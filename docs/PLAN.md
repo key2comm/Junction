@@ -34,7 +34,7 @@ FreeSWITCH relays every call's media (RTP). The current 1 vCPU droplet is for bu
 | 80, 443/tcp | nginx: Let's Encrypt, admin UI, WSS proxy | anywhere |
 | 5080/udp+tcp | FreeSWITCH `carrier` profile: **all wholesale traffic** from customers and vendors, IP-authenticated | **only IPs in the `carriers` set** |
 | 5060/udp+tcp, 5061/tls | FreeSWITCH `internal` profile: PBX phones only, digest auth | anywhere, covered by fail2ban |
-| 7443 | FreeSWITCH WSS, proxied by nginx `/ws` | localhost only |
+| 7443 | FreeSWITCH WSS for WebRTC phones (self-signed, loopback), proxied by nginx at `wss://<host>/ws` | localhost only |
 | 16384-32768/udp | RTP media | anywhere |
 | 9090 | Cockpit | closed |
 
@@ -85,7 +85,7 @@ flowchart LR
 5. **Billing** (done: per-call rating, usage posting in 15-minute batches, call records page, monthly invoices per customer time zone, vendor payables and vendor invoice reconciliation, SMTP settings in the admin UI, low-balance alerts, invoice emailing, dashboard): CDRs into PostgreSQL, rating, ledger, invoices, rate deck import with effective dates.
 6. **API** (done: /api/v1, 37 operations, bearer tokens with abilities and customer scoping, OpenAPI 3.1 at /api/v1/openapi.json, customer portal at /portal): `/api/v1` with token scopes and OpenAPI docs. A customer portal built on the same API.
 7. **Quality and operations** (done: per-attempt PDD from vendor-leg CDRs, hourly vendor quality stats, Vendor quality page and API, live calls with hang-up, fraud and operational alerts with optional auto-suspend, quality-aware routing): ASR/ACD/PDD stats, alerts, live calls view, and dashboards.
-8. **Minimal PBX:** extensions, voicemail, simple IVR, and WebRTC through nginx WSS, with outbound calls routed through LCR.
+8. **Minimal PBX** (done; all 11 self-test scenarios pass on the live switch): extensions, IVRs and DIDs belong to customer accounts. Extensions dial 2-6 digits internally and 7 or more digits out, through the account's LCR, limits, funds and billing (`lcr.lua`, shared with carrier traffic). Unanswered calls go to voicemail, and `*97` checks it. The IVR plays an uploaded WAV greeting and acts on one key. Carrier-delivered DIDs reach an extension, IVR or voicemail for free. WebRTC goes through nginx `wss://<host>/ws` to the loopback WSS. A JsSIP web phone is in the admin UI and the portal. SIP users are generated into `directory/pbx/` by `PbxSync`. CDRs have a `direction` (carrier, pbx_out, pbx_in, pbx_local).
 
 ## Deploy model
 
