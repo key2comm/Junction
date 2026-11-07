@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AccountController;
 use App\Http\Controllers\Admin\AccountIpController;
+use App\Http\Controllers\Admin\AlertController;
 use App\Http\Controllers\Admin\CdrController;
 use App\Http\Controllers\Admin\GatewayController;
 use App\Http\Controllers\Admin\InvoiceController;
@@ -39,6 +40,11 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::post('accounts/{account}/ledger', [LedgerEntryController::class, 'store'])
         ->middleware('throttle:30,1')
         ->name('accounts.ledger.store');
+
+    Route::get('alerts', [AlertController::class, 'index'])->name('alerts.index');
+    Route::put('alerts/rules/{type}', [AlertController::class, 'updateRule'])->name('alerts.rules.update');
+    Route::post('alerts/{alert}/acknowledge', [AlertController::class, 'acknowledge'])->name('alerts.acknowledge');
+    Route::post('alerts/{alert}/resolve', [AlertController::class, 'resolve'])->name('alerts.resolve');
 
     Route::get('quality', [QualityController::class, 'index'])->name('quality.index');
     Route::get('live', [LiveCallsController::class, 'index'])->name('live.index');

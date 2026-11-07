@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
-import { Activity, AudioLines, Building2, Cable, FileText, KeyRound, LayoutGrid, PhoneCall, Route, Tags } from '@lucide/vue';
+import { Activity, AudioLines, BellRing, Building2, Cable, FileText, KeyRound, LayoutGrid, PhoneCall, Route, Tags } from '@lucide/vue';
 import AppLogo from '@/components/AppLogo.vue';
 import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
@@ -18,6 +18,7 @@ import {
 import { dashboard } from '@/routes';
 import { index as accounts } from '@/routes/accounts';
 import { index as cdrs } from '@/routes/cdrs';
+import { index as alerts } from '@/routes/alerts';
 import { index as invoices } from '@/routes/invoices';
 import { index as live } from '@/routes/live';
 import { index as quality } from '@/routes/quality';
@@ -36,6 +37,11 @@ const adminNavItems: NavItem[] = [
         title: 'Dashboard',
         href: dashboard(),
         icon: LayoutGrid,
+    },
+    {
+        title: 'Alerts',
+        href: alerts(),
+        icon: BellRing,
     },
     {
         title: 'Live calls',
@@ -90,7 +96,11 @@ const portalNavItems: NavItem[] = [
 
 const page = usePage();
 const isPortal = computed(() => Boolean((page.props.auth as { user?: { account_id?: number | null } }).user?.account_id));
-const mainNavItems = computed(() => (isPortal.value ? portalNavItems : adminNavItems));
+// Show the number of open alerts beside "Alerts".
+const openAlerts = computed(() => (page.props as { openAlerts?: number | null }).openAlerts ?? 0);
+const mainNavItems = computed(() =>
+    isPortal.value ? portalNavItems : adminNavItems.map((item) => (item.title === 'Alerts' && openAlerts.value ? { ...item, title: `Alerts (${openAlerts.value})` } : item)),
+);
 const homeLink = computed(() => (isPortal.value ? portalHome() : dashboard()));
 
 const footerNavItems: NavItem[] = [];

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AlertController;
 use App\Http\Controllers\Admin\LiveCallsController;
 use App\Http\Controllers\Admin\QualityController;
 use App\Http\Controllers\Api\V1\AccountsController;
@@ -76,6 +77,9 @@ Route::prefix('v1')->group(function () {
             Route::get('cdrs', [CdrsController::class, 'index']);
             Route::get('cdrs/summary', [CdrsController::class, 'summary']);
             Route::get('cdrs/{cdr}', [CdrsController::class, 'show'])->whereNumber('cdr');
+        });
+        Route::middleware($can('alerts:read'))->group(function () {
+            Route::get('alerts', [AlertController::class, 'api']);
         });
         Route::middleware($can('billing:read'))->group(function () {
             Route::get('invoices', [CdrsController::class, 'invoices']);

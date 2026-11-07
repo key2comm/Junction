@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { date, money } from '@/lib/format';
 import { dashboard } from '@/routes';
 import { show as showAccount } from '@/routes/accounts';
+import { index as alertsIndex } from '@/routes/alerts';
 import { index as cdrIndex } from '@/routes/cdrs';
 import { edit as editEmail } from '@/routes/email';
 import { show as showInvoice } from '@/routes/invoices';
@@ -16,6 +17,7 @@ defineProps<{
     lowBalance: { id: number; code: string; name: string; currency: string; low_balance_threshold: string; low_balance_alerted_at: string; available: string }[];
     unpaid: { id: number; number: string; account_code: string; account_name: string; currency: string; amount_due: string; due_at: string | null }[];
     disputes: { id: number; reference: string; status: string; currency: string; vendor: string; difference: string }[];
+    alerts: { id: number; type: string; severity: string; status: string; title: string; action_taken: string | null; opened_at: string }[];
     mailConfigured: boolean;
     currency: string;
 }>();
@@ -34,6 +36,20 @@ const overdue = (iso: string | null) => iso !== null && new Date(iso) < new Date
             Email isn't set up, so invoices and low-balance alerts can't be sent.
             <Link :href="editEmail()" class="font-medium text-foreground hover:underline">Set up email</Link>
         </p>
+
+        <section v-if="alerts.length" class="space-y-2">
+            <div class="flex items-baseline justify-between">
+                <Heading variant="small" title="Alerts" />
+                <Link :href="alertsIndex()" class="text-sm hover:underline">All alerts →</Link>
+            </div>
+            <ul class="divide-y rounded-lg border text-sm" :class="{ 'border-destructive': alerts.some((a) => a.status === 'open' && a.severity === 'critical') }">
+                <li v-for="a in alerts" :key="a.id" class="flex flex-wrap items-center gap-2 px-3 py-2">
+                    <Badge :variant="a.severity === 'critical' ? 'destructive' : 'secondary'">{{ a.status }}</Badge>
+                    <span>{{ a.title }}</span>
+                    <span v-if="a.action_taken" class="text-destructive">· {{ a.action_taken }}</span>
+                </li>
+            </ul>
+        </section>
 
         <section class="space-y-3">
             <div class="flex items-baseline justify-between">

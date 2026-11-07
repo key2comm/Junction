@@ -39,3 +39,6 @@ Schedule::call(function () {
         app(LiveCalls::class)->refresh();
     }
 })->name('softswitch:live-calls')->everyFiveSeconds()->withoutOverlapping();
+
+// Fraud and operational alerts.
+Schedule::command('softswitch:check-alerts')->everyMinute()->withoutOverlapping();

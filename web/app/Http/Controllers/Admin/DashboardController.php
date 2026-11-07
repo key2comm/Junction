@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Account;
+use App\Models\Alert;
 use App\Models\Invoice;
 use App\Models\VendorInvoice;
 use App\Services\MailSettings;
@@ -36,6 +37,8 @@ class DashboardController extends Controller
             'disputes' => VendorInvoice::query()->where('status', '!=', 'accepted')->with('account:id,code')->orderBy('period_start')->limit(10)
                 ->get(['id', 'account_id', 'reference', 'status', 'amount', 'our_amount', 'currency'])
                 ->map(fn ($i) => [...$i->only(['id', 'reference', 'status', 'currency']), 'vendor' => $i->account->code, 'difference' => $i->difference()]),
+            'alerts' => Alert::query()->whereIn('status', ['open', 'acknowledged'])->orderByRaw("CASE status WHEN 'open' THEN 0 ELSE 1 END")
+                ->orderByDesc('opened_at')->limit(8)->get(['id', 'type', 'severity', 'status', 'title', 'action_taken', 'opened_at']),
             'mailConfigured' => MailSettings::configured(),
             'currency' => Account::query()->groupBy('currency')->orderByRaw('count(*) desc')->value('currency') ?? 'USD',
         ]);

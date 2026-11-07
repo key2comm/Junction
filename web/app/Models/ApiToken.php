@@ -28,6 +28,7 @@ class ApiToken extends Model
         'routing:write' => 'Change trunks, gateways and routing plans',
         'cdrs:read' => 'Read call records',
         'billing:read' => 'Read invoices',
+        'alerts:read' => 'Read fraud and operational alerts',
     ];
 
     /** A token scoped to one customer account can only have these. */

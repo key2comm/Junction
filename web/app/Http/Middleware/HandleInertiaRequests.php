@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Alert;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -43,6 +44,8 @@ class HandleInertiaRequests extends Middleware
                 // Portal users: the customer account they belong to.
                 'account' => $request->user()?->account?->only(['id', 'code', 'name']),
             ],
+            // Admins: open alerts, for the sidebar badge.
+            'openAlerts' => fn () => $request->user()?->isAdmin() ? Alert::query()->where('status', 'open')->count() : null,
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
     }
