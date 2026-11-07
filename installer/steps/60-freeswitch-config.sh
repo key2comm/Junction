@@ -72,7 +72,7 @@ done
 "$fs_cli" -x status >/dev/null 2>&1 || die "FreeSWITCH did not start; check journalctl -u freeswitch and $SS_FS_LOG/freeswitch.log"
 
 # Profiles start a moment after the core answers; give them time.
-for profile in carrier internal; do
+for profile in carrier internal selftest; do
 	running=0
 	for _ in $(seq 1 20); do
 		if "$fs_cli" -x "sofia status" | awk -v p="$profile" '$1 == p && $2 == "profile" && /RUNNING/ { f = 1 } END { exit !f }'; then

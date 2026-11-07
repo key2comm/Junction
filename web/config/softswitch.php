@@ -5,6 +5,11 @@ return [
     // DNS before requesting a Let's Encrypt certificate.
     'public_ip' => env('SOFTSWITCH_PUBLIC_IP'),
 
+    'carrier_port' => (int) env('SOFTSWITCH_CARRIER_PORT', 5080),
+
+    // Built-in self-test: fake vendor/customer on this FreeSWITCH profile port.
+    'selftest_port' => (int) env('SOFTSWITCH_SELFTEST_PORT', 5090),
+
     // Longest call allowed, in seconds (the funds reservation covers this much).
     'max_call_duration' => (int) env('SOFTSWITCH_MAX_CALL_DURATION', 14400),
 

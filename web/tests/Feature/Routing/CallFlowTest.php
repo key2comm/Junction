@@ -256,4 +256,11 @@ class CallFlowTest extends TestCase
         $this->customer->update(['status' => 'suspended']);
         Queue::assertPushed(SyncSwitchConfig::class);
     }
+
+    public function test_self_test_profile_legs_are_not_recorded(): void
+    {
+        $this->postCdr($this->xml((string) Str::uuid(), ['sofia_profile_name' => 'selftest']))->assertOk();
+
+        $this->assertSame(0, Cdr::query()->count());
+    }
 }

@@ -5,6 +5,8 @@
   <X-PRE-PROCESS cmd="set" data="carrier_sip_port=@SS_CARRIER_PORT@"/>
   <X-PRE-PROCESS cmd="set" data="internal_sip_port=@SS_PBX_PORT@"/>
   <X-PRE-PROCESS cmd="set" data="internal_tls_port=@SS_PBX_TLS_PORT@"/>
+  <!-- Self-test vendor/customer (php artisan softswitch:selftest). Not opened in the firewall. -->
+  <X-PRE-PROCESS cmd="set" data="selftest_sip_port=@SS_SELFTEST_PORT@"/>
 
   <!-- Carrier calls offer the caller's own codecs to the vendor (no transcoding);
        this list is what FreeSWITCH accepts from carriers. -->

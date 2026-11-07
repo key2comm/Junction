@@ -18,8 +18,9 @@ class EventSocket
     ) {}
 
     /** Run an API command (e.g. "sofia profile carrier rescan") and return its output. */
-    public function api(string $command): string
+    public function api(string $command, ?float $timeout = null): string
     {
+        $timeout ??= $this->timeout;
         if (preg_match('/[\r\n]/', $command)) {
             throw new RuntimeException('ESL commands cannot contain line breaks.');
         }
@@ -28,7 +29,7 @@ class EventSocket
         if ($socket === false) {
             throw new RuntimeException("Cannot reach FreeSWITCH event socket: {$error}");
         }
-        stream_set_timeout($socket, (int) ceil($this->timeout));
+        stream_set_timeout($socket, (int) ceil($timeout));
 
         try {
             $hello = $this->readMessage($socket);

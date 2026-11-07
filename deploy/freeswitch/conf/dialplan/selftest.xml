@@ -1,0 +1,32 @@
+<include>
+  <!--
+    The self-test "vendor". softswitch:selftest creates trunks whose tech prefix
+    tells this dialplan how to behave, then calls through the real carrier
+    profile and checks what the routing engine did.
+  -->
+  <context name="selftest">
+    <extension name="vendor-answers">
+      <condition field="destination_number" expression="^8200\d+$">
+        <action application="answer"/>
+        <!-- Hold the call (silently) until the switch or the test hangs up; 5 minutes max. -->
+        <action application="playback" data="silence_stream://300000"/>
+        <action application="hangup"/>
+      </condition>
+    </extension>
+    <extension name="vendor-unavailable">
+      <condition field="destination_number" expression="^8503\d+$">
+        <action application="respond" data="503 Service Unavailable"/>
+      </condition>
+    </extension>
+    <extension name="vendor-busy">
+      <condition field="destination_number" expression="^8486\d+$">
+        <action application="respond" data="486 Busy Here"/>
+      </condition>
+    </extension>
+    <extension name="refuse">
+      <condition field="destination_number" expression="^.*$">
+        <action application="respond" data="404 Not Found"/>
+      </condition>
+    </extension>
+  </context>
+</include>

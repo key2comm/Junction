@@ -23,7 +23,9 @@ class PostUsage extends Command
     public function handle(Ledger $ledger): int
     {
         $accounts = DB::table('cdrs')->whereNull('posted_at')->whereNotNull('sell_cost')
-            ->whereNotNull('customer_account_id')->distinct()->pluck('customer_account_id');
+            ->whereNotNull('customer_account_id')
+            ->whereNotIn('customer_account_id', DB::table('accounts')->select('id')->where('code', SelfTest::CUSTOMER))
+            ->distinct()->pluck('customer_account_id');
 
         $posted = 0;
         foreach ($accounts as $accountId) {

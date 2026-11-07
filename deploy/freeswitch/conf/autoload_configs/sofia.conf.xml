@@ -87,5 +87,31 @@
         <param name="tls" value="false"/>
       </settings>
     </profile>
+
+    <!--
+      selftest: a fake vendor (and the fake customer that calls through the
+      carrier profile) for `php artisan softswitch:selftest`. Not opened in the
+      firewall and limited to the switch's own IP by ACL.
+    -->
+    <profile name="selftest">
+      <gateways/>
+      <domains/>
+      <settings>
+        <param name="context" value="selftest"/>
+        <param name="dialplan" value="XML"/>
+        <param name="sip-ip" value="$${softswitch_public_ip}"/>
+        <param name="rtp-ip" value="$${softswitch_public_ip}"/>
+        <param name="sip-port" value="$${selftest_sip_port}"/>
+        <param name="username" value="selftest"/>
+        <param name="apply-inbound-acl" value="selftest"/>
+        <param name="auth-calls" value="false"/>
+        <param name="disable-register" value="true"/>
+        <param name="manage-presence" value="false"/>
+        <param name="inbound-codec-prefs" value="PCMU,PCMA"/>
+        <param name="outbound-codec-prefs" value="PCMU,PCMA"/>
+        <param name="rtp-timer-name" value="soft"/>
+        <param name="tls" value="false"/>
+      </settings>
+    </profile>
   </profiles>
 </configuration>

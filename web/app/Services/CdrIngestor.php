@@ -32,6 +32,12 @@ class CdrIngestor
             : null;
         $profile = $doc->callflow[0]->caller_profile ?? null;
 
+        // The built-in self-test's fake customer and vendor legs (selftest
+        // profile) are not traffic; only the carrier-profile leg is recorded.
+        if ($var('sofia_profile_name') === 'selftest') {
+            return null;
+        }
+
         $uuid = $var('uuid');
         if (! $uuid || ! preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $uuid)) {
             throw new InvalidArgumentException('CDR has no valid uuid.');

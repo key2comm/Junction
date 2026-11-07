@@ -3,5 +3,10 @@
     <!-- Carrier access is enforced by the nftables allowlist and by customer
          identification in the routing engine. Built-in lists (loopback.auto,
          localnet.auto) are always available. -->
+    <!-- Only the switch itself may reach the self-test profile. -->
+    <list name="selftest" default="deny">
+      <node type="allow" cidr="$${softswitch_public_ip}/32"/>
+      <node type="allow" cidr="127.0.0.1/32"/>
+    </list>
   </network-lists>
 </configuration>
