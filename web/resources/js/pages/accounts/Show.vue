@@ -71,7 +71,7 @@ const page = usePage();
 // One-time password for a new portal login (only when email isn't set up).
 const portalPassword = computed(() => (page.flash as Record<string, unknown> | undefined)?.portalPassword as { email: string; password: string } | undefined);
 
-const select = 'form-select';
+const select = 'form-select w-auto';
 </script>
 
 <template>

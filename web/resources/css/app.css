@@ -28,6 +28,21 @@
     height: 1rem;
 }
 
+/* Menu dropdowns are positioned by CSS (no Popper/Bootstrap JS). */
+.navbar .dropdown-menu.show {
+    position: absolute;
+    top: 100%;
+    margin-top: 0.25rem;
+}
+.navbar .nav-item.dropdown {
+    position: relative;
+}
+
+/* A select in an inline row takes its natural width, like a button. */
+.d-flex > .form-select {
+    width: auto;
+}
+
 /* Tables are dense: lots of numbers. */
 .table td,
 .table th {

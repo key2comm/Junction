@@ -49,7 +49,7 @@ function apply(delay = 0) {
     }, delay);
 }
 
-const select = 'form-select';
+const select = 'form-select w-auto';
 const statusVariant = (s: string) => (s === 'active' ? 'default' : s === 'suspended' ? 'destructive' : 'secondary');
 </script>
 
