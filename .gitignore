@@ -1,0 +1,11 @@
+.env
+.env.*
+.claude/settings.local.json
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+node_modules/
+__pycache__/
+.venv/
+*.log
+.DS_Store
