@@ -50,7 +50,11 @@ FreeSWITCH relays every call's media (RTP). The current 1 vCPU droplet is for bu
    - CDRs into PostgreSQL with both buy and sell rating.
    - Routing logic in Lua, so routes stay in the database rather than in XML.
 4. **Quality and operations:** per-vendor ASR/ACD/PDD, alerts, and rate deck CSV import.
-5. **nginx and admin UI:** Let's Encrypt for `theswitch.key2pbx.ca`. Website installed under `/var/www/html` (`SS_WEB_ROOT`). Web UI for carriers, IPs, rate decks, routes, CDRs and stats, and live calls.
+5. **nginx and admin UI:** Let's Encrypt for `theswitch.key2pbx.ca`.
+   - Admin UI is **Laravel** (backend) with **Vue 3 + Inertia** (frontend), built with Vite. It's served by nginx and PHP-FPM.
+   - The app is installed under `/var/www/html` (`SS_WEB_ROOT`), and nginx serves `/var/www/html/public`.
+   - Laravel uses the same PostgreSQL database as the routing engine, which makes it the source of truth for carriers, rate decks, and routes. It talks to FreeSWITCH through the event socket (ESL) for live calls, reloads, and gateway status. Queue workers and the scheduler run as systemd units, and handle rate deck imports and stats.
+   - Pages: carriers and their IPs, rate decks, routes, CDRs and stats, and live calls.
 6. **Minimal PBX:** extensions, voicemail, simple IVR, and WebRTC through nginx WSS. Calls to outside numbers go through the same LCR engine as wholesale traffic.
 
 ## Deploy model

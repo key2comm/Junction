@@ -45,7 +45,7 @@ show_settings
 
 for step in "$SS_ROOT"/installer/steps/[0-9][0-9]-*.sh; do
 	num="$(basename "$step" | cut -c1-2)"
-	if [ -n "$SS_ONLY_STEPS" ] && ! printf ',%s,' "$SS_ONLY_STEPS" | grep -q ",$num,"; then
+	if [ -n "$SS_ONLY_STEPS" ] && [[ ",$SS_ONLY_STEPS," != *",$num,"* ]]; then
 		continue
 	fi
 	log "Step $(basename "$step" .sh)"

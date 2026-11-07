@@ -1,4 +1,6 @@
 # Shared helpers for install.sh and its steps. Sourced, not executed.
+# NOTE: runs with pipefail. Never pipe into a reader that exits early
+# (head, grep -q, awk exit): the writer gets SIGPIPE and the installer dies.
 
 log()  { printf '\033[1;34m==>\033[0m %s\n' "$*"; }
 info() { printf '    %s\n' "$*"; }
@@ -26,8 +28,8 @@ detect_os() {
 resolve_defaults() {
 	: "${SS_HOSTNAME:=}" "${SS_PUBLIC_IP:=}" "${SS_SSH_PORT:=}"
 	[ -n "$SS_HOSTNAME" ]  || SS_HOSTNAME="$(hostname -f 2>/dev/null || hostname)"
-	[ -n "$SS_PUBLIC_IP" ] || SS_PUBLIC_IP="$(ip -4 route get 1.1.1.1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="src"){print $(i+1); exit}}')"
-	[ -n "$SS_SSH_PORT" ]  || SS_SSH_PORT="$(sshd -T 2>/dev/null | awk '$1=="port"{print $2; exit}')"
+	[ -n "$SS_PUBLIC_IP" ] || SS_PUBLIC_IP="$(ip -4 route get 1.1.1.1 2>/dev/null | awk '!f{for(i=1;i<=NF;i++) if($i=="src"){print $(i+1); f=1}}')"
+	[ -n "$SS_SSH_PORT" ]  || SS_SSH_PORT="$(sshd -T 2>/dev/null | awk '$1=="port" && !f{print $2; f=1}')"
 	[ -n "$SS_SSH_PORT" ]  || SS_SSH_PORT=22
 	: "${SS_PBX_PORT:=5060}" "${SS_PBX_TLS_PORT:=5061}" "${SS_CARRIER_PORT:=5080}"
 	: "${SS_RTP_START:=16384}" "${SS_RTP_END:=32768}"
@@ -73,7 +75,7 @@ secret() {
 	local name="$1" f=/etc/softswitch/secrets val
 	install -d -m 0750 /etc/softswitch
 	[ -f "$f" ] || install -m 0600 /dev/null "$f"
-	val="$(sed -n "s/^${name}=//p" "$f" | head -n1)"
+	val="$(sed -n "s/^${name}=//p" "$f" | awk 'NR==1')"
 	if [ -z "$val" ]; then
 		val="$(head -c 24 /dev/urandom | od -An -tx1 | tr -d ' \n')"
 		printf '%s=%s\n' "$name" "$val" >> "$f"

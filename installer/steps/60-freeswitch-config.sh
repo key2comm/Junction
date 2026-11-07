@@ -42,7 +42,7 @@ for _ in $(seq 1 30); do
 	sleep 2
 done
 fs_cli -x status >/dev/null 2>&1 || die "FreeSWITCH did not start; check journalctl -u freeswitch and $SS_FS_PREFIX/log/freeswitch.log"
-info "FreeSWITCH running: $(fs_cli -x version | head -n1)"
+info "FreeSWITCH running: $(fs_cli -x version | awk 'NR==1')"
 
 # Now that FreeSWITCH logs exist, turn on its fail2ban jail.
 . "$SS_ROOT/installer/steps/30-fail2ban.sh"
