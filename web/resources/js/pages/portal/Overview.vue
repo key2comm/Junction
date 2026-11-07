@@ -90,21 +90,21 @@ const duration = (s: number | null) => (s === null ? '—' : s >= 60 ? `${Math.f
             <section class="ss-stack-2">
                 <Heading variant="small" title="Recent payments and credits" />
                 <ul class="list-group">
-                    <li v-for="p in payments" :key="p.id" class="d-flex justify-content-between gap-2 px-2 py-2">
+                    <li v-for="p in payments" :key="p.id" class="list-group-item d-flex justify-content-between gap-2 px-2 py-2">
                         <span><span class="text-secondary">{{ date(p.effective_at, account.timezone) }}</span> {{ p.description }}</span>
                         <span class="tabular-nums">{{ m(p.amount) }}</span>
                     </li>
-                    <li v-if="payments.length === 0" class="px-2 py-4 text-center text-secondary">None yet.</li>
+                    <li v-if="payments.length === 0" class="list-group-item px-2 py-4 text-center text-secondary">None yet.</li>
                 </ul>
             </section>
             <section class="ss-stack-2">
                 <Heading variant="small" title="Latest invoices" />
                 <ul class="list-group">
-                    <li v-for="i in invoices" :key="i.id" class="d-flex justify-content-between gap-2 px-2 py-2">
+                    <li v-for="i in invoices" :key="i.id" class="list-group-item d-flex justify-content-between gap-2 px-2 py-2">
                         <span><Link :href="showInvoice(i.id)" class="font-monospace">{{ i.number }}</Link> <span class="text-secondary">{{ billingMonth(i.period_start, i.timezone) }}</span></span>
                         <span class="tabular-nums">{{ Number(i.amount_due) ? `${money(i.amount_due, i.currency)} due ${date(i.due_at)}` : money(i.usage_total, i.currency) }}</span>
                     </li>
-                    <li v-if="invoices.length === 0" class="px-2 py-4 text-center text-secondary">No invoices yet.</li>
+                    <li v-if="invoices.length === 0" class="list-group-item px-2 py-4 text-center text-secondary">No invoices yet.</li>
                 </ul>
             </section>
         </div>

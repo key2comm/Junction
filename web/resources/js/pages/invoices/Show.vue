@@ -75,7 +75,7 @@ const print = () => window.print();
 
         <!-- Email (not printed) -->
         <section class="mx-auto ss-maxw-3xl d-print-none">
-            <div class="card card-body d-flex flex-wrap align-items-start gap-2">
+            <div class="card card-body d-flex flex-wrap align-items-start gap-2 flex-row">
                 <div class="flex-grow-1">
                     <p class="fw-medium">Email this {{ invoice.billing_type === 'postpaid' ? 'invoice' : 'statement' }}</p>
                     <p class="text-secondary">

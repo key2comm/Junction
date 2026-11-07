@@ -52,15 +52,15 @@ function search() {
                     </thead>
                     <tbody>
                         <tr v-for="r in rates.data" :key="r.prefix + r.effective_from">
-                            <td class="px-2 py-1 font-monospace">{{ r.prefix }}</td>
-                            <td class="px-2 py-1">{{ r.destination }}</td>
-                            <td class="px-2 py-1 text-end tabular-nums">{{ money(r.rate, currency) }}</td>
-                            <td class="px-2 py-1 text-end tabular-nums">{{ Number(r.connect_fee) ? money(r.connect_fee, currency) : '—' }}</td>
-                            <td class="px-2 py-1 font-monospace">{{ r.initial_increment }}/{{ r.increment }}</td>
-                            <td class="px-2 py-1 text-secondary">{{ r.effective_to ? date(r.effective_to) : '—' }}</td>
+                            <td class="font-monospace">{{ r.prefix }}</td>
+                            <td>{{ r.destination }}</td>
+                            <td class="text-end tabular-nums">{{ money(r.rate, currency) }}</td>
+                            <td class="text-end tabular-nums">{{ Number(r.connect_fee) ? money(r.connect_fee, currency) : '—' }}</td>
+                            <td class="font-monospace">{{ r.initial_increment }}/{{ r.increment }}</td>
+                            <td class="text-secondary">{{ r.effective_to ? date(r.effective_to) : '—' }}</td>
                         </tr>
                         <tr v-if="rates.data.length === 0">
-                            <td colspan="6" class="px-2 py-4 text-center text-secondary">No rates match.</td>
+                            <td colspan="6" class="text-center text-secondary">No rates match.</td>
                         </tr>
                     </tbody>
                 </table>

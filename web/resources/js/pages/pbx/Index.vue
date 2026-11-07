@@ -55,7 +55,7 @@ defineOptions({ layout: { breadcrumbs: [{ title: 'PBX', href: index() }] } });
                         <td class="text-end tabular-nums">{{ a.dids }}</td>
                     </tr>
                     <tr v-if="accounts.length === 0">
-                        <td colspan="4" class="py-3 text-center text-secondary">No customer accounts yet.</td>
+                        <td colspan="4" class="text-center text-secondary">No customer accounts yet.</td>
                     </tr>
                 </tbody>
             </table>

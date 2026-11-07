@@ -133,14 +133,14 @@ function toggle(route: Route) {
                     </thead>
                     <tbody>
                         <tr v-for="r in routes.data" :key="r.id" :class="{ 'opacity-50': !r.enabled || !r.trunk.enabled }">
-                            <td class="px-2 py-1 font-monospace">{{ r.prefix || '(all)' }}</td>
-                            <td class="px-2 py-1">
+                            <td class="font-monospace">{{ r.prefix || '(all)' }}</td>
+                            <td>
                                 <Link :href="showTrunk(r.trunk.id)">{{ r.trunk.vendor }} / {{ r.trunk.name }}</Link>
                                 <Badge v-if="!r.trunk.enabled" variant="secondary" class="ms-2">trunk disabled</Badge>
                             </td>
-                            <td class="px-2 py-1 text-end tabular-nums">{{ r.priority }}</td>
-                            <td class="px-2 py-1 text-end tabular-nums">{{ r.weight }}</td>
-                            <td class="px-2 py-1 text-end text-nowrap">
+                            <td class="text-end tabular-nums">{{ r.priority }}</td>
+                            <td class="text-end tabular-nums">{{ r.weight }}</td>
+                            <td class="text-end text-nowrap">
                                 <Button size="sm" variant="ghost" @click="toggle(r)">{{ r.enabled ? 'Disable' : 'Enable' }}</Button>
                                 <Form v-bind="RoutingPlanController.destroyRoute.form([plan.id, r.id])" :options="{ preserveScroll: true }" class="d-inline" v-slot="{ processing }">
                                     <Button size="sm" variant="ghost" :disabled="processing" aria-label="Remove route"><Trash2 class="icon" /></Button>
@@ -148,7 +148,7 @@ function toggle(route: Route) {
                             </td>
                         </tr>
                         <tr v-if="routes.data.length === 0">
-                            <td colspan="5" class="px-2 py-4 text-center text-secondary">
+                            <td colspan="5" class="text-center text-secondary">
                                 {{ trunks.length === 0 ? 'Create a vendor trunk first, then route prefixes to it.' : 'No routes yet.' }}
                             </td>
                         </tr>

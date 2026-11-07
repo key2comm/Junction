@@ -65,28 +65,28 @@ function apply() {
             <table class="table table-vcenter card-table table-tight">
                 <thead>
                     <tr>
-                        <th class="px-3 py-2 fw-medium">Invoice</th>
-                        <th class="px-3 py-2 fw-medium">Customer</th>
-                        <th class="px-3 py-2 fw-medium">Period</th>
-                        <th class="px-3 py-2 text-end fw-medium">Usage</th>
-                        <th class="px-3 py-2 text-end fw-medium">Amount due</th>
-                        <th class="px-3 py-2 fw-medium">Due</th>
+                        <th class="fw-medium">Invoice</th>
+                        <th class="fw-medium">Customer</th>
+                        <th class="fw-medium">Period</th>
+                        <th class="text-end fw-medium">Usage</th>
+                        <th class="text-end fw-medium">Amount due</th>
+                        <th class="fw-medium">Due</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr v-for="i in invoices.data" :key="i.id" :class="{ 'opacity-50': i.status === 'void' }">
-                        <td class="px-3 py-2">
+                        <td>
                             <Link :href="show(i.id)" class="font-monospace fw-medium">{{ i.number }}</Link>
                             <Badge v-if="i.status === 'void'" variant="secondary" class="ms-2">void</Badge>
                         </td>
-                        <td class="px-3 py-2">{{ i.account_name }} <span class="text-secondary">{{ i.account_code }}</span></td>
-                        <td class="px-3 py-2">{{ billingMonth(i.period_start, i.timezone) }}</td>
-                        <td class="px-3 py-2 text-end tabular-nums">{{ money(i.usage_total, i.currency) }}</td>
-                        <td class="px-3 py-2 text-end fw-medium tabular-nums">{{ Number(i.amount_due) ? money(i.amount_due, i.currency) : '—' }}</td>
-                        <td class="px-3 py-2">{{ date(i.due_at) }}</td>
+                        <td>{{ i.account_name }} <span class="text-secondary">{{ i.account_code }}</span></td>
+                        <td>{{ billingMonth(i.period_start, i.timezone) }}</td>
+                        <td class="text-end tabular-nums">{{ money(i.usage_total, i.currency) }}</td>
+                        <td class="text-end fw-medium tabular-nums">{{ Number(i.amount_due) ? money(i.amount_due, i.currency) : '—' }}</td>
+                        <td>{{ date(i.due_at) }}</td>
                     </tr>
                     <tr v-if="invoices.data.length === 0">
-                        <td colspan="6" class="px-3 py-5 text-center text-secondary">No invoices yet. The first ones are issued after the current month ends.</td>
+                        <td colspan="6" class="text-center text-secondary">No invoices yet. The first ones are issued after the current month ends.</td>
                     </tr>
                 </tbody>
             </table>

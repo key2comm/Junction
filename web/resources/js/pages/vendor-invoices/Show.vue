@@ -126,16 +126,16 @@ const flagged = (r: Row) => Math.abs(Number(r.difference)) > Math.max(0.01, Math
                     </thead>
                     <tbody>
                         <tr v-for="r in comparison" :key="r.prefix ?? 'none'" :class="{ 'bg-danger-lt': has_breakdown && flagged(r) }">
-                            <td class="px-2 py-1 font-monospace">{{ r.prefix ?? '—' }}</td>
-                            <td class="px-2 py-1">{{ r.destination ?? '' }}</td>
-                            <td v-if="has_breakdown" class="px-2 py-1 text-end tabular-nums">{{ r.their_minutes ?? '—' }}</td>
-                            <td class="px-2 py-1 text-end tabular-nums">{{ r.our_minutes }}</td>
-                            <td v-if="has_breakdown" class="px-2 py-1 text-end tabular-nums">{{ m(r.their_amount) }}</td>
-                            <td class="px-2 py-1 text-end tabular-nums">{{ m(r.our_amount) }}</td>
-                            <td v-if="has_breakdown" class="px-2 py-1 text-end tabular-nums">{{ m(r.difference) }}</td>
+                            <td class="font-monospace">{{ r.prefix ?? '—' }}</td>
+                            <td>{{ r.destination ?? '' }}</td>
+                            <td v-if="has_breakdown" class="text-end tabular-nums">{{ r.their_minutes ?? '—' }}</td>
+                            <td class="text-end tabular-nums">{{ r.our_minutes }}</td>
+                            <td v-if="has_breakdown" class="text-end tabular-nums">{{ m(r.their_amount) }}</td>
+                            <td class="text-end tabular-nums">{{ m(r.our_amount) }}</td>
+                            <td v-if="has_breakdown" class="text-end tabular-nums">{{ m(r.difference) }}</td>
                         </tr>
                         <tr v-if="comparison.length === 0">
-                            <td colspan="7" class="py-3 text-center text-secondary">No calls to this vendor in the period.</td>
+                            <td colspan="7" class="text-center text-secondary">No calls to this vendor in the period.</td>
                         </tr>
                     </tbody>
                 </table>

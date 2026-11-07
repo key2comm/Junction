@@ -190,17 +190,17 @@ const increments = (r: Rate) => `${r.initial_increment}/${r.increment}`;
                     </thead>
                     <tbody>
                         <tr v-for="r in rates.data" :key="r.id">
-                            <td class="px-2 py-1 font-monospace">{{ r.prefix }}</td>
-                            <td class="px-2 py-1">{{ r.destination }}</td>
-                            <td class="px-2 py-1 text-end tabular-nums">{{ money(r.rate, deck.currency) }}</td>
-                            <td class="px-2 py-1 text-end tabular-nums">{{ Number(r.connect_fee) ? money(r.connect_fee, deck.currency) : '—' }}</td>
-                            <td class="px-2 py-1 font-monospace">{{ increments(r) }}</td>
-                            <td class="px-2 py-1 text-nowrap text-secondary">
+                            <td class="font-monospace">{{ r.prefix }}</td>
+                            <td>{{ r.destination }}</td>
+                            <td class="text-end tabular-nums">{{ money(r.rate, deck.currency) }}</td>
+                            <td class="text-end tabular-nums">{{ Number(r.connect_fee) ? money(r.connect_fee, deck.currency) : '—' }}</td>
+                            <td class="font-monospace">{{ increments(r) }}</td>
+                            <td class="text-nowrap text-secondary">
                                 {{ dateTime(r.effective_from) }}<span v-if="r.effective_to"> → {{ dateTime(r.effective_to) }}</span>
                             </td>
                         </tr>
                         <tr v-if="rates.data.length === 0">
-                            <td colspan="6" class="px-2 py-5 text-center text-secondary">No rates{{ filters.q ? ' match' : '' }}.</td>
+                            <td colspan="6" class="text-center text-secondary">No rates{{ filters.q ? ' match' : '' }}.</td>
                         </tr>
                     </tbody>
                 </table>

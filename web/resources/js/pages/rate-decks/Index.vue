@@ -33,21 +33,21 @@ defineOptions({ layout: { breadcrumbs: [{ title: 'Rate decks', href: index() }] 
             <table class="table table-vcenter card-table table-tight">
                 <thead>
                     <tr>
-                        <th class="px-3 py-2 fw-medium">Deck</th>
-                        <th class="px-3 py-2 fw-medium">Currency</th>
-                        <th class="px-3 py-2 text-end fw-medium">Current rates</th>
-                        <th class="px-3 py-2 fw-medium">Used by</th>
+                        <th class="fw-medium">Deck</th>
+                        <th class="fw-medium">Currency</th>
+                        <th class="text-end fw-medium">Current rates</th>
+                        <th class="fw-medium">Used by</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr v-for="d in decks" :key="d.id">
-                        <td class="px-3 py-2">
+                        <td>
                             <Link :href="show(d.id)" class="fw-medium">{{ d.name }}</Link>
                             <div v-if="d.description" class="small text-secondary">{{ d.description }}</div>
                         </td>
-                        <td class="px-3 py-2">{{ d.currency }}</td>
-                        <td class="px-3 py-2 text-end tabular-nums">{{ d.current_rates_count.toLocaleString() }}</td>
-                        <td class="px-3 py-2 text-secondary">
+                        <td>{{ d.currency }}</td>
+                        <td class="text-end tabular-nums">{{ d.current_rates_count.toLocaleString() }}</td>
+                        <td class="text-secondary">
                             <span v-if="d.customers_count">{{ d.customers_count }} customer(s)</span>
                             <span v-if="d.customers_count && d.trunks_count">, </span>
                             <span v-if="d.trunks_count">{{ d.trunks_count }} trunk(s)</span>
@@ -55,7 +55,7 @@ defineOptions({ layout: { breadcrumbs: [{ title: 'Rate decks', href: index() }] 
                         </td>
                     </tr>
                     <tr v-if="decks.length === 0">
-                        <td colspan="4" class="px-3 py-5 text-center text-secondary">No rate decks yet.</td>
+                        <td colspan="4" class="text-center text-secondary">No rate decks yet.</td>
                     </tr>
                 </tbody>
             </table>

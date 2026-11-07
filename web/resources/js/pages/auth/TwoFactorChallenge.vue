@@ -77,7 +77,7 @@ const toggleRecoveryMode = (clearErrors: () => void): void => {
                     <span>or you can </span>
                     <button
                         type="button"
-                        class="text-body text-decoration-underline"
+                        class="btn btn-link p-0 align-baseline"
                         @click="() => toggleRecoveryMode(clearErrors)"
                     >
                         {{ authConfigContent.buttonText }}
@@ -109,7 +109,7 @@ const toggleRecoveryMode = (clearErrors: () => void): void => {
                     <span>or you can </span>
                     <button
                         type="button"
-                        class="text-body text-decoration-underline"
+                        class="btn btn-link p-0 align-baseline"
                         @click="() => toggleRecoveryMode(clearErrors)"
                     >
                         {{ authConfigContent.buttonText }}

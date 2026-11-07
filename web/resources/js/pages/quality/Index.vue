@@ -71,7 +71,7 @@ const cell = (asr: number | null, attempts: number) =>
     <div class="ss-stack-4">
         <Heading title="Vendor quality" :description="`Per vendor attempt over the last ${rangeHours} hours. Updated every 5 minutes.`" />
 
-        <div class="card card-body d-flex flex-wrap align-items-end gap-2">
+        <div class="card card-body d-flex flex-wrap align-items-end gap-2 flex-row">
             <div class="ss-grid gap-1">
                 <Label for="group">Group by</Label>
                 <select id="group" v-model="f.group" :class="selectClass" class="w-auto" @change="apply()">
@@ -117,20 +117,20 @@ const cell = (asr: number | null, attempts: number) =>
                 </thead>
                 <tbody>
                     <tr v-for="r in rows" :key="`${r.vendor_id}-${r.trunk_id}-${r.prefix}`">
-                        <td class="px-2 py-1"><Link :href="showAccount(r.vendor_id)">{{ r.vendor_code }}</Link></td>
-                        <td v-if="filters.group !== 'vendor'" class="px-2 py-1">
+                        <td><Link :href="showAccount(r.vendor_id)">{{ r.vendor_code }}</Link></td>
+                        <td v-if="filters.group !== 'vendor'">
                             <Link v-if="r.trunk_id" :href="showTrunk(r.trunk_id)">{{ r.trunk_name }}</Link>
                         </td>
-                        <td v-if="filters.group === 'prefix'" class="px-2 py-1 font-monospace">{{ r.prefix || '—' }}</td>
-                        <td class="px-2 py-1 text-end tabular-nums">{{ r.attempts.toLocaleString() }}</td>
-                        <td class="px-2 py-1 text-end tabular-nums" :class="asrClass(r.asr)">{{ pct(r.asr) }}</td>
-                        <td class="px-2 py-1 text-end tabular-nums">{{ secs(r.acd) }}</td>
-                        <td class="px-2 py-1 text-end tabular-nums" :class="pddClass(r.pdd_ms)">{{ pdd(r.pdd_ms) }}</td>
-                        <td class="px-2 py-1 text-end tabular-nums">{{ r.minutes.toLocaleString() }}</td>
-                        <td class="px-2 py-1 text-end small text-nowrap text-secondary tabular-nums">
+                        <td v-if="filters.group === 'prefix'" class="font-monospace">{{ r.prefix || '—' }}</td>
+                        <td class="text-end tabular-nums">{{ r.attempts.toLocaleString() }}</td>
+                        <td class="text-end tabular-nums" :class="asrClass(r.asr)">{{ pct(r.asr) }}</td>
+                        <td class="text-end tabular-nums">{{ secs(r.acd) }}</td>
+                        <td class="text-end tabular-nums" :class="pddClass(r.pdd_ms)">{{ pdd(r.pdd_ms) }}</td>
+                        <td class="text-end tabular-nums">{{ r.minutes.toLocaleString() }}</td>
+                        <td class="text-end small text-nowrap text-secondary tabular-nums">
                             {{ pct(r.busy_pct) }} · {{ pct(r.no_answer_pct) }} · {{ pct(r.congestion_pct) }} · {{ pct(r.rejected_pct) }}
                         </td>
-                        <td v-if="filters.group === 'trunk'" class="px-2 py-1">
+                        <td v-if="filters.group === 'trunk'">
                             <div class="d-flex align-items-end ss-gap-px">
                                 <span
                                     v-for="h in (r.trunk_id && series[r.trunk_id]) || []"
@@ -143,7 +143,7 @@ const cell = (asr: number | null, attempts: number) =>
                         </td>
                     </tr>
                     <tr v-if="rows.length === 0">
-                        <td colspan="10" class="px-2 py-5 text-center text-secondary">No vendor attempts in this range.</td>
+                        <td colspan="10" class="text-center text-secondary">No vendor attempts in this range.</td>
                     </tr>
                 </tbody>
             </table>

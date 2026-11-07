@@ -84,25 +84,25 @@ const lastDay = new Date(new Date(props.invoice.period_end).getTime() - 1000).to
         <table class="w-100">
             <thead>
                 <tr>
-                    <th class="py-1 fw-medium">Destination</th>
-                    <th class="py-1 fw-medium">Prefix</th>
-                    <th class="py-1 text-end fw-medium">Calls</th>
-                    <th class="py-1 text-end fw-medium">Minutes</th>
-                    <th class="py-1 text-end fw-medium">Rate/min</th>
-                    <th class="py-1 text-end fw-medium">Amount</th>
+                    <th class="fw-medium">Destination</th>
+                    <th class="fw-medium">Prefix</th>
+                    <th class="text-end fw-medium">Calls</th>
+                    <th class="text-end fw-medium">Minutes</th>
+                    <th class="text-end fw-medium">Rate/min</th>
+                    <th class="text-end fw-medium">Amount</th>
                 </tr>
             </thead>
             <tbody>
                 <tr v-for="l in lines" :key="l.position" class="border-bottom ss-border-dashed">
-                    <td class="py-1">{{ l.destination ?? '—' }}</td>
-                    <td class="py-1 font-monospace">{{ l.prefix }}</td>
-                    <td class="py-1 text-end tabular-nums">{{ l.calls.toLocaleString() }}</td>
-                    <td class="py-1 text-end tabular-nums">{{ minutes(l.billsec) }}</td>
-                    <td class="py-1 text-end tabular-nums">{{ l.rate ? m(l.rate) : '—' }}</td>
-                    <td class="py-1 text-end tabular-nums">{{ m(l.amount) }}</td>
+                    <td>{{ l.destination ?? '—' }}</td>
+                    <td class="font-monospace">{{ l.prefix }}</td>
+                    <td class="text-end tabular-nums">{{ l.calls.toLocaleString() }}</td>
+                    <td class="text-end tabular-nums">{{ minutes(l.billsec) }}</td>
+                    <td class="text-end tabular-nums">{{ l.rate ? m(l.rate) : '—' }}</td>
+                    <td class="text-end tabular-nums">{{ m(l.amount) }}</td>
                 </tr>
                 <tr v-if="lines.length === 0">
-                    <td colspan="6" class="py-3 text-center text-secondary">No billable calls in this period.</td>
+                    <td colspan="6" class="text-center text-secondary">No billable calls in this period.</td>
                 </tr>
             </tbody>
             <tfoot>

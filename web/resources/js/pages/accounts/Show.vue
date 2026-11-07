@@ -170,7 +170,7 @@ const select = 'form-select';
                                 </td>
                             </tr>
                             <tr v-if="ips.length === 0">
-                                <td colspan="4" class="py-3 text-center text-secondary">No IPs yet. This customer can't send traffic until one is added.</td>
+                                <td colspan="4" class="text-center text-secondary">No IPs yet. This customer can't send traffic until one is added.</td>
                             </tr>
                         </tbody>
                     </table>
@@ -250,7 +250,7 @@ const select = 'form-select';
                                 <td class="text-end tabular-nums">{{ money(e.balance_after, account.currency) }}</td>
                             </tr>
                             <tr v-if="ledger.length === 0">
-                                <td colspan="4" class="py-3 text-center text-secondary">No entries yet.</td>
+                                <td colspan="4" class="text-center text-secondary">No entries yet.</td>
                             </tr>
                         </tbody>
                     </table>
@@ -266,13 +266,13 @@ const select = 'form-select';
                     <code class="mt-1 d-inline-block rounded bg-body-tertiary px-2 py-1 font-monospace">{{ portalPassword.password }}</code>
                 </div>
                 <ul class="list-group">
-                    <li v-for="u in portalUsers" :key="u.id" class="d-flex align-items-center justify-content-between gap-2 px-2 py-2">
+                    <li v-for="u in portalUsers" :key="u.id" class="list-group-item d-flex align-items-center justify-content-between gap-2 px-2 py-2">
                         <span>{{ u.name }} <span class="text-secondary">{{ u.email }}</span></span>
                         <Form v-bind="PortalUserController.destroy.form([account.id, u.id])" v-slot="{ processing }">
                             <Button size="sm" variant="ghost" :disabled="processing" :aria-label="`Remove ${u.email}`"><Trash2 class="icon" /></Button>
                         </Form>
                     </li>
-                    <li v-if="portalUsers.length === 0" class="px-2 py-4 text-center text-secondary">No portal logins.</li>
+                    <li v-if="portalUsers.length === 0" class="list-group-item px-2 py-4 text-center text-secondary">No portal logins.</li>
                 </ul>
                 <Form v-bind="PortalUserController.store.form(account.id)" reset-on-success class="ss-grid gap-2 ss-gtc-sm-1fr-1fr-auto align-items-sm-start" v-slot="{ errors, processing }">
                     <div class="ss-grid gap-1">
@@ -291,7 +291,7 @@ const select = 'form-select';
             <section v-if="account.is_customer" class="ss-stack-3">
                 <Heading variant="small" title="Invoices" description="Issued automatically after each month ends. Issue one by hand for any finished month (e.g. after voiding)." />
                 <ul class="list-group">
-                    <li v-for="i in invoices" :key="i.id" class="d-flex flex-wrap align-items-center justify-content-between gap-2 px-2 py-2" :class="{ 'opacity-50': i.status === 'void' }">
+                    <li v-for="i in invoices" :key="i.id" class="list-group-item d-flex flex-wrap align-items-center justify-content-between gap-2 px-2 py-2" :class="{ 'opacity-50': i.status === 'void' }">
                         <span>
                             <Link :href="showInvoice(i.id)" class="font-monospace">{{ i.number }}</Link>
                             <span class="ms-2 text-secondary">{{ billingMonth(i.period_start, i.timezone) }}</span>
@@ -299,7 +299,7 @@ const select = 'form-select';
                         </span>
                         <span class="tabular-nums">{{ Number(i.amount_due) ? `${money(i.amount_due, i.currency)} due` : money(i.usage_total, i.currency) }}</span>
                     </li>
-                    <li v-if="invoices.length === 0" class="px-2 py-4 text-center text-secondary">No invoices yet.</li>
+                    <li v-if="invoices.length === 0" class="list-group-item px-2 py-4 text-center text-secondary">No invoices yet.</li>
                 </ul>
                 <Form v-bind="InvoiceController.store.form(account.id)" class="d-flex flex-wrap align-items-start gap-2" v-slot="{ errors, processing }">
                     <div class="ss-grid gap-1">
@@ -314,11 +314,11 @@ const select = 'form-select';
             <section v-if="account.is_vendor" class="ss-stack-3">
                 <Heading variant="small" title="Vendor trunks" description="Where we send traffic to this vendor. Managed from the Trunks page." />
                 <ul class="list-group">
-                    <li v-for="t in trunks" :key="t.id" class="d-flex justify-content-between px-2 py-2">
+                    <li v-for="t in trunks" :key="t.id" class="list-group-item d-flex justify-content-between px-2 py-2">
                         <span :class="{ 'opacity-50': !t.enabled }">{{ t.name }}</span>
                         <span class="text-secondary">{{ t.gateways_count }} gateway(s)</span>
                     </li>
-                    <li v-if="trunks.length === 0" class="px-2 py-4 text-center text-secondary">No trunks yet.</li>
+                    <li v-if="trunks.length === 0" class="list-group-item px-2 py-4 text-center text-secondary">No trunks yet.</li>
                 </ul>
             </section>
 

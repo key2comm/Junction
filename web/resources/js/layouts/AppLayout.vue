@@ -109,7 +109,6 @@ const initials = computed(() =>
         .slice(0, 2)
         .toUpperCase(),
 );
-const title = computed(() => breadcrumbs.at(-1)?.title ?? '');
 </script>
 
 <template>
@@ -144,43 +143,42 @@ const title = computed(() => breadcrumbs.at(-1)?.title ?? '');
             </div>
         </aside>
 
-        <header class="navbar navbar-expand-md d-none d-lg-flex d-print-none">
-            <div class="container-xl">
-                <div class="navbar-nav flex-row order-md-last ms-auto">
-                    <button type="button" class="nav-link px-0 me-3 btn btn-ghost-secondary" :title="resolvedAppearance === 'dark' ? 'Light mode' : 'Dark mode'" @click="toggleTheme">
-                        <Sun v-if="resolvedAppearance === 'dark'" class="icon" /><Moon v-else class="icon" />
-                    </button>
-                    <div ref="userMenu" class="nav-item dropdown" :class="{ show: userOpen }">
-                        <button type="button" class="nav-link d-flex lh-1 p-0 px-2 btn btn-ghost-secondary" :aria-expanded="userOpen" @click="userOpen = !userOpen">
-                            <span class="avatar avatar-sm">{{ initials }}</span>
-                            <div class="d-none d-xl-block ps-2 text-start">
-                                <div>{{ user?.name }}</div>
-                                <div class="mt-1 small text-secondary">{{ user?.email }}</div>
-                            </div>
-                            <ChevronDown class="icon ms-1" />
+
+        <div class="page-wrapper">
+            <header class="navbar navbar-expand-md d-none d-lg-flex d-print-none">
+                <div class="container-xl">
+                    <div class="navbar-nav flex-row order-md-last ms-auto">
+                        <button type="button" class="nav-link px-0 me-3 btn btn-ghost-secondary" :title="resolvedAppearance === 'dark' ? 'Light mode' : 'Dark mode'" @click="toggleTheme">
+                            <Sun v-if="resolvedAppearance === 'dark'" class="icon" /><Moon v-else class="icon" />
                         </button>
-                        <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow" :class="{ show: userOpen }" style="right: 0; left: auto">
-                            <Link :href="profile()" class="dropdown-item"><Settings class="icon dropdown-item-icon" /> Settings</Link>
-                            <div class="dropdown-divider"></div>
-                            <Link :href="logout()" as="button" class="dropdown-item" data-test="logout-button" @click="router.flushAll()">
-                                <LogOut class="icon dropdown-item-icon" /> Log out
-                            </Link>
+                        <div ref="userMenu" class="nav-item dropdown" :class="{ show: userOpen }">
+                            <button type="button" class="nav-link d-flex lh-1 p-0 px-2 btn btn-ghost-secondary" :aria-expanded="userOpen" @click="userOpen = !userOpen">
+                                <span class="avatar avatar-sm">{{ initials }}</span>
+                                <div class="d-none d-xl-block ps-2 text-start">
+                                    <div>{{ user?.name }}</div>
+                                    <div class="mt-1 small text-secondary">{{ user?.email }}</div>
+                                </div>
+                                <ChevronDown class="icon ms-1" />
+                            </button>
+                            <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow" :class="{ show: userOpen }" style="right: 0; left: auto">
+                                <Link :href="profile()" class="dropdown-item"><Settings class="icon dropdown-item-icon" /> Settings</Link>
+                                <div class="dropdown-divider"></div>
+                                <Link :href="logout()" as="button" class="dropdown-item" data-test="logout-button" @click="router.flushAll()">
+                                    <LogOut class="icon dropdown-item-icon" /> Log out
+                                </Link>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </header>
-
-        <div class="page-wrapper">
-            <div v-if="breadcrumbs.length" class="page-header d-print-none">
+            </header>
+            <div v-if="breadcrumbs.length > 1" class="page-header d-print-none">
                 <div class="container-xl">
-                    <ol v-if="breadcrumbs.length > 1" class="breadcrumb breadcrumb-arrows mb-1" aria-label="breadcrumbs">
+                    <ol class="breadcrumb breadcrumb-arrows mb-0" aria-label="breadcrumbs">
                         <li v-for="(b, i) in breadcrumbs" :key="i" class="breadcrumb-item" :class="{ active: i === breadcrumbs.length - 1 }">
                             <Link v-if="i < breadcrumbs.length - 1" :href="b.href">{{ b.title }}</Link>
                             <span v-else>{{ b.title }}</span>
                         </li>
                     </ol>
-                    <div v-else class="page-pretitle">{{ title }}</div>
                 </div>
             </div>
             <div class="page-body">

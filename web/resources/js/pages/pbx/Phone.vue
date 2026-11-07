@@ -210,7 +210,7 @@ const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#'];
                 </select>
             </div>
 
-            <div class="card card-body d-flex align-items-center justify-content-between gap-2">
+            <div class="card card-body d-flex align-items-center justify-content-between gap-2 flex-row">
                 <div class="d-flex align-items-center gap-2">
                     <Badge :variant="status === 'registered' ? 'default' : status === 'failed' ? 'destructive' : 'secondary'">{{ status }}</Badge>
                     <span>{{ statusText }}</span>

@@ -28,26 +28,26 @@ const modeLabel: Record<string, string> = { lcr: 'Least cost', priority: 'Priori
             <table class="table table-vcenter card-table table-tight">
                 <thead>
                     <tr>
-                        <th class="px-3 py-2 fw-medium">Plan</th>
-                        <th class="px-3 py-2 fw-medium">Mode</th>
-                        <th class="px-3 py-2 text-end fw-medium">Max attempts</th>
-                        <th class="px-3 py-2 text-end fw-medium">Routes</th>
-                        <th class="px-3 py-2 text-end fw-medium">Customers</th>
+                        <th class="fw-medium">Plan</th>
+                        <th class="fw-medium">Mode</th>
+                        <th class="text-end fw-medium">Max attempts</th>
+                        <th class="text-end fw-medium">Routes</th>
+                        <th class="text-end fw-medium">Customers</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr v-for="p in plans" :key="p.id">
-                        <td class="px-3 py-2">
+                        <td>
                             <Link :href="show(p.id)" class="fw-medium">{{ p.name }}</Link>
                             <div v-if="p.description" class="small text-secondary">{{ p.description }}</div>
                         </td>
-                        <td class="px-3 py-2"><Badge variant="outline">{{ modeLabel[p.mode] ?? p.mode }}</Badge></td>
-                        <td class="px-3 py-2 text-end tabular-nums">{{ p.max_attempts }}</td>
-                        <td class="px-3 py-2 text-end tabular-nums">{{ p.routes_count }}</td>
-                        <td class="px-3 py-2 text-end tabular-nums">{{ p.accounts_count }}</td>
+                        <td><Badge variant="outline">{{ modeLabel[p.mode] ?? p.mode }}</Badge></td>
+                        <td class="text-end tabular-nums">{{ p.max_attempts }}</td>
+                        <td class="text-end tabular-nums">{{ p.routes_count }}</td>
+                        <td class="text-end tabular-nums">{{ p.accounts_count }}</td>
                     </tr>
                     <tr v-if="plans.length === 0">
-                        <td colspan="5" class="px-3 py-5 text-center text-secondary">No routing plans yet.</td>
+                        <td colspan="5" class="text-center text-secondary">No routing plans yet.</td>
                     </tr>
                 </tbody>
             </table>

@@ -206,25 +206,25 @@ const duration = (s: number) => (s >= 60 ? `${Math.floor(s / 60)}m ${s % 60}s` :
                 </thead>
                 <tbody>
                     <tr v-for="r in cdrs.data" :key="r.id">
-                        <td class="px-2 py-1 text-nowrap">
+                        <td class="text-nowrap">
                             <Link :href="show(r.id)">{{ dateTime(r.started_at) }}</Link>
                         </td>
-                        <td class="px-2 py-1">{{ r.customer ?? '—' }}</td>
-                        <td class="px-2 py-1 font-monospace small">{{ r.caller ?? '?' }} → {{ r.destination ?? r.callee }}</td>
-                        <td class="px-2 py-1 text-nowrap">
+                        <td>{{ r.customer ?? '—' }}</td>
+                        <td class="font-monospace small">{{ r.caller ?? '?' }} → {{ r.destination ?? r.callee }}</td>
+                        <td class="text-nowrap">
                             <Badge :variant="variant(r)">{{ outcome(r) }}</Badge>
                             <span class="ms-1 small text-secondary">{{ r.sip_code ?? '' }} {{ r.answered ? '' : r.hangup_cause }}</span>
                         </td>
-                        <td class="px-2 py-1 small">
+                        <td class="small">
                             <span v-if="r.vendor">{{ r.vendor }} / {{ r.trunk }}</span>
                             <span v-else class="text-secondary">{{ r.attempts ? `${r.attempts} tried` : '—' }}</span>
                         </td>
-                        <td class="px-2 py-1 text-end tabular-nums">{{ r.answered ? duration(r.billsec) : '—' }}</td>
-                        <td class="px-2 py-1 text-end tabular-nums">{{ r.answered ? money(r.sell_cost, currency) : '—' }}</td>
-                        <td class="px-2 py-1 text-end tabular-nums" :class="{ 'text-danger': Number(r.margin) < 0 }">{{ r.margin !== null ? money(r.margin, currency) : '—' }}</td>
+                        <td class="text-end tabular-nums">{{ r.answered ? duration(r.billsec) : '—' }}</td>
+                        <td class="text-end tabular-nums">{{ r.answered ? money(r.sell_cost, currency) : '—' }}</td>
+                        <td class="text-end tabular-nums" :class="{ 'text-danger': Number(r.margin) < 0 }">{{ r.margin !== null ? money(r.margin, currency) : '—' }}</td>
                     </tr>
                     <tr v-if="cdrs.data.length === 0">
-                        <td colspan="8" class="px-2 py-5 text-center text-secondary">No calls in this range.</td>
+                        <td colspan="8" class="text-center text-secondary">No calls in this range.</td>
                     </tr>
                 </tbody>
             </table>

@@ -108,19 +108,19 @@ const duration = (s: number) => (s >= 60 ? `${Math.floor(s / 60)}m ${s % 60}s` :
                 </thead>
                 <tbody>
                     <tr v-for="r in calls.data" :key="r.id">
-                        <td class="px-2 py-1 text-nowrap">{{ dateTime(r.started_at) }}</td>
-                        <td class="px-2 py-1 font-monospace small">{{ r.caller ?? '?' }} → {{ r.destination ?? r.callee }}</td>
-                        <td class="px-2 py-1">{{ r.sell_destination ?? '' }}</td>
-                        <td class="px-2 py-1 text-nowrap">
+                        <td class="text-nowrap">{{ dateTime(r.started_at) }}</td>
+                        <td class="font-monospace small">{{ r.caller ?? '?' }} → {{ r.destination ?? r.callee }}</td>
+                        <td>{{ r.sell_destination ?? '' }}</td>
+                        <td class="text-nowrap">
                             <Badge :variant="r.answered ? 'default' : r.rejected ? 'destructive' : 'secondary'">{{ r.answered ? 'answered' : r.rejected ? 'refused' : 'not completed' }}</Badge>
                             <span v-if="!r.answered" class="ms-1 small text-secondary">{{ r.sip_code }} {{ r.reason }}</span>
                         </td>
-                        <td class="px-2 py-1 text-end tabular-nums">{{ r.answered ? duration(r.billsec) : '—' }}</td>
-                        <td class="px-2 py-1 text-end tabular-nums">{{ r.answered ? m(r.sell_rate) : '—' }}</td>
-                        <td class="px-2 py-1 text-end tabular-nums">{{ r.answered ? m(r.sell_cost) : '—' }}</td>
+                        <td class="text-end tabular-nums">{{ r.answered ? duration(r.billsec) : '—' }}</td>
+                        <td class="text-end tabular-nums">{{ r.answered ? m(r.sell_rate) : '—' }}</td>
+                        <td class="text-end tabular-nums">{{ r.answered ? m(r.sell_cost) : '—' }}</td>
                     </tr>
                     <tr v-if="calls.data.length === 0">
-                        <td colspan="7" class="px-2 py-5 text-center text-secondary">No calls in this range.</td>
+                        <td colspan="7" class="text-center text-secondary">No calls in this range.</td>
                     </tr>
                 </tbody>
             </table>

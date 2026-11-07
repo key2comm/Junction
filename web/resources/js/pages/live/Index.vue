@@ -101,34 +101,34 @@ function hangup(uuid: string) {
                 </thead>
                 <tbody>
                     <tr v-for="c in snapshot.calls" :key="c.uuid">
-                        <td class="px-2 py-1">
+                        <td>
                             <Link v-if="c.customer" :href="showAccount(c.customer.id)">{{ c.customer.code }}</Link>
                             <span v-else class="text-secondary">unidentified</span>
                         </td>
-                        <td class="px-2 py-1 font-monospace small">{{ c.caller ?? '?' }} → {{ c.dialled }}</td>
-                        <td class="px-2 py-1 text-nowrap">
+                        <td class="font-monospace small">{{ c.caller ?? '?' }} → {{ c.dialled }}</td>
+                        <td class="text-nowrap">
                             <Badge :variant="c.state === 'answered' ? 'default' : 'secondary'">{{ c.state }}</Badge>
                             <span v-if="c.state !== 'answered'" class="ms-1 small text-secondary tabular-nums">{{ fmt(elapsed(c.started_at)) }}</span>
                         </td>
-                        <td class="px-2 py-1 small">
+                        <td class="small">
                             <template v-if="c.trunk">
                                 {{ c.vendor }} / <Link :href="showTrunk(c.trunk.id)">{{ c.trunk.name }}</Link>
                                 <span class="font-monospace text-secondary"> {{ c.gateway }}</span>
                             </template>
                             <span v-else class="text-secondary">—</span>
                         </td>
-                        <td class="px-2 py-1 text-end tabular-nums">{{ fmt(since(c.talking_seconds)) }}</td>
-                        <td class="px-2 py-1 text-end tabular-nums text-secondary">
+                        <td class="text-end tabular-nums">{{ fmt(since(c.talking_seconds)) }}</td>
+                        <td class="text-end tabular-nums text-secondary">
                             {{ c.remaining_seconds !== null ? fmt(Math.max(0, c.remaining_seconds - (age ?? 0))) : '—' }}
                         </td>
-                        <td class="px-2 py-1 text-end">
+                        <td class="text-end">
                             <Button size="sm" :variant="armed === c.uuid ? 'destructive' : 'ghost'" @click="hangup(c.uuid)" :aria-label="`Hang up call from ${c.caller}`">
                                 <PhoneOff class="icon" /><span v-if="armed === c.uuid">Confirm</span>
                             </Button>
                         </td>
                     </tr>
                     <tr v-if="snapshot.calls.length === 0">
-                        <td colspan="7" class="px-2 py-5 text-center text-secondary">No calls in progress.</td>
+                        <td colspan="7" class="text-center text-secondary">No calls in progress.</td>
                     </tr>
                 </tbody>
             </table>

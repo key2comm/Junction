@@ -83,33 +83,33 @@ const statusVariant = (s: string) => (s === 'active' ? 'default' : s === 'suspen
             <table class="table table-vcenter card-table table-tight">
                 <thead>
                     <tr>
-                        <th class="px-3 py-2 fw-medium">Account</th>
-                        <th class="px-3 py-2 fw-medium">Role</th>
-                        <th class="px-3 py-2 fw-medium">Status</th>
-                        <th class="px-3 py-2 fw-medium">Billing</th>
-                        <th class="px-3 py-2 text-end fw-medium">Balance</th>
-                        <th class="px-3 py-2 text-end fw-medium">Available</th>
+                        <th class="fw-medium">Account</th>
+                        <th class="fw-medium">Role</th>
+                        <th class="fw-medium">Status</th>
+                        <th class="fw-medium">Billing</th>
+                        <th class="text-end fw-medium">Balance</th>
+                        <th class="text-end fw-medium">Available</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr v-for="a in accounts.data" :key="a.id">
-                        <td class="px-3 py-2">
+                        <td>
                             <Link :href="show(a.id)" class="fw-medium">{{ a.name }}</Link>
                             <div class="font-monospace small text-secondary">{{ a.code }}</div>
                         </td>
-                        <td class="ss-row-1 px-3 py-2">
+                        <td class="ss-row-1">
                             <Badge v-if="a.is_customer" variant="outline">Customer</Badge>
                             <Badge v-if="a.is_vendor" variant="outline">Vendor</Badge>
                         </td>
-                        <td class="px-3 py-2"><Badge :variant="statusVariant(a.status)">{{ titleCase(a.status) }}</Badge></td>
-                        <td class="px-3 py-2">{{ titleCase(a.billing_type) }}</td>
-                        <td class="px-3 py-2 text-end tabular-nums" :class="{ 'text-danger': Number(a.balance) < 0 }">
+                        <td><Badge :variant="statusVariant(a.status)">{{ titleCase(a.status) }}</Badge></td>
+                        <td>{{ titleCase(a.billing_type) }}</td>
+                        <td class="text-end tabular-nums" :class="{ 'text-danger': Number(a.balance) < 0 }">
                             {{ money(a.balance, a.currency) }}
                         </td>
-                        <td class="px-3 py-2 text-end tabular-nums">{{ money(a.available, a.currency) }}</td>
+                        <td class="text-end tabular-nums">{{ money(a.available, a.currency) }}</td>
                     </tr>
                     <tr v-if="accounts.data.length === 0">
-                        <td colspan="6" class="px-3 py-5 text-center text-secondary">
+                        <td colspan="6" class="text-center text-secondary">
                             No accounts{{ filters.q || filters.role || filters.status ? ' match these filters' : ' yet' }}.
                         </td>
                     </tr>

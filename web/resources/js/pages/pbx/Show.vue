@@ -107,7 +107,7 @@ const editingDid = ref<number | null>(null);
                                 <div>{{ e.sip_username }}</div>
                                 <div class="d-flex align-items-center gap-1 text-secondary">
                                     <span>{{ revealed[e.id] ? e.sip_password : '••••••••••••' }}</span>
-                                    <button type="button" :aria-label="revealed[e.id] ? 'Hide password' : 'Show password'" @click="revealed[e.id] = !revealed[e.id]">
+                                    <button type="button" class="btn btn-link p-0 link-secondary" :aria-label="revealed[e.id] ? 'Hide password' : 'Show password'" @click="revealed[e.id] = !revealed[e.id]">
                                         <EyeOff v-if="revealed[e.id]" class="icon" /><Eye v-else class="icon" />
                                     </button>
                                 </div>
@@ -133,7 +133,7 @@ const editingDid = ref<number | null>(null);
                             </td>
                         </tr>
                         <tr v-if="extensions.length === 0">
-                            <td colspan="6" class="py-3 text-center text-secondary">No extensions yet.</td>
+                            <td colspan="6" class="text-center text-secondary">No extensions yet.</td>
                         </tr>
                     </tbody>
                 </table>
@@ -225,7 +225,7 @@ const editingDid = ref<number | null>(null);
                             </td>
                         </tr>
                         <tr v-if="ivrs.length === 0">
-                            <td colspan="5" class="py-3 text-center text-secondary">No IVRs.</td>
+                            <td colspan="5" class="text-center text-secondary">No IVRs.</td>
                         </tr>
                     </tbody>
                 </table>
@@ -274,7 +274,7 @@ const editingDid = ref<number | null>(null);
                                 </td>
                             </tr>
                             <tr v-if="editingDid === d.id" class="bg-body-tertiary">
-                                <td colspan="4" class="px-2 py-2">
+                                <td colspan="4">
                                     <Form v-bind="PbxController.updateDid.form([account.id, d.id])" class="d-flex flex-wrap align-items-start gap-2" @success="editingDid = null" v-slot="{ errors, processing }">
                                         <div class="ss-grid gap-1">
                                             <DestinationPicker name="destination" :numbers="numbers" :value="d.destination" />
@@ -287,7 +287,7 @@ const editingDid = ref<number | null>(null);
                             </tr>
                         </template>
                         <tr v-if="dids.length === 0">
-                            <td colspan="4" class="py-3 text-center text-secondary">No DIDs.</td>
+                            <td colspan="4" class="text-center text-secondary">No DIDs.</td>
                         </tr>
                     </tbody>
                 </table>

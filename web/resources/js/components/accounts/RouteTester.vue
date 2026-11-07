@@ -85,25 +85,25 @@ const duration = (s: number | null) => (s === null ? '—' : s >= 3600 ? `${Math
             <table v-if="result.attempts.length" class="w-100">
                 <thead>
                     <tr>
-                        <th class="py-1 fw-medium">#</th>
-                        <th class="py-1 fw-medium">Trunk</th>
-                        <th class="py-1 fw-medium">Gateways (in order)</th>
-                        <th class="py-1 fw-medium">Sent as</th>
-                        <th class="py-1 text-end fw-medium">Buy</th>
-                        <th class="py-1 text-end fw-medium">Margin</th>
+                        <th class="fw-medium">#</th>
+                        <th class="fw-medium">Trunk</th>
+                        <th class="fw-medium">Gateways (in order)</th>
+                        <th class="fw-medium">Sent as</th>
+                        <th class="text-end fw-medium">Buy</th>
+                        <th class="text-end fw-medium">Margin</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr v-for="a in result.attempts" :key="a.attempt">
-                        <td class="py-1">{{ a.attempt }}</td>
-                        <td class="py-1">
+                        <td>{{ a.attempt }}</td>
+                        <td>
                             {{ a.trunk }}
                             <Badge v-if="a.quality_demoted" variant="secondary" class="ms-1" title="Performing below the plan's quality bar over the last hour, so tried after the others">demoted</Badge>
                         </td>
-                        <td class="py-1 font-monospace small">{{ a.gateways.map((g) => g.name).join(' → ') }}</td>
-                        <td class="py-1 font-monospace">{{ a.dial_number }}</td>
-                        <td class="py-1 text-end tabular-nums">{{ money(a.buy_rate, currency) }}</td>
-                        <td class="py-1 text-end tabular-nums">{{ a.margin !== null ? money(a.margin, currency) : '—' }}</td>
+                        <td class="font-monospace small">{{ a.gateways.map((g) => g.name).join(' → ') }}</td>
+                        <td class="font-monospace">{{ a.dial_number }}</td>
+                        <td class="text-end tabular-nums">{{ money(a.buy_rate, currency) }}</td>
+                        <td class="text-end tabular-nums">{{ a.margin !== null ? money(a.margin, currency) : '—' }}</td>
                     </tr>
                 </tbody>
             </table>

@@ -72,16 +72,16 @@ const lastDay = (iso: string) => new Date(new Date(iso).getTime() - 1000).toISOS
                         </thead>
                         <tbody>
                             <tr v-for="i in invoices" :key="i.id">
-                                <td class="px-2 py-1">
+                                <td>
                                     <Link :href="showVendorInvoice(i.id)" class="font-monospace">{{ i.reference }}</Link>
                                     <Badge :variant="statusVariant(i.status)" class="ms-2">{{ i.status }}</Badge>
                                 </td>
-                                <td class="px-2 py-1 text-nowrap small">{{ date(i.period_start, i.timezone) }} – {{ date(lastDay(i.period_end), i.timezone) }}</td>
-                                <td class="px-2 py-1 text-end tabular-nums">{{ m(i.amount) }}</td>
-                                <td class="px-2 py-1 text-end tabular-nums" :class="{ 'text-danger': Number(i.difference) > 0 }">{{ m(i.difference) }}</td>
+                                <td class="text-nowrap small">{{ date(i.period_start, i.timezone) }} – {{ date(lastDay(i.period_end), i.timezone) }}</td>
+                                <td class="text-end tabular-nums">{{ m(i.amount) }}</td>
+                                <td class="text-end tabular-nums" :class="{ 'text-danger': Number(i.difference) > 0 }">{{ m(i.difference) }}</td>
                             </tr>
                             <tr v-if="invoices.length === 0">
-                                <td colspan="4" class="py-3 text-center text-secondary">No vendor invoices recorded.</td>
+                                <td colspan="4" class="text-center text-secondary">No vendor invoices recorded.</td>
                             </tr>
                         </tbody>
                     </table>
@@ -145,13 +145,13 @@ const lastDay = (iso: string) => new Date(new Date(iso).getTime() - 1000).toISOS
                         </thead>
                         <tbody>
                             <tr v-for="e in entries" :key="e.id">
-                                <td class="px-2 py-1 text-nowrap text-secondary">{{ date(e.effective_at) }}</td>
-                                <td class="px-2 py-1"><Badge variant="outline" class="me-1">{{ titleCase(e.type) }}</Badge>{{ e.description }}</td>
-                                <td class="px-2 py-1 text-end tabular-nums">{{ m(e.amount) }}</td>
-                                <td class="px-2 py-1 text-end tabular-nums">{{ m(e.balance_after) }}</td>
+                                <td class="text-nowrap text-secondary">{{ date(e.effective_at) }}</td>
+                                <td><Badge variant="outline" class="me-1">{{ titleCase(e.type) }}</Badge>{{ e.description }}</td>
+                                <td class="text-end tabular-nums">{{ m(e.amount) }}</td>
+                                <td class="text-end tabular-nums">{{ m(e.balance_after) }}</td>
                             </tr>
                             <tr v-if="entries.length === 0">
-                                <td colspan="4" class="py-3 text-center text-secondary">Nothing yet. Usage is posted from your call records every hour.</td>
+                                <td colspan="4" class="text-center text-secondary">Nothing yet. Usage is posted from your call records every hour.</td>
                             </tr>
                         </tbody>
                     </table>

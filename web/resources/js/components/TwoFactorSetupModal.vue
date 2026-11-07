@@ -118,7 +118,7 @@ watch(
                 <AlertError v-if="errors?.length" :errors="errors" />
                 <template v-else>
                     <div class="d-flex justify-content-center mb-3">
-                        <div class="card card-body d-flex align-items-center justify-content-center" style="width: 16rem; height: 16rem">
+                        <div class="card card-body d-flex align-items-center justify-content-center flex-row" style="width: 16rem; height: 16rem">
                             <Spinner v-if="!qrCodeSvg" />
                             <div
                                 v-else

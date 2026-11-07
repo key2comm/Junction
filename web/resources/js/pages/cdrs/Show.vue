@@ -141,20 +141,20 @@ const outcome = c.answered_at ? 'Answered' : c.attempts === 0 ? 'Rejected before
                     </thead>
                     <tbody>
                         <tr v-for="a in attempts" :key="a.attempt">
-                            <td class="px-2 py-1">{{ a.attempt }}</td>
-                            <td class="px-2 py-1">
+                            <td>{{ a.attempt }}</td>
+                            <td>
                                 <Link v-if="a.trunk_id && a.trunk" :href="showTrunk(a.trunk_id)">{{ a.trunk }}</Link>
                                 <span v-else class="text-secondary">(deleted)</span>
                             </td>
-                            <td class="px-2 py-1 font-monospace small">{{ a.gateway ?? '—' }}</td>
-                            <td class="px-2 py-1 text-end tabular-nums">{{ a.buy_rate ? money(a.buy_rate, cdr.currency) : '—' }}</td>
-                            <td class="px-2 py-1">
+                            <td class="font-monospace small">{{ a.gateway ?? '—' }}</td>
+                            <td class="text-end tabular-nums">{{ a.buy_rate ? money(a.buy_rate, cdr.currency) : '—' }}</td>
+                            <td>
                                 <Badge :variant="a.answered ? 'default' : 'secondary'">{{ a.answered ? 'answered' : a.sip_code ?? 'failed' }}</Badge>
                                 <span v-if="!a.answered" class="ms-1 small text-secondary">{{ a.hangup_cause }}</span>
                             </td>
                         </tr>
                         <tr v-if="attempts.length === 0">
-                            <td colspan="5" class="py-3 text-center text-secondary">No vendor was tried: the call was refused before routing.</td>
+                            <td colspan="5" class="text-center text-secondary">No vendor was tried: the call was refused before routing.</td>
                         </tr>
                     </tbody>
                 </table>
