@@ -224,6 +224,6 @@ details.card[open] > summary::before {
     .ss-print-p-0 { padding: 0 !important; }
     .ss-print-border-0 { border: 0 !important; box-shadow: none !important; }
     .ss-print-maxw-none { max-width: none !important; }
-    .navbar-vertical, .page-header { display: none !important; }
+    .page > .navbar, .page > .navbar-expand-md, .page-header { display: none !important; }
     .page-wrapper { margin: 0 !important; }
 }

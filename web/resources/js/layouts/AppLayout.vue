@@ -1,8 +1,8 @@
 <script setup lang="ts">
 /**
- * The signed-in shell, in Tabler's "vertical" layout: dark sidebar with the
- * menu, a top bar with the user menu, then the page header (breadcrumbs) and
- * body. Admins and customer-portal users get different menus.
+ * The signed-in shell, in Tabler's horizontal layout: a top row with the logo
+ * and user menu, a menu row below it (admin items grouped into dropdowns),
+ * then breadcrumbs and the page. Admins and portal users get different menus.
  */
 import { Link, router, usePage } from '@inertiajs/vue3';
 import {
@@ -58,22 +58,41 @@ const user = computed(() => (page.props.auth as { user: User & { account_id?: nu
 const isPortal = computed(() => Boolean(user.value?.account_id));
 const openAlerts = computed(() => (page.props as { openAlerts?: number | null }).openAlerts ?? 0);
 
-const adminNav: (NavItem | { heading: string })[] = [
+type NavGroup = { title: string; icon: NavItem['icon']; items: NavItem[] };
+type NavEntry = NavItem | NavGroup;
+
+const adminNav: NavEntry[] = [
     { title: 'Dashboard', href: dashboard(), icon: LayoutGrid },
     { title: 'Alerts', href: alerts(), icon: BellRing },
-    { title: 'Live calls', href: live(), icon: AudioLines },
-    { title: 'Call records', href: cdrs(), icon: PhoneCall },
-    { title: 'Vendor quality', href: quality(), icon: Activity },
-    { heading: 'Billing' },
-    { title: 'Invoices', href: invoices(), icon: FileText },
-    { title: 'Accounts', href: accounts(), icon: Building2 },
-    { heading: 'Routing' },
-    { title: 'Rate decks', href: rateDecks(), icon: Tags },
-    { title: 'Trunks', href: trunks(), icon: Cable },
-    { title: 'Routing plans', href: routingPlans(), icon: Route },
+    {
+        title: 'Calls',
+        icon: PhoneCall,
+        items: [
+            { title: 'Live calls', href: live(), icon: AudioLines },
+            { title: 'Call records', href: cdrs(), icon: PhoneCall },
+            { title: 'Vendor quality', href: quality(), icon: Activity },
+        ],
+    },
+    {
+        title: 'Billing',
+        icon: FileText,
+        items: [
+            { title: 'Accounts', href: accounts(), icon: Building2 },
+            { title: 'Invoices', href: invoices(), icon: FileText },
+        ],
+    },
+    {
+        title: 'Routing',
+        icon: Route,
+        items: [
+            { title: 'Rate decks', href: rateDecks(), icon: Tags },
+            { title: 'Trunks', href: trunks(), icon: Cable },
+            { title: 'Routing plans', href: routingPlans(), icon: Route },
+        ],
+    },
     { title: 'PBX', href: pbx(), icon: Phone },
 ];
-const portalNav: NavItem[] = [
+const portalNav: NavEntry[] = [
     { title: 'Overview', href: portalHome(), icon: LayoutGrid },
     { title: 'Calls', href: portalCalls(), icon: PhoneCall },
     { title: 'Invoices', href: portalInvoices(), icon: FileText },
@@ -83,19 +102,26 @@ const portalNav: NavItem[] = [
 ];
 const nav = computed(() => (isPortal.value ? portalNav : adminNav));
 const home = computed(() => (isPortal.value ? portalHome() : dashboard()));
+const isGroup = (e: NavEntry): e is NavGroup => 'items' in e;
 
 const { isCurrentUrl, isCurrentOrParentUrl } = useCurrentUrl();
 // The dashboard/overview is only active on itself; other items also for their sub-pages.
 const active = (item: NavItem) => (item.href === home.value ? isCurrentUrl(item.href) : isCurrentOrParentUrl(item.href));
+const groupActive = (g: NavGroup) => g.items.some(active);
 
-// Mobile menu and the user dropdown (Vue, no Bootstrap JS).
+// Mobile menu, menu dropdowns and the user dropdown (Vue, no Bootstrap JS).
 const menuOpen = ref(false);
+const openGroup = ref<string | null>(null);
 const userOpen = ref(false);
 const userMenu = useTemplateRef<HTMLElement>('userMenu');
+const mainMenu = useTemplateRef<HTMLElement>('mainMenu');
 onClickOutside(userMenu, () => (userOpen.value = false));
+onClickOutside(mainMenu, () => (openGroup.value = null));
+const toggleGroup = (title: string) => (openGroup.value = openGroup.value === title ? null : title);
 router.on('navigate', () => {
     menuOpen.value = false;
     userOpen.value = false;
+    openGroup.value = null;
 });
 
 const { resolvedAppearance, updateAppearance } = useAppearance();
@@ -113,64 +139,73 @@ const initials = computed(() =>
 
 <template>
     <div class="page">
-        <aside class="navbar navbar-vertical navbar-expand-lg">
-            <div class="container-fluid">
+        <!-- Top row: logo, theme toggle, user menu. -->
+        <header class="navbar navbar-expand-md d-print-none">
+            <div class="container-xl">
                 <button class="navbar-toggler" type="button" :aria-expanded="menuOpen" aria-label="Menu" @click="menuOpen = !menuOpen">
                     <Menu class="icon" />
                 </button>
-                <div class="navbar-brand">
+                <div class="navbar-brand pe-0 pe-md-3">
                     <Link :href="home" class="text-reset text-decoration-none"><AppLogo /></Link>
                 </div>
-                <div class="navbar-nav flex-row d-lg-none">
-                    <Link :href="profile()" class="nav-link px-2" aria-label="Settings"><Settings class="icon" /></Link>
-                </div>
-                <div class="collapse navbar-collapse" :class="{ show: menuOpen }">
-                    <ul class="navbar-nav pt-lg-3">
-                        <template v-for="(item, i) in nav" :key="i">
-                            <li v-if="'heading' in item" class="nav-item">
-                                <div class="nav-link text-uppercase small text-secondary pt-3 pb-1 pe-none">{{ item.heading }}</div>
-                            </li>
-                            <li v-else class="nav-item" :class="{ active: active(item) }">
-                                <Link :href="item.href" class="nav-link">
-                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><component :is="item.icon" class="icon" /></span>
-                                    <span class="nav-link-title">{{ item.title }}</span>
-                                    <span v-if="item.title === 'Alerts' && openAlerts" class="badge bg-red text-red-fg ms-auto">{{ openAlerts }}</span>
-                                </Link>
-                            </li>
-                        </template>
-                    </ul>
-                </div>
-            </div>
-        </aside>
-
-
-        <div class="page-wrapper">
-            <header class="navbar navbar-expand-md d-none d-lg-flex d-print-none">
-                <div class="container-xl">
-                    <div class="navbar-nav flex-row order-md-last ms-auto">
-                        <button type="button" class="nav-link px-0 me-3 btn btn-ghost-secondary" :title="resolvedAppearance === 'dark' ? 'Light mode' : 'Dark mode'" @click="toggleTheme">
-                            <Sun v-if="resolvedAppearance === 'dark'" class="icon" /><Moon v-else class="icon" />
-                        </button>
-                        <div ref="userMenu" class="nav-item dropdown" :class="{ show: userOpen }">
-                            <button type="button" class="nav-link d-flex lh-1 p-0 px-2 btn btn-ghost-secondary" :aria-expanded="userOpen" @click="userOpen = !userOpen">
-                                <span class="avatar avatar-sm">{{ initials }}</span>
-                                <div class="d-none d-xl-block ps-2 text-start">
-                                    <div>{{ user?.name }}</div>
-                                    <div class="mt-1 small text-secondary">{{ user?.email }}</div>
-                                </div>
-                                <ChevronDown class="icon ms-1" />
-                            </button>
-                            <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow" :class="{ show: userOpen }" style="right: 0; left: auto">
-                                <Link :href="profile()" class="dropdown-item"><Settings class="icon dropdown-item-icon" /> Settings</Link>
-                                <div class="dropdown-divider"></div>
-                                <Link :href="logout()" as="button" class="dropdown-item" data-test="logout-button" @click="router.flushAll()">
-                                    <LogOut class="icon dropdown-item-icon" /> Log out
-                                </Link>
+                <div class="navbar-nav flex-row order-md-last">
+                    <button type="button" class="nav-link px-2 btn btn-ghost-secondary" :title="resolvedAppearance === 'dark' ? 'Light mode' : 'Dark mode'" @click="toggleTheme">
+                        <Sun v-if="resolvedAppearance === 'dark'" class="icon" /><Moon v-else class="icon" />
+                    </button>
+                    <div ref="userMenu" class="nav-item dropdown" :class="{ show: userOpen }">
+                        <button type="button" class="nav-link d-flex lh-1 p-0 px-2 btn btn-ghost-secondary" :aria-expanded="userOpen" @click="userOpen = !userOpen">
+                            <span class="avatar avatar-sm">{{ initials }}</span>
+                            <div class="d-none d-xl-block ps-2 text-start">
+                                <div>{{ user?.name }}</div>
+                                <div class="mt-1 small text-secondary">{{ user?.email }}</div>
                             </div>
+                            <ChevronDown class="icon ms-1" />
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow" :class="{ show: userOpen }" style="right: 0; left: auto">
+                            <Link :href="profile()" class="dropdown-item"><Settings class="icon dropdown-item-icon" /> Settings</Link>
+                            <div class="dropdown-divider"></div>
+                            <Link :href="logout()" as="button" class="dropdown-item" data-test="logout-button" @click="router.flushAll()">
+                                <LogOut class="icon dropdown-item-icon" /> Log out
+                            </Link>
                         </div>
                     </div>
                 </div>
-            </header>
+            </div>
+        </header>
+
+        <!-- Second row: the menu (collapses behind the toggler on small screens). -->
+        <header class="navbar-expand-md">
+            <div class="collapse navbar-collapse" :class="{ show: menuOpen }">
+                <div class="navbar">
+                    <div class="container-xl">
+                        <ul ref="mainMenu" class="navbar-nav">
+                            <template v-for="entry in nav" :key="entry.title">
+                                <li v-if="isGroup(entry)" class="nav-item dropdown" :class="{ active: groupActive(entry), show: openGroup === entry.title }">
+                                    <button type="button" class="nav-link dropdown-toggle btn btn-link text-reset border-0" :aria-expanded="openGroup === entry.title" @click="toggleGroup(entry.title)">
+                                        <span class="nav-link-icon d-md-none d-lg-inline-block"><component :is="entry.icon" class="icon" /></span>
+                                        <span class="nav-link-title">{{ entry.title }}</span>
+                                    </button>
+                                    <div class="dropdown-menu" :class="{ show: openGroup === entry.title }">
+                                        <Link v-for="item in entry.items" :key="item.title" :href="item.href" class="dropdown-item" :class="{ active: active(item) }">
+                                            <component :is="item.icon" class="icon dropdown-item-icon" /> {{ item.title }}
+                                        </Link>
+                                    </div>
+                                </li>
+                                <li v-else class="nav-item" :class="{ active: active(entry) }">
+                                    <Link :href="entry.href" class="nav-link">
+                                        <span class="nav-link-icon d-md-none d-lg-inline-block"><component :is="entry.icon" class="icon" /></span>
+                                        <span class="nav-link-title">{{ entry.title }}</span>
+                                        <span v-if="entry.title === 'Alerts' && openAlerts" class="badge bg-red text-red-fg ms-2">{{ openAlerts }}</span>
+                                    </Link>
+                                </li>
+                            </template>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="page-wrapper">
             <div v-if="breadcrumbs.length > 1" class="page-header d-print-none">
                 <div class="container-xl">
                     <ol class="breadcrumb breadcrumb-arrows mb-0" aria-label="breadcrumbs">
