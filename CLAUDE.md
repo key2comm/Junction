@@ -6,6 +6,8 @@ This project is worked on from multiple devices and synced through GitHub.
 - Never commit secrets. Keep machine-specific config in `.env` or `.claude/settings.local.json` (both gitignored).
 
 ## Project
+**Resuming? Read `docs/RESUME.md` first**: it says where work stopped and what's next.
+
 Class 4 (wholesale carrier) softswitch on FreeSWITCH: routes high-volume traffic between customer and vendor carriers, with light PBX features on the side. See `docs/PLAN.md` for the phases and port layout.
 - Server: SSH alias `theswitch` (rocky@theswitch.key2pbx.ca), Rocky 10.2, passwordless sudo.
 - Laravel app source is in `web/`. Test with `scripts/test-on-server.sh` (this dev machine has no PHP/Node). Public registration and email verification were removed from the starter kit on purpose; admins are created with `php artisan softswitch:admin`. Privileged actions (certificates) go through queued jobs → `sudo /usr/local/sbin/softswitch-cert`; php-fpm never runs sudo (SELinux stays enforcing).
