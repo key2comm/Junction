@@ -102,13 +102,27 @@ class AccountsTest extends TestCase
         $account = Account::factory()->create(['code' => 'OLD']);
 
         $this->actingAs($this->admin)
-            ->put(route('accounts.update', $account), $this->validAccount(['code' => 'OLD', 'is_vendor' => '1', 'billing_type' => 'postpaid', 'credit_limit' => '2500']))
+            ->put(route('accounts.update', $account), $this->validAccount(['code' => 'OLD', 'is_customer' => null, 'role' => 'carrier', 'billing_type' => 'postpaid', 'credit_limit' => '2500']))
             ->assertRedirect(route('accounts.show', $account));
 
         $account->refresh();
         $this->assertTrue($account->is_vendor);
+        $this->assertFalse($account->is_customer);
         $this->assertSame('postpaid', $account->billing_type->value);
         $this->assertSame('2500.0000', $account->credit_limit);
+    }
+
+    public function test_an_account_is_either_a_customer_or_a_carrier(): void
+    {
+        $this->actingAs($this->admin)->post(route('accounts.store'), $this->validAccount(['is_vendor' => '1']))
+            ->assertSessionHasErrors('is_customer');
+        $this->actingAs($this->admin)->post(route('accounts.store'), $this->validAccount(['is_customer' => null]))
+            ->assertSessionHasErrors('is_customer');
+        $this->assertSame(0, Account::query()->count());
+
+        $this->actingAs($this->admin)->post(route('accounts.store'), $this->validAccount(['is_customer' => null, 'role' => 'customer']))
+            ->assertSessionHasNoErrors();
+        $this->assertTrue(Account::query()->sole()->is_customer);
     }
 
     public function test_show_page_includes_ips_and_ledger(): void

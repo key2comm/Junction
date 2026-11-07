@@ -40,12 +40,14 @@ class AccountRequest extends FormRequest
     public static function normalise(array $input): array
     {
         $bool = fn ($v) => filter_var($v, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false;
+        // The admin form sends role=customer|carrier; the API sends the two flags.
+        $role = $input['role'] ?? null;
 
         return [
             'code' => strtoupper(trim((string) ($input['code'] ?? ''))),
             'currency' => strtoupper(trim((string) ($input['currency'] ?? 'USD'))),
-            'is_customer' => $bool($input['is_customer'] ?? false),
-            'is_vendor' => $bool($input['is_vendor'] ?? false),
+            'is_customer' => $role !== null ? $role === 'customer' : $bool($input['is_customer'] ?? false),
+            'is_vendor' => $role !== null ? $role === 'carrier' : $bool($input['is_vendor'] ?? false),
         ];
     }
 
@@ -80,8 +82,9 @@ class AccountRequest extends FormRequest
     public static function checkRoles(Validator $validator): void
     {
         $data = $validator->getData();
-        if (empty($data['is_customer']) && empty($data['is_vendor'])) {
-            $validator->errors()->add('is_customer', 'An account must be a customer, a carrier, or both.');
+        // An account is either a customer or a carrier (vendor), never both.
+        if (empty($data['is_customer']) === empty($data['is_vendor'])) {
+            $validator->errors()->add('is_customer', 'Choose whether the account is a customer or a carrier.');
         }
     }
 

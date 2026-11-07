@@ -67,19 +67,21 @@ class ApiTest extends TestCase
     public function test_accounts_crud_with_partial_updates(): void
     {
         $plain = $this->token();
-        $this->api($plain)->postJson('/api/v1/accounts', ['name' => 'Acme', 'code' => 'acme', 'is_customer' => true, 'is_vendor' => true,
+        $this->api($plain)->postJson('/api/v1/accounts', ['name' => 'Acme', 'code' => 'acme', 'is_customer' => true,
             'status' => 'active', 'currency' => 'usd', 'billing_type' => 'postpaid', 'credit_limit' => 500, 'timezone' => 'UTC'])
             ->assertCreated()->assertJsonPath('data.code', 'ACME')->assertJsonPath('data.available_funds', '500.000000');
         $id = Account::query()->where('code', 'ACME')->value('id');
 
-        // Partial update: only the fields sent change (the vendor flag survives).
+        // Partial update: only the fields sent change (the customer flag survives).
         $this->api($plain)->patchJson("/api/v1/accounts/{$id}", ['credit_limit' => 750])
-            ->assertOk()->assertJsonPath('data.credit_limit', '750.0000')->assertJsonPath('data.is_vendor', true);
+            ->assertOk()->assertJsonPath('data.credit_limit', '750.0000')->assertJsonPath('data.is_customer', true);
+        // Customer or carrier, never both.
+        $this->api($plain)->patchJson("/api/v1/accounts/{$id}", ['is_vendor' => true])->assertJsonValidationErrors('is_customer');
 
         $this->api($plain)->postJson('/api/v1/accounts', ['name' => 'X'])->assertUnprocessable()->assertJsonValidationErrors(['code', 'status']);
         $this->api($plain)->patchJson("/api/v1/accounts/{$id}", ['is_customer' => false, 'is_vendor' => false])->assertJsonValidationErrors('is_customer');
         $this->api($plain)->getJson('/api/v1/accounts/999999')->assertNotFound();
-        $this->api($plain)->getJson('/api/v1/accounts?role=vendor')->assertJsonCount(1, 'data')->assertJsonPath('meta.total', 1);
+        $this->api($plain)->getJson('/api/v1/accounts?role=customer')->assertJsonCount(1, 'data')->assertJsonPath('meta.total', 1);
 
         // IPs and payments.
         $this->api($plain)->postJson("/api/v1/accounts/{$id}/ips", ['ip' => '198.51.100.0/24'])->assertCreated();

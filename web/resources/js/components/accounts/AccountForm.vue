@@ -88,12 +88,12 @@ const billing = useBilling();
                 <legend class="fw-medium">Role</legend>
                 <div class="d-flex flex-wrap gap-4">
                     <label class="d-flex align-items-center gap-2">
-                        <input type="checkbox" name="is_customer" value="1" :checked="v.is_customer" class="form-check-input m-0" />
-                        Customer <span class="text-secondary">(sends us traffic)</span>
+                        <input type="radio" name="role" value="customer" :checked="v.is_customer" class="form-check-input m-0" />
+                        Customer
                     </label>
                     <label class="d-flex align-items-center gap-2">
-                        <input type="checkbox" name="is_vendor" value="1" :checked="v.is_vendor" class="form-check-input m-0" />
-                        Carrier <span class="text-secondary">(we send traffic to them)</span>
+                        <input type="radio" name="role" value="carrier" :checked="!v.is_customer && v.is_vendor" class="form-check-input m-0" />
+                        Carrier
                     </label>
                 </div>
                 <InputError :message="errors.is_customer" />

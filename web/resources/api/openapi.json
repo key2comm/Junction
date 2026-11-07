@@ -238,10 +238,12 @@
             "pattern": "^[A-Za-z0-9_-]{1,32}$"
           },
           "is_customer": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "An account is either a customer or a carrier (is_vendor), never both."
           },
           "is_vendor": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Carrier: we send traffic to them. Never together with is_customer."
           },
           "status": {
             "type": "string",
