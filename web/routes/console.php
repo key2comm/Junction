@@ -1,5 +1,8 @@
 <?php
 
+use App\Jobs\SyncSwitchConfig;
+use App\Services\LiveCalls;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schedule;
 
@@ -16,7 +19,7 @@ Schedule::call(function () {
 })->name('softswitch:expire-reservations')->everyFiveMinutes();
 
 // Follow vendor hostnames whose IPs change, and repair any drift.
-Schedule::job(new \App\Jobs\SyncSwitchConfig)->everyFifteenMinutes();
+Schedule::job(new SyncSwitchConfig)->everyFifteenMinutes();
 
 // Monthly invoices: hourly, so each customer is invoiced two hours after the
 // month ends in their own time zone (issueDue skips anyone not due yet).
@@ -29,3 +32,10 @@ Schedule::command('softswitch:check-balances')->everyFiveMinutes()->withoutOverl
 Schedule::command('softswitch:quality-rollup')->everyFiveMinutes()->withoutOverlapping();
 Schedule::call(fn () => DB::table('cdr_leg_timings')->where('created_at', '<', now()->subDays(2))->delete())
     ->name('softswitch:prune-leg-timings')->daily();
+
+// Live calls: refresh the snapshot every 5 seconds, but only while someone is looking.
+Schedule::call(function () {
+    if (Cache::has(LiveCalls::WATCHING)) {
+        app(LiveCalls::class)->refresh();
+    }
+})->name('softswitch:live-calls')->everyFiveSeconds()->withoutOverlapping();

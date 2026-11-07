@@ -20,9 +20,26 @@ class EventSocket
     /** Run an API command (e.g. "sofia profile carrier rescan") and return its output. */
     public function api(string $command, ?float $timeout = null): string
     {
+        return $this->apiMany([$command], $timeout)[0];
+    }
+
+    /**
+     * Run several API commands over one connection (much cheaper than one
+     * connection each, e.g. a uuid_getvar per live call).
+     *
+     * @param  list<string>  $commands
+     * @return list<string>
+     */
+    public function apiMany(array $commands, ?float $timeout = null): array
+    {
         $timeout ??= $this->timeout;
-        if (preg_match('/[\r\n]/', $command)) {
-            throw new RuntimeException('ESL commands cannot contain line breaks.');
+        foreach ($commands as $command) {
+            if (preg_match('/[\r\n]/', $command)) {
+                throw new RuntimeException('ESL commands cannot contain line breaks.');
+            }
+        }
+        if ($commands === []) {
+            return [];
         }
 
         $socket = @stream_socket_client("tcp://{$this->host}:{$this->port}", $errno, $error, $this->timeout);
@@ -42,10 +59,13 @@ class EventSocket
                 throw new RuntimeException('Event socket authentication failed.');
             }
 
-            fwrite($socket, "api {$command}\n\n");
-            $reply = $this->readMessage($socket);
+            $out = [];
+            foreach ($commands as $command) {
+                fwrite($socket, "api {$command}\n\n");
+                $out[] = $this->readMessage($socket)['body'];
+            }
 
-            return $reply['body'];
+            return $out;
         } finally {
             fclose($socket);
         }

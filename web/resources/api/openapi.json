@@ -1526,6 +1526,119 @@
             ]
           }
         }
+      },
+      "LiveCall": {
+        "type": "object",
+        "properties": {
+          "uuid": {
+            "type": "string"
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "routing",
+              "ringing",
+              "answered"
+            ]
+          },
+          "caller": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "dialled": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sent_as": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Number as sent to the vendor"
+          },
+          "customer": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "type": "integer"
+              },
+              "code": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            }
+          },
+          "vendor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "trunk": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "type": "integer"
+              },
+              "name": {
+                "type": "string"
+              }
+            }
+          },
+          "gateway": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "talking_seconds": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "max_duration": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "remaining_seconds": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Until the funds cut-off"
+          },
+          "reserved": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "currency": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
       }
     }
   },
@@ -3882,6 +3995,57 @@
           },
           "422": {
             "$ref": "#/components/responses/Invalid"
+          }
+        }
+      }
+    },
+    "/live-calls": {
+      "get": {
+        "summary": "Calls in progress",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "x-ability": "routing:read",
+        "description": "From a snapshot refreshed every 5 seconds while it is being read (the first call after a quiet period may return an older or empty snapshot).",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/LiveCall"
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "snapshot_at": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "format": "date-time"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           }
         }
       }

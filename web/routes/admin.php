@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\CdrController;
 use App\Http\Controllers\Admin\GatewayController;
 use App\Http\Controllers\Admin\InvoiceController;
 use App\Http\Controllers\Admin\LedgerEntryController;
+use App\Http\Controllers\Admin\LiveCallsController;
 use App\Http\Controllers\Admin\PortalUserController;
 use App\Http\Controllers\Admin\QualityController;
 use App\Http\Controllers\Admin\RateDeckController;
@@ -40,6 +41,8 @@ Route::middleware(['auth', 'admin'])->group(function () {
         ->name('accounts.ledger.store');
 
     Route::get('quality', [QualityController::class, 'index'])->name('quality.index');
+    Route::get('live', [LiveCallsController::class, 'index'])->name('live.index');
+    Route::post('live/{uuid}/hangup', [LiveCallsController::class, 'hangup'])->middleware('throttle:30,1')->name('live.hangup');
 
     Route::get('cdrs', [CdrController::class, 'index'])->name('cdrs.index');
     Route::get('cdrs/export', [CdrController::class, 'export'])->middleware('throttle:10,1')->name('cdrs.download');

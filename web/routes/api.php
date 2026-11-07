@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\LiveCallsController;
 use App\Http\Controllers\Admin\QualityController;
 use App\Http\Controllers\Api\V1\AccountsController;
 use App\Http\Controllers\Api\V1\CdrsController;
@@ -56,6 +57,7 @@ Route::prefix('v1')->group(function () {
             Route::get('routing-plans/{routing_plan}', [RoutingController::class, 'showPlan']);
             Route::post('route-test', [RoutingController::class, 'routeTest']);
             Route::get('quality', [QualityController::class, 'api']);
+            Route::get('live-calls', [LiveCallsController::class, 'api']);
         });
         Route::middleware($can('routing:write'))->scopeBindings()->group(function () {
             Route::post('trunks', [RoutingController::class, 'storeTrunk']);
