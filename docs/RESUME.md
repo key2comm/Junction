@@ -31,8 +31,8 @@ _Last updated: 2026-11-07. All 8 phases of `docs/PLAN.md` are done._
 2. **Real-carrier test.** Needs the IP of a real test customer or vendor from the user. It would also be the first real check of inbound DIDs.
 3. **Setup the user can do in the admin UI** (https://theswitch.key2pbx.ca):
    - Settings → SSL certificate: Let's Encrypt (DNS already points at the server). **Needed for the web phone.**
-   - Settings → Email: SMTP. For Microsoft 365, "Authenticated SMTP" may need enabling on the mailbox.
-   - Settings → Profile: change the default admin login `admin@theswitch.key2pbx.ca`. The initial password is on the server: `sudo grep ADMIN_INITIAL_PASSWORD /etc/softswitch/secrets`.
+   - Settings → Email (SMTP). For Microsoft 365, "Authenticated SMTP" may need enabling on the mailbox.
+   - User menu → My account → Profile: change the default admin login `admin@theswitch.key2pbx.ca`. The initial password is on the server: `sudo grep ADMIN_INITIAL_PASSWORD /etc/softswitch/secrets`.
 4. **Production sizing.** This server handles roughly 30–50 concurrent calls. Production needs more CPU, or several FreeSWITCH media servers behind Kamailio.
 5. **Offered but not yet requested:**
    - PBX in the REST API, and customers managing their own extensions in the portal
@@ -43,7 +43,7 @@ _Last updated: 2026-11-07. All 8 phases of `docs/PLAN.md` are done._
 
 ## Things to remember
 
-- **UI checks without a browser here:** headless Firefox driven over WebDriver BiDi (a small stdlib-only Python client) can log in and screenshot pages. It needs a login. Create a temporary admin only with the user's OK, and delete it afterwards. The layout is Tabler's horizontal one (menu at the top, the user's choice): admin items are grouped into Calls, Billing and Routing dropdowns, positioned by CSS because there is no Bootstrap JS.
+- **UI checks without a browser here:** headless Firefox driven over WebDriver BiDi (a small stdlib-only Python client) can log in and screenshot pages. It needs a login. Create a temporary admin only with the user's OK, and delete it afterwards. The layout is Tabler's horizontal one (menu at the top, the user's choice): admin items are grouped into Calls, Billing, Routing and Settings (SSL certificate, Email, API tokens) dropdowns; the user menu holds My account (profile, security, appearance), positioned by CSS because there is no Bootstrap JS.
 
 - **Deploying:** commit, then `scripts/push-to-server.sh theswitch -- --steps 90` (copy plus app step). Add `60` when `deploy/freeswitch` changes and `80` when `deploy/nginx` changes. Run the self-test after anything that touches calls: `sudo -u softswitch bash -c 'cd /var/www/html && php artisan softswitch:selftest'`.
 - **No PHP or Node on this laptop.** Tests run on the server through `scripts/test-on-server.sh`. To change npm dependencies, regenerate `package-lock.json` on the server (`npm install --package-lock-only`) and copy it back.
