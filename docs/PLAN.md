@@ -80,7 +80,7 @@ flowchart LR
 
 1. **Harden the host** (done on the test server): nftables firewall, fail2ban, SSH key-only.
 2. **FreeSWITCH** (building): from public source with no SignalWire token. Replace the stock config with a Softswitch config that has two profiles (`carrier` on 5080, `internal` on 5060) and the event socket on localhost.
-3. **Data model and Laravel skeleton** (skeleton done; data model next): PostgreSQL install step. Laravel + Vue + Inertia app under `/var/www/html`, with nginx, PHP-FPM, and Let's Encrypt. Migrations for accounts, IPs, gateways, rate decks, routing plans, CDRs, and the ledger. Admin login.
+3. **Data model and Laravel skeleton** (done: schema, rating, ledger, Accounts UI; next: rate deck, trunk, and routing plan pages): PostgreSQL install step. Laravel + Vue + Inertia app under `/var/www/html`, with nginx, PHP-FPM, and Let's Encrypt. Migrations for accounts, IPs, gateways, rate decks, routing plans, CDRs, and the ledger. Admin login.
 4. **Routing engine:** Lua dialplan with customer identification by source IP (and tech-prefix), number normalization, LCR, failover, CPS and channel limits, balance checks, and maximum duration. FreeSWITCH gateways and the firewall `carriers` set generated from the database.
 5. **Billing:** CDRs into PostgreSQL, rating, ledger, invoices, rate deck import with effective dates.
 6. **API:** `/api/v1` with token scopes and OpenAPI docs. A customer portal built on the same API.
