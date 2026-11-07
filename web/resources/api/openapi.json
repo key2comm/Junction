@@ -3170,7 +3170,7 @@
     },
     "/routing-plans": {
       "get": {
-        "summary": "List routing plans",
+        "summary": "List LCR groups",
         "security": [
           {
             "bearer": []
@@ -3230,7 +3230,7 @@
         }
       },
       "post": {
-        "summary": "Create a routing plan",
+        "summary": "Create an LCR group",
         "security": [
           {
             "bearer": []
@@ -3278,7 +3278,7 @@
     },
     "/routing-plans/{routing_plan}": {
       "get": {
-        "summary": "Get a routing plan with its routes",
+        "summary": "Get an LCR group with its carriers (routes)",
         "security": [
           {
             "bearer": []
@@ -3323,7 +3323,7 @@
         }
       },
       "patch": {
-        "summary": "Update a routing plan (partial)",
+        "summary": "Update an LCR group (partial)",
         "security": [
           {
             "bearer": []

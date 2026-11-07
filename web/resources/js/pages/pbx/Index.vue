@@ -19,7 +19,7 @@ defineOptions({ layout: { breadcrumbs: [{ title: 'PBX', href: index() }] } });
     <div class="ss-stack-4">
         <Heading
             title="PBX"
-            description="Extensions, IVRs and DIDs belong to a customer account. Calls from extensions to outside numbers use that account's routing plan, rates and funds, like its carrier traffic."
+            description="Extensions, IVRs and DIDs belong to a customer account. Calls from extensions to outside numbers use that account's LCR group, rates and funds, like its carrier traffic."
         />
 
         <div class="card card-body ss-grid gap-2 ss-cols-sm-2">

@@ -32,7 +32,7 @@ class RoutingPlanController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $plan = RoutingPlan::create($this->validated($request));
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Routing plan created. Add routes next.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'LCR group created. Add its carriers next.']);
 
         return to_route('routing-plans.show', $plan);
     }
@@ -53,8 +53,8 @@ class RoutingPlanController extends Controller
                     'trunk' => ['id' => $r->trunk->id, 'name' => $r->trunk->name, 'enabled' => $r->trunk->enabled, 'vendor' => $r->trunk->account->code],
                 ]),
             'filters' => ['q' => $q],
-            'trunks' => Trunk::query()->with('account:id,code')->orderBy('name')->get(['id', 'name', 'account_id'])
-                ->map(fn (Trunk $t) => ['id' => $t->id, 'label' => "{$t->account->code} / {$t->name}"])
+            'trunks' => Trunk::query()->with('account:id,code,name')->orderBy('name')->get(['id', 'name', 'account_id'])
+                ->map(fn (Trunk $t) => ['id' => $t->id, 'label' => "{$t->account->name} ({$t->account->code}) / {$t->name}"])
                 ->sortBy('label')->values(),
             'customers' => $routingPlan->accounts()->orderBy('name')->get(['id', 'name', 'code']),
         ]);
@@ -71,7 +71,7 @@ class RoutingPlanController extends Controller
     public function update(Request $request, RoutingPlan $routingPlan): RedirectResponse
     {
         $routingPlan->update($this->validated($request, $routingPlan));
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Routing plan updated.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'LCR group updated.']);
 
         return to_route('routing-plans.show', $routingPlan);
     }

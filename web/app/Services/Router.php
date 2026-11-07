@@ -18,7 +18,7 @@ class Router
         'invalid_number' => 'The number has no digits (or more than 32).',
         'blocked_destination' => 'The destination prefix is blocked.',
         'no_sell_rate' => "The customer's tariff has no rate for this destination.",
-        'no_routing_plan' => 'The customer has no routing plan.',
+        'no_routing_plan' => 'The customer has no LCR group.',
         'insufficient_funds' => 'Not enough funds for the minimum billable duration.',
         'no_route' => 'No enabled trunk with a gateway and a buy rate is routed for this destination.',
         'negative_margin' => 'Every routed carrier costs more than the sell rate.',

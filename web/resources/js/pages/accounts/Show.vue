@@ -141,7 +141,7 @@ const select = 'form-select w-auto';
                 <dl class="ss-grid ss-cols-2 gap-2">
                     <dt class="text-secondary">Tariffs</dt>
                     <dd>{{ account.sell_rate_deck?.name ?? '— not set —' }}</dd>
-                    <dt class="text-secondary">Routing plan</dt>
+                    <dt class="text-secondary">LCR group</dt>
                     <dd>{{ account.routing_plan?.name ?? '— not set —' }}</dd>
                     <dt class="text-secondary">Limits</dt>
                     <dd>{{ account.max_channels ?? '∞' }} channels, {{ account.max_cps ?? '∞' }} CPS</dd>

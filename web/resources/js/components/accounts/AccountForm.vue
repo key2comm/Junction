@@ -182,7 +182,7 @@ const billing = useBilling();
             </div>
 
             <div class="ss-grid gap-2">
-                <Label for="routing_plan_id">Routing plan</Label>
+                <Label for="routing_plan_id">LCR group</Label>
                 <select id="routing_plan_id" name="routing_plan_id" :class="select">
                     <option value="">— None —</option>
                     <option v-for="p in options.routingPlans" :key="p.id" :value="p.id" :selected="p.id === v.routing_plan_id">{{ p.name }}</option>

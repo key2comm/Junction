@@ -9,6 +9,7 @@ import Pagination from '@/components/Pagination.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import type { Paginated } from '@/lib/ui';
 import { selectClass } from '@/lib/ui';
 import { show as showAccount } from '@/routes/accounts';
@@ -45,7 +46,7 @@ const props = defineProps<{
 defineOptions({
     layout: (props: { plan: { id: number; name: string } }) => ({
         breadcrumbs: [
-            { title: 'Routing plans', href: index() },
+            { title: 'LCR groups', href: index() },
             { title: props.plan.name, href: show(props.plan.id) },
         ],
     }),
@@ -86,36 +87,41 @@ function toggle(route: Route) {
         <section class="ss-stack-3">
             <Heading
                 variant="small"
-                title="Routes"
-                description="For each call, the longest matching prefix wins, and its trunks are tried in the plan's order. A blank prefix matches every destination."
+                title="Carriers"
+                description="Only the carriers added here are used for this group's customers. Leave the prefix blank to use a carrier for every destination, or enter one (such as 44) to use it only for numbers starting with it; the longest matching prefix wins."
             />
 
             <Form
                 v-bind="RoutingPlanController.storeRoute.form(plan.id)"
                 :options="{ preserveScroll: true }"
-                class="ss-grid gap-2 rounded border p-3 ss-gtc-sm-1fr-2fr-auto-auto-auto align-items-sm-start"
+                reset-on-success
+                class="ss-grid gap-2 rounded border p-3 ss-gtc-sm-2fr-1fr-auto-auto-auto align-items-sm-end"
                 v-slot="{ errors, processing }"
             >
                 <div class="ss-grid gap-1">
-                    <Input name="prefix" placeholder="Prefix (blank = all)" class="font-monospace" aria-label="Prefix" />
-                    <InputError :message="errors.prefix" />
-                </div>
-                <div class="ss-grid gap-1">
-                    <select name="trunk_id" :class="selectClass" required aria-label="Trunk">
-                        <option value="" disabled selected>Choose a trunk</option>
+                    <Label for="route_trunk">Carrier</Label>
+                    <select id="route_trunk" name="trunk_id" :class="selectClass" required>
+                        <option value="" disabled selected>Choose a carrier</option>
                         <option v-for="t in trunks" :key="t.id" :value="t.id">{{ t.label }}</option>
                     </select>
                     <InputError :message="errors.trunk_id" />
                 </div>
                 <div class="ss-grid gap-1">
-                    <Input name="priority" type="number" min="1" max="100" default-value="1" class="ss-w-24" aria-label="Priority" title="Priority (lower first)" />
+                    <Label for="route_prefix">Only for prefix</Label>
+                    <Input id="route_prefix" name="prefix" placeholder="All destinations" class="font-monospace" />
+                    <InputError :message="errors.prefix" />
+                </div>
+                <div class="ss-grid gap-1">
+                    <Label for="route_priority" title="Lower is tried first when costs are equal (or always, in priority mode)">Priority</Label>
+                    <Input id="route_priority" name="priority" type="number" min="1" max="100" default-value="1" class="ss-w-24" />
                     <InputError :message="errors.priority" />
                 </div>
                 <div class="ss-grid gap-1">
-                    <Input name="weight" type="number" min="1" max="1000" default-value="100" class="ss-w-24" aria-label="Weight" title="Weight (load balance share)" />
+                    <Label for="route_weight" title="Share of calls in load-balance mode">Weight</Label>
+                    <Input id="route_weight" name="weight" type="number" min="1" max="1000" default-value="100" class="ss-w-24" />
                     <InputError :message="errors.weight" />
                 </div>
-                <Button :disabled="processing || trunks.length === 0">Add route</Button>
+                <Button :disabled="processing || trunks.length === 0">Add carrier</Button>
             </Form>
 
             <Input v-model="q" placeholder="Filter by prefix" class="ss-maxw-xs font-monospace" @input="search" />
@@ -124,8 +130,8 @@ function toggle(route: Route) {
                 <table class="table table-vcenter card-table table-tight">
                     <thead>
                         <tr>
-                            <th>Prefix</th>
-                            <th>Trunk</th>
+                            <th>Carrier</th>
+                            <th>Destinations</th>
                             <th class="text-end">Priority</th>
                             <th class="text-end">Weight</th>
                             <th></th>
@@ -133,23 +139,23 @@ function toggle(route: Route) {
                     </thead>
                     <tbody>
                         <tr v-for="r in routes.data" :key="r.id" :class="{ 'opacity-50': !r.enabled || !r.trunk.enabled }">
-                            <td class="font-monospace">{{ r.prefix || '(all)' }}</td>
                             <td>
                                 <Link :href="showTrunk(r.trunk.id)">{{ r.trunk.vendor }} / {{ r.trunk.name }}</Link>
                                 <Badge v-if="!r.trunk.enabled" variant="secondary" class="ms-2">trunk disabled</Badge>
                             </td>
+                            <td><span v-if="r.prefix" class="font-monospace">{{ r.prefix }}…</span><span v-else class="text-secondary">All</span></td>
                             <td class="text-end tabular-nums">{{ r.priority }}</td>
                             <td class="text-end tabular-nums">{{ r.weight }}</td>
                             <td class="text-end text-nowrap">
                                 <Button size="sm" variant="ghost" @click="toggle(r)">{{ r.enabled ? 'Disable' : 'Enable' }}</Button>
                                 <Form v-bind="RoutingPlanController.destroyRoute.form([plan.id, r.id])" :options="{ preserveScroll: true }" class="d-inline" v-slot="{ processing }">
-                                    <Button size="sm" variant="ghost" :disabled="processing" aria-label="Remove route"><Trash2 class="icon" /></Button>
+                                    <Button size="sm" variant="ghost" :disabled="processing" aria-label="Remove carrier"><Trash2 class="icon" /></Button>
                                 </Form>
                             </td>
                         </tr>
                         <tr v-if="routes.data.length === 0">
                             <td colspan="5" class="text-center text-secondary">
-                                {{ trunks.length === 0 ? 'Create a carrier trunk first, then route prefixes to it.' : 'No routes yet.' }}
+                                {{ trunks.length === 0 ? 'Create a carrier trunk first, then add it here.' : 'No carriers in this group yet.' }}
                             </td>
                         </tr>
                     </tbody>
@@ -159,10 +165,10 @@ function toggle(route: Route) {
         </section>
 
         <section class="ss-stack-2">
-            <Heading variant="small" title="Customers on this plan" />
+            <Heading variant="small" title="Customers in this group" />
             <ul>
                 <li v-for="c in customers" :key="c.id"><Link :href="showAccount(c.id)">{{ c.name }}</Link> <span class="text-secondary">{{ c.code }}</span></li>
-                <li v-if="customers.length === 0" class="text-secondary">None. Assign this plan on a customer account.</li>
+                <li v-if="customers.length === 0" class="text-secondary">None. Choose this LCR group on a customer account.</li>
             </ul>
         </section>
     </div>

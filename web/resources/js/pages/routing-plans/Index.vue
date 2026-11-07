@@ -10,28 +10,28 @@ defineProps<{
     plans: { id: number; name: string; mode: string; max_attempts: number; description: string | null; routes_count: number; accounts_count: number }[];
 }>();
 
-defineOptions({ layout: { breadcrumbs: [{ title: 'Routing plans', href: index() }] } });
+defineOptions({ layout: { breadcrumbs: [{ title: 'LCR groups', href: index() }] } });
 
 const modeLabel: Record<string, string> = { lcr: 'Least cost', priority: 'Priority', weight: 'Load balance' };
 </script>
 
 <template>
-    <Head title="Routing plans" />
+    <Head title="LCR groups" />
 
     <div class="ss-stack-4">
         <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
-            <Heading title="Routing plans" description="Which carrier trunks may carry which destinations, assigned to customers" />
-            <Button as-child><Link :href="create()"><Plus class="icon" /> New routing plan</Link></Button>
+            <Heading title="LCR groups" description="Groups of carriers a customer's calls may use, cheapest first in least-cost mode. Each customer is assigned one group, so special carriers can go in a group of their own." />
+            <Button as-child><Link :href="create()"><Plus class="icon" /> New LCR group</Link></Button>
         </div>
 
         <div class="card table-responsive">
             <table class="table table-vcenter card-table table-tight">
                 <thead>
                     <tr>
-                        <th class="fw-medium">Plan</th>
+                        <th class="fw-medium">Group</th>
                         <th class="fw-medium">Mode</th>
                         <th class="text-end fw-medium">Max attempts</th>
-                        <th class="text-end fw-medium">Routes</th>
+                        <th class="text-end fw-medium">Carriers</th>
                         <th class="text-end fw-medium">Customers</th>
                     </tr>
                 </thead>
@@ -47,7 +47,7 @@ const modeLabel: Record<string, string> = { lcr: 'Least cost', priority: 'Priori
                         <td class="text-end tabular-nums">{{ p.accounts_count }}</td>
                     </tr>
                     <tr v-if="plans.length === 0">
-                        <td colspan="5" class="text-center text-secondary">No routing plans yet.</td>
+                        <td colspan="5" class="text-center text-secondary">No LCR groups yet.</td>
                     </tr>
                 </tbody>
             </table>

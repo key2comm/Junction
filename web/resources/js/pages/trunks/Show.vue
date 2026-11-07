@@ -122,13 +122,13 @@ defineOptions({
         </section>
 
         <section class="ss-stack-3">
-            <Heading variant="small" title="Used in routing plans" />
+            <Heading variant="small" title="Used in LCR groups" />
             <ul class="list-group">
                 <li v-for="r in routes" :key="r.id" class="list-group-item d-flex justify-content-between px-2 py-2" :class="{ 'opacity-50': !r.enabled }">
                     <Link :href="showPlan(r.plan.id)">{{ r.plan.name }}</Link>
                     <span class="font-monospace text-secondary">{{ r.prefix || '(all destinations)' }}</span>
                 </li>
-                <li v-if="routes.length === 0" class="list-group-item px-2 py-4 text-center text-secondary">Not in any routing plan yet.</li>
+                <li v-if="routes.length === 0" class="list-group-item px-2 py-4 text-center text-secondary">Not in any LCR group yet.</li>
             </ul>
         </section>
     </div>

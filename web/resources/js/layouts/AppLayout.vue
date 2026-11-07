@@ -102,7 +102,7 @@ const adminNav = computed((): NavEntry[] => [
             { title: 'Tariffs', href: tariffs(), icon: Tags },
             { title: 'Carrier rates', href: carrierRates(), icon: Tags },
             { title: 'Trunks', href: trunks(), icon: Cable },
-            { title: 'Routing plans', href: routingPlans(), icon: Route },
+            { title: 'LCR groups', href: routingPlans(), icon: Route },
         ],
     },
     { title: 'PBX', href: pbx(), icon: Phone },

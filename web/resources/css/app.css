@@ -185,7 +185,7 @@ details.card[open] > summary::before {
     .ss-span-sm-5 { grid-column: span 5 / span 5; }
     .ss-span-sm-6 { grid-column: span 6 / span 6; }
     .ss-gtc-sm-1fr-1fr-auto { grid-template-columns: 1fr 1fr auto; }
-    .ss-gtc-sm-1fr-2fr-auto-auto-auto { grid-template-columns: 1fr 2fr auto auto auto; }
+    .ss-gtc-sm-2fr-1fr-auto-auto-auto { grid-template-columns: 2fr 1fr auto auto auto; }
     .ss-gtc-sm-2fr-1fr-2fr-auto { grid-template-columns: 2fr 1fr 2fr auto; }
     .ss-gtc-sm-auto-1fr-2fr-auto { grid-template-columns: auto 1fr 2fr auto; }
     .ss-justify-self-sm-start { justify-self: start; }

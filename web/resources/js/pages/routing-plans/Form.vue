@@ -27,7 +27,7 @@ const props = defineProps<{
 defineOptions({
     layout: (props: { plan: { id: number; name: string } | null }) => ({
         breadcrumbs: [
-            { title: 'Routing plans', href: index() },
+            { title: 'LCR groups', href: index() },
             props.plan ? { title: props.plan.name, href: show(props.plan.id) } : { title: 'New', href: index() },
         ],
     }),
@@ -43,10 +43,10 @@ const modeHelp: Record<string, string> = {
 </script>
 
 <template>
-    <Head :title="p ? `Edit ${p.name}` : 'New routing plan'" />
+    <Head :title="p ? `Edit ${p.name}` : 'New LCR group'" />
 
     <div class="ss-maxw-xl ss-stack-4">
-        <Heading :title="p ? `Edit ${p.name}` : 'New routing plan'" />
+        <Heading :title="p ? `Edit ${p.name}` : 'New LCR group'" />
 
         <Form v-bind="action" class="ss-stack-4" v-slot="{ errors, processing }">
             <div class="ss-grid gap-2">
@@ -99,7 +99,7 @@ const modeHelp: Record<string, string> = {
                 <InputError :message="errors.description" />
             </div>
             <div class="d-flex gap-2">
-                <Button :disabled="processing">{{ p ? 'Save changes' : 'Create routing plan' }}</Button>
+                <Button :disabled="processing">{{ p ? 'Save changes' : 'Create LCR group' }}</Button>
                 <Button variant="ghost" as-child><Link :href="p ? show(p.id) : index()">Cancel</Link></Button>
             </div>
         </Form>

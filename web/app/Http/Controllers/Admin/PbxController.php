@@ -20,7 +20,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Minimal PBX of a customer account: extensions (SIP phones), IVRs and DIDs.
- * Calls from extensions to outside numbers use the account's routing plan,
+ * Calls from extensions to outside numbers use the account's LCR group,
  * rates and funds, exactly like its carrier traffic.
  */
 class PbxController extends Controller

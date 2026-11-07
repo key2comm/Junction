@@ -98,7 +98,7 @@ const duration = (s: number | null) => (s === null ? '—' : s >= 3600 ? `${Math
                         <td>{{ a.attempt }}</td>
                         <td>
                             {{ a.trunk }}
-                            <Badge v-if="a.quality_demoted" variant="secondary" class="ms-1" title="Performing below the plan's quality bar over the last hour, so tried after the others">demoted</Badge>
+                            <Badge v-if="a.quality_demoted" variant="secondary" class="ms-1" title="Performing below the LCR group's quality bar over the last hour, so tried after the others">demoted</Badge>
                         </td>
                         <td class="font-monospace small">{{ a.gateways.map((g) => g.name).join(' → ') }}</td>
                         <td class="font-monospace">{{ a.dial_number }}</td>
