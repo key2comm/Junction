@@ -5,29 +5,39 @@ import type { AccountFormOptions } from '@/components/accounts/AccountForm.vue';
 import AccountForm from '@/components/accounts/AccountForm.vue';
 import Heading from '@/components/Heading.vue';
 import { create, index } from '@/routes/accounts';
+import { create as createCarrier, index as carriers } from '@/routes/carriers';
 
-defineProps<{ options: AccountFormOptions }>();
+const props = defineProps<{ options: AccountFormOptions; role: 'customer' | 'carrier' }>();
 
 defineOptions({
-    layout: {
-        breadcrumbs: [
-            { title: 'Accounts', href: index() },
-            { title: 'New account', href: create() },
-        ],
-    },
+    layout: (props: { role: 'customer' | 'carrier' }) => ({
+        breadcrumbs:
+            props.role === 'carrier'
+                ? [
+                      { title: 'Carriers', href: carriers() },
+                      { title: 'New carrier', href: createCarrier() },
+                  ]
+                : [
+                      { title: 'Accounts', href: index() },
+                      { title: 'New customer', href: create() },
+                  ],
+    }),
 });
+
+const title = props.role === 'carrier' ? 'New carrier' : 'New customer';
 </script>
 
 <template>
-    <Head title="New account" />
+    <Head :title="title" />
 
     <div class="ss-maxw-3xl ss-stack-4">
-        <Heading title="New account" description="A customer, a carrier, or both" />
+        <Heading :title="title" :description="role === 'carrier' ? 'A carrier we send traffic to. Add its trunks after saving.' : 'A customer that sends us traffic'" />
         <AccountForm
             :action="AccountController.store.form()"
             :options="options"
-            submit-label="Create account"
-            :cancel-href="index().url"
+            :role="role"
+            :submit-label="role === 'carrier' ? 'Create carrier' : 'Create customer'"
+            :cancel-href="role === 'carrier' ? carriers().url : index().url"
         />
     </div>
 </template>

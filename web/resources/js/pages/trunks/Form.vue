@@ -49,7 +49,7 @@ const vendorId = t?.account_id ?? props.defaults.account_id ?? null;
         <Heading :title="t ? `Edit ${t.name}` : 'New trunk'" description="A carrier product: what we pay (carrier rates) and where we send calls (gateways)" />
 
         <p v-if="vendors.length === 0" class="rounded border ss-border-dashed p-3 text-secondary">
-            There are no carrier accounts yet. Create an account and tick "Carrier" first.
+            There are no carriers yet. Add one under Routing → Carriers first.
         </p>
 
         <Form v-else v-bind="action" class="ss-grid gap-4 ss-cols-sm-2" v-slot="{ errors, processing }">

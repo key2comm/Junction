@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Method } from '@inertiajs/core';
 import { Form, Link } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -43,6 +44,8 @@ const props = defineProps<{
     account?: Partial<AccountFormValues>;
     submitLabel: string;
     cancelHref: string;
+    /** Set by the page: Billing → Accounts makes customers, Routing → Carriers makes carriers. */
+    role: 'customer' | 'carrier';
 }>();
 
 const v: Partial<AccountFormValues> = {
@@ -61,6 +64,8 @@ const otherCurrencies = props.options.currencies.filter((c) => !c.top);
 
 // Settings → Billing off: balances aren't used, so the billing fields are kept as they are (hidden).
 const billing = useBilling();
+// Balance, credit and alerts are customer billing; carriers are paid through carrier payables.
+const customerBilling = computed(() => billing.value && props.role === 'customer');
 </script>
 
 <template>
@@ -87,33 +92,21 @@ const billing = useBilling();
                 <InputError :message="errors.status" />
             </div>
 
-            <fieldset class="ss-grid gap-2 ss-span-sm-2">
-                <legend class="fw-medium">Role</legend>
-                <div class="d-flex flex-wrap gap-4">
-                    <label class="d-flex align-items-center gap-2">
-                        <input type="radio" name="role" value="customer" :checked="v.is_customer" class="form-check-input m-0" />
-                        Customer
-                    </label>
-                    <label class="d-flex align-items-center gap-2">
-                        <input type="radio" name="role" value="carrier" :checked="!v.is_customer && v.is_vendor" class="form-check-input m-0" />
-                        Carrier
-                    </label>
-                </div>
-                <InputError :message="errors.is_customer" />
-            </fieldset>
+            <input type="hidden" name="role" :value="role" />
+            <InputError :message="errors.is_customer" class="ss-span-sm-2" />
         </section>
 
         <section class="ss-grid gap-4 ss-cols-sm-2">
-            <h2 class="fw-semibold ss-span-sm-2">{{ billing ? 'Billing' : 'Currency and contacts' }}</h2>
+            <h2 class="fw-semibold ss-span-sm-2">{{ customerBilling ? 'Billing' : 'Currency and contacts' }}</h2>
 
-            <template v-if="!billing">
+            <template v-if="!customerBilling">
                 <input type="hidden" name="billing_type" :value="v.billing_type" />
                 <input type="hidden" name="credit_limit" :value="v.credit_limit" />
                 <input type="hidden" name="low_balance_threshold" :value="v.low_balance_threshold ?? ''" />
-                <input type="hidden" name="billing_email" :value="v.billing_email ?? ''" />
             </template>
+            <input v-if="!billing" type="hidden" name="billing_email" :value="v.billing_email ?? ''" />
 
-            <div v-if="billing" class="ss-grid gap-2">
+            <div v-if="customerBilling" class="ss-grid gap-2">
                 <Label for="billing_type">Billing type</Label>
                 <select id="billing_type" name="billing_type" :class="select">
                     <option v-for="b in options.billingTypes" :key="b" :value="b" :selected="b === v.billing_type">{{ titleCase(b) }}</option>
@@ -121,14 +114,14 @@ const billing = useBilling();
                 <InputError :message="errors.billing_type" />
             </div>
 
-            <div v-if="billing" class="ss-grid gap-2">
+            <div v-if="customerBilling" class="ss-grid gap-2">
                 <Label for="credit_limit">Credit limit</Label>
                 <Input id="credit_limit" name="credit_limit" type="number" step="0.01" min="0" :default-value="v.credit_limit" required />
                 <p class="small text-secondary">How far below zero the balance may go before calls are refused.</p>
                 <InputError :message="errors.credit_limit" />
             </div>
 
-            <div v-if="billing" class="ss-grid gap-2">
+            <div v-if="customerBilling" class="ss-grid gap-2">
                 <Label for="low_balance_threshold">Low-balance alert below</Label>
                 <Input id="low_balance_threshold" name="low_balance_threshold" type="number" step="0.01" min="0" :default-value="v.low_balance_threshold ?? ''" placeholder="No alerts" />
                 <p class="small text-secondary">Emails the customer (and you) once when funds available for calls drop below this.</p>
@@ -146,7 +139,7 @@ const billing = useBilling();
             </div>
 
             <div class="ss-grid gap-2">
-                <Label for="timezone">{{ billing ? 'Billing time zone' : 'Time zone' }}</Label>
+                <Label for="timezone">{{ customerBilling ? 'Billing time zone' : 'Time zone' }}</Label>
                 <select id="timezone" name="timezone" :class="select">
                     <option v-for="tz in options.timezones" :key="tz" :value="tz" :selected="tz === v.timezone">{{ tz }}</option>
                 </select>
@@ -166,7 +159,7 @@ const billing = useBilling();
             </div>
         </section>
 
-        <section class="ss-grid gap-4 ss-cols-sm-2">
+        <section v-if="role === 'customer'" class="ss-grid gap-4 ss-cols-sm-2">
             <div class="ss-span-sm-2">
                 <h2 class="fw-semibold">Customer settings</h2>
                 <p class="small text-secondary">Used when this account sends us traffic.</p>

@@ -20,10 +20,23 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
+/**
+ * Accounts. Billing → Accounts lists everyone and creates customers;
+ * Routing → Carriers (/carriers, scope "carrier") lists and creates carriers.
+ */
 class AccountController extends Controller
 {
+    private static function carrierScope(Request $request): bool
+    {
+        return $request->route('scope') === 'carrier';
+    }
+
     public function index(Request $request): Response
     {
+        $carriers = self::carrierScope($request);
+        if ($carriers) {
+            $request->merge(['role' => 'vendor']);
+        }
         $filters = $request->validate([
             'q' => ['nullable', 'string', 'max:100'],
             'role' => ['nullable', 'in:customer,vendor'],
@@ -37,6 +50,7 @@ class AccountController extends Controller
             ->when(($filters['role'] ?? null) === 'customer', fn ($q) => $q->customers())
             ->when(($filters['role'] ?? null) === 'vendor', fn ($q) => $q->vendors())
             ->when($filters['status'] ?? null, fn ($q, $status) => $q->where('status', $status))
+            ->withCount('trunks')
             ->orderBy('name')
             ->paginate(25)
             ->withQueryString()
@@ -51,24 +65,27 @@ class AccountController extends Controller
                 'currency' => $a->currency,
                 'balance' => $a->balance,
                 'available' => $a->availableFunds(),
+                'trunks_count' => $a->trunks_count,
             ]);
 
         return Inertia::render('accounts/Index', [
+            'scope' => $carriers ? 'carrier' : 'all',
             'accounts' => $accounts,
-            'filters' => (object) $filters,
+            'filters' => (object) ($carriers ? array_diff_key($filters, ['role' => true]) : $filters),
         ]);
     }
 
-    public function create(): Response
+    /** New customer (Billing → Accounts) or, at /carriers/create, new carrier. */
+    public function create(Request $request): Response
     {
-        return Inertia::render('accounts/Create', $this->formOptions());
+        return Inertia::render('accounts/Create', [...$this->formOptions(), 'role' => self::carrierScope($request) ? 'carrier' : 'customer']);
     }
 
     public function store(AccountRequest $request): RedirectResponse
     {
         $account = Account::create($request->validated());
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => "Account {$account->code} created."]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => ($account->is_vendor ? 'Carrier' : 'Customer')." {$account->code} created."]);
 
         return to_route('accounts.show', $account);
     }

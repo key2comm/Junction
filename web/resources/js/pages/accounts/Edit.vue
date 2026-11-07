@@ -5,6 +5,7 @@ import type { AccountFormOptions, AccountFormValues } from '@/components/account
 import AccountForm from '@/components/accounts/AccountForm.vue';
 import Heading from '@/components/Heading.vue';
 import { edit, index, show } from '@/routes/accounts';
+import { index as carriers } from '@/routes/carriers';
 
 const props = defineProps<{
     options: AccountFormOptions;
@@ -12,9 +13,9 @@ const props = defineProps<{
 }>();
 
 defineOptions({
-    layout: (props: { account: { id: number; code: string } }) => ({
+    layout: (props: { account: { id: number; code: string; is_vendor: boolean } }) => ({
         breadcrumbs: [
-            { title: 'Accounts', href: index() },
+            props.account.is_vendor ? { title: 'Carriers', href: carriers() } : { title: 'Accounts', href: index() },
             { title: props.account.code, href: show(props.account.id) },
             { title: 'Edit', href: edit(props.account.id) },
         ],
@@ -31,6 +32,7 @@ defineOptions({
             :action="AccountController.update.form(props.account.id)"
             :options="options"
             :account="props.account"
+            :role="props.account.is_vendor && !props.account.is_customer ? 'carrier' : 'customer'"
             submit-label="Save changes"
             :cancel-href="show(props.account.id).url"
         />

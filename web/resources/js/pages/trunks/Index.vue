@@ -62,7 +62,7 @@ defineOptions({ layout: { breadcrumbs: [{ title: 'Trunks', href: index() }] } })
                         <td class="text-secondary">{{ t.max_channels ?? '∞' }} ch, {{ t.max_cps ?? '∞' }} CPS</td>
                     </tr>
                     <tr v-if="trunks.length === 0">
-                        <td colspan="6" class="text-center text-secondary">No trunks yet. Create a carrier account first, then add its trunks.</td>
+                        <td colspan="6" class="text-center text-secondary">No trunks yet. Add a carrier under Routing → Carriers first, then add its trunks.</td>
                     </tr>
                 </tbody>
             </table>

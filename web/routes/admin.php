@@ -23,6 +23,9 @@ use Illuminate\Support\Facades\Route;
  * customer portal users to /portal). Every admin can manage everything.
  */
 Route::middleware(['auth', 'admin'])->group(function () {
+    // Routing → Carriers: the carrier accounts (Billing → Accounts lists everyone and creates customers).
+    Route::get('carriers', [AccountController::class, 'index'])->defaults('scope', 'carrier')->name('carriers.index');
+    Route::get('carriers/create', [AccountController::class, 'create'])->defaults('scope', 'carrier')->name('carriers.create');
     Route::resource('accounts', AccountController::class)->except(['destroy']);
 
     Route::scopeBindings()->group(function () {

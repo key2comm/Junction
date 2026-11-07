@@ -44,6 +44,7 @@ import { index as apiTokens } from '@/routes/api-tokens';
 import { edit as billingSettings } from '@/routes/billing';
 import { edit as certificate } from '@/routes/certificate';
 import { index as carrierRates } from '@/routes/carrier-rates';
+import { index as carriers } from '@/routes/carriers';
 import { index as cdrs } from '@/routes/cdrs';
 import { edit as email } from '@/routes/email';
 import { index as invoices } from '@/routes/invoices';
@@ -99,6 +100,7 @@ const adminNav = computed((): NavEntry[] => [
         title: 'Routing',
         icon: Route,
         items: [
+            { title: 'Carriers', href: carriers(), icon: Building2 },
             { title: 'Tariffs', href: tariffs(), icon: Tags },
             { title: 'Carrier rates', href: carrierRates(), icon: Tags },
             { title: 'Trunks', href: trunks(), icon: Cable },

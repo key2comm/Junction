@@ -18,8 +18,10 @@ import { useBilling } from '@/composables/useBilling';
 import { billingMonth, dateTime, money, titleCase } from '@/lib/format';
 import { edit, index, show } from '@/routes/accounts';
 import { show as showPbx } from '@/routes/accounts/pbx';
+import { index as carriers } from '@/routes/carriers';
 import { index as cdrIndex } from '@/routes/cdrs';
 import { show as showInvoice } from '@/routes/invoices';
+import { create as createTrunk } from '@/routes/trunks';
 
 type Account = {
     id: number;
@@ -60,9 +62,9 @@ const props = defineProps<{
 }>();
 
 defineOptions({
-    layout: (props: { account: { id: number; code: string } }) => ({
+    layout: (props: { account: { id: number; code: string; is_vendor: boolean } }) => ({
         breadcrumbs: [
-            { title: 'Accounts', href: index() },
+            props.account.is_vendor ? { title: 'Carriers', href: carriers() } : { title: 'Accounts', href: index() },
             { title: props.account.code, href: show(props.account.id) },
         ],
     }),
@@ -88,7 +90,7 @@ const select = 'form-select w-auto';
                     <Badge :variant="account.status === 'active' ? 'default' : 'destructive'">{{ titleCase(account.status) }}</Badge>
                     <Badge v-if="account.is_customer" variant="outline">Customer</Badge>
                     <Badge v-if="account.is_vendor" variant="outline">Carrier</Badge>
-                    <Badge v-if="billing" variant="secondary">{{ titleCase(account.billing_type) }}</Badge>
+                    <Badge v-if="billing && account.is_customer" variant="secondary">{{ titleCase(account.billing_type) }}</Badge>
                 </div>
             </div>
             <div class="d-flex flex-wrap gap-2">
@@ -107,8 +109,8 @@ const select = 'form-select w-auto';
             </div>
         </div>
 
-        <!-- Money -->
-        <div v-if="billing" class="ss-grid gap-3 ss-cols-sm-3">
+        <!-- Money (customer balance; carriers have payables further down) -->
+        <div v-if="billing && account.is_customer" class="ss-grid gap-3 ss-cols-sm-3">
             <div class="card card-body">
                 <p class="small text-secondary">Balance</p>
                 <p class="fs-1 fw-semibold tabular-nums" :class="{ 'text-danger': Number(account.balance) < 0 }">
@@ -206,7 +208,7 @@ const select = 'form-select w-auto';
             <RouteTester v-if="account.is_customer" :account-id="account.id" :currency="account.currency" />
 
             <!-- Money movements -->
-            <section v-if="billing" class="ss-stack-3">
+            <section v-if="billing && account.is_customer" class="ss-stack-3">
                 <Heading variant="small" title="Payments and adjustments" description="Every change to the balance is recorded here and can't be edited." />
 
                 <Form
@@ -319,7 +321,10 @@ const select = 'form-select w-auto';
 
             <!-- Carrier egress -->
             <section v-if="account.is_vendor" class="ss-stack-3">
-                <Heading variant="small" title="Carrier trunks" description="Where we send traffic to this carrier. Managed from the Trunks page." />
+                <div class="d-flex flex-wrap align-items-start justify-content-between gap-2">
+                    <Heading variant="small" title="Carrier trunks" description="Where we send traffic to this carrier." />
+                    <Button size="sm" variant="outline" as-child><Link :href="createTrunk({ query: { vendor: account.id } })">Add trunk</Link></Button>
+                </div>
                 <ul class="list-group">
                     <li v-for="t in trunks" :key="t.id" class="list-group-item d-flex justify-content-between px-2 py-2">
                         <span :class="{ 'opacity-50': !t.enabled }">{{ t.name }}</span>

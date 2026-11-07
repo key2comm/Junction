@@ -124,6 +124,28 @@ class AccountsTest extends TestCase
         $this->assertSame('CAD', Account::query()->sole()->currency);
     }
 
+    public function test_carriers_have_their_own_list_and_form_under_routing(): void
+    {
+        $carrier = Account::factory()->vendor()->create(['name' => 'Big Carrier', 'is_customer' => false]);
+        $customer = Account::factory()->create(['name' => 'Some Customer']);
+
+        // Routing → Carriers lists only carriers; Billing → Accounts still lists everyone.
+        $this->actingAs($this->admin)->get(route('carriers.index'))->assertInertia(fn (Assert $page) => $page
+            ->component('accounts/Index')->where('scope', 'carrier')->has('accounts.data', 1)->where('accounts.data.0.id', $carrier->id));
+        $this->actingAs($this->admin)->get(route('accounts.index'))->assertInertia(fn (Assert $page) => $page
+            ->where('scope', 'all')->has('accounts.data', 2));
+
+        // Each "New" form makes its own kind of account.
+        $this->actingAs($this->admin)->get(route('carriers.create'))->assertInertia(fn (Assert $page) => $page->component('accounts/Create')->where('role', 'carrier'));
+        $this->actingAs($this->admin)->get(route('accounts.create'))->assertInertia(fn (Assert $page) => $page->where('role', 'customer'));
+        $this->actingAs($this->admin)->post(route('accounts.store'), $this->validAccount(['code' => 'CARR2', 'is_customer' => null, 'role' => 'carrier']))
+            ->assertSessionHasNoErrors();
+        $new = Account::query()->where('code', 'CARR2')->sole();
+        $this->assertTrue($new->is_vendor);
+        $this->assertFalse($new->is_customer);
+        $this->assertNotNull($customer->id);
+    }
+
     public function test_an_account_is_either_a_customer_or_a_carrier(): void
     {
         $this->actingAs($this->admin)->post(route('accounts.store'), $this->validAccount(['is_vendor' => '1']))
