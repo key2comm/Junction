@@ -15,7 +15,6 @@ use App\Models\Trunk;
 use App\Services\Freeswitch\EventSocket;
 use App\Services\Freeswitch\GatewaySync;
 use App\Services\Router;
-use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -47,8 +46,6 @@ class SelfTest extends Command
 
     protected $description = 'Place real test calls through the switch and check routing, failover, limits and billing';
 
-    private CarbonImmutable $runStart;
-
     private array $f = [];
 
     public function handle(EventSocket $esl, GatewaySync $gateways): int
@@ -59,8 +56,6 @@ class SelfTest extends Command
 
             return self::FAILURE;
         }
-        $this->runStart = CarbonImmutable::now()->subSecond();
-
         $this->cleanup();
         $results = [];
         try {
