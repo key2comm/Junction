@@ -14,6 +14,7 @@ use App\Models\RoutingPlanRoute;
 use App\Models\Trunk;
 use App\Services\Freeswitch\EventSocket;
 use App\Services\Freeswitch\GatewaySync;
+use App\Services\Router;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
@@ -129,6 +130,8 @@ class SelfTest extends Command
     private function failover(EventSocket $esl, string $ip): string
     {
         $this->routes(['503', 'ok']); // 503 is cheapest, so it is tried first
+        $plan = array_map(fn ($a) => $a['gateways'][0]['name'], app(Router::class)->route($this->f['customer']->fresh(), self::DEST)['attempts']);
+        $this->check($plan === ['selftest-503', 'selftest-ok'], 'routing engine planned '.json_encode($plan).', expected [selftest-503, selftest-ok]');
         $cdr = $this->placeCall($esl, $ip, self::TECH.self::DEST, hold: 2, expectAnswer: true);
 
         $codes = $cdr->attemptLog()->orderBy('attempt')->pluck('sip_code')->all();
