@@ -48,6 +48,7 @@ class Router
                 'buy_rate_id' => $row->buy_rate_id,
                 'buy_prefix' => $row->buy_prefix,
                 'buy_rate' => $row->buy_rate,
+                'quality_demoted' => (bool) $row->quality_demoted,
                 'gateways' => [],
             ];
             $attempts[$row->attempt]['gateways'][] = ['id' => $row->gateway_id, 'name' => $row->gateway_name];

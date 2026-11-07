@@ -42,7 +42,7 @@ class RoutingPlanController extends Controller
         $q = preg_replace('/\D/', '', (string) $request->query('q', ''));
 
         return Inertia::render('routing-plans/Show', [
-            'plan' => [...$routingPlan->only(['id', 'name', 'max_attempts', 'description']), 'mode' => $routingPlan->mode->value],
+            'plan' => [...$routingPlan->only(['id', 'name', 'max_attempts', 'description', 'quality_routing', 'quality_min_asr', 'quality_max_pdd_ms', 'quality_min_attempts']), 'mode' => $routingPlan->mode->value],
             'routes' => $routingPlan->routes()
                 ->with('trunk:id,name,account_id,enabled', 'trunk.account:id,code')
                 ->when($q !== '', fn ($query) => $query->where('prefix', 'like', $q.'%'))
@@ -63,7 +63,7 @@ class RoutingPlanController extends Controller
     public function edit(RoutingPlan $routingPlan): Response
     {
         return Inertia::render('routing-plans/Form', [
-            'plan' => [...$routingPlan->only(['id', 'name', 'max_attempts', 'description']), 'mode' => $routingPlan->mode->value],
+            'plan' => [...$routingPlan->only(['id', 'name', 'max_attempts', 'description', 'quality_routing', 'quality_min_asr', 'quality_max_pdd_ms', 'quality_min_attempts']), 'mode' => $routingPlan->mode->value],
             'modes' => RoutingMode::values(),
         ]);
     }
@@ -117,11 +117,17 @@ class RoutingPlanController extends Controller
     /** Also used by the REST API, so both validate identically. */
     public function validated(Request $request, ?RoutingPlan $plan = null): array
     {
+        $request->merge(['quality_routing' => $request->boolean('quality_routing')]);
+
         return $request->validate([
             'name' => ['required', 'string', 'max:255', Rule::unique('routing_plans', 'name')->ignore($plan)],
             'mode' => ['required', Rule::enum(RoutingMode::class)],
             'max_attempts' => ['required', 'integer', 'between:1,10'],
             'description' => ['nullable', 'string', 'max:2000'],
+            'quality_routing' => ['boolean'],
+            'quality_min_asr' => ['sometimes', 'numeric', 'between:0,100'],
+            'quality_max_pdd_ms' => ['sometimes', 'integer', 'between:500,120000'],
+            'quality_min_attempts' => ['sometimes', 'integer', 'between:1,100000'],
         ]);
     }
 }

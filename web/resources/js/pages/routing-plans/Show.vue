@@ -25,7 +25,17 @@ type Route = {
 };
 
 const props = defineProps<{
-    plan: { id: number; name: string; mode: string; max_attempts: number; description: string | null };
+    plan: {
+        id: number;
+        name: string;
+        mode: string;
+        max_attempts: number;
+        description: string | null;
+        quality_routing: boolean;
+        quality_min_asr: string;
+        quality_max_pdd_ms: number;
+        quality_min_attempts: number;
+    };
     routes: Paginated<Route>;
     filters: { q: string };
     trunks: { id: number; label: string }[];
@@ -65,6 +75,9 @@ function toggle(route: Route) {
                 <div class="flex gap-1">
                     <Badge variant="outline">{{ modeLabel[plan.mode] ?? plan.mode }}</Badge>
                     <Badge variant="outline">up to {{ plan.max_attempts }} attempts</Badge>
+                    <Badge v-if="plan.quality_routing" variant="secondary" :title="`After ${plan.quality_min_attempts} attempts in the last hour`">
+                        quality routing: demote below {{ Number(plan.quality_min_asr) }}% ASR or above {{ plan.quality_max_pdd_ms / 1000 }}s PDD
+                    </Badge>
                 </div>
             </div>
             <Button variant="outline" as-child><Link :href="edit(plan.id)"><Pencil class="size-4" /> Edit</Link></Button>

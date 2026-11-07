@@ -23,6 +23,7 @@ type Result = {
         buy_prefix: string;
         buy_rate: string;
         margin: string | null;
+        quality_demoted: boolean;
         gateways: { id: number; name: string }[];
     }[];
 };
@@ -95,7 +96,10 @@ const duration = (s: number | null) => (s === null ? '—' : s >= 3600 ? `${Math
                 <tbody>
                     <tr v-for="a in result.attempts" :key="a.attempt" class="border-t">
                         <td class="py-1">{{ a.attempt }}</td>
-                        <td class="py-1">{{ a.trunk }}</td>
+                        <td class="py-1">
+                            {{ a.trunk }}
+                            <Badge v-if="a.quality_demoted" variant="secondary" class="ml-1" title="Performing below the plan's quality bar over the last hour, so tried after the others">demoted</Badge>
+                        </td>
                         <td class="py-1 font-mono text-xs">{{ a.gateways.map((g) => g.name).join(' → ') }}</td>
                         <td class="py-1 font-mono">{{ a.dial_number }}</td>
                         <td class="py-1 text-right tabular-nums">{{ money(a.buy_rate, currency) }}</td>

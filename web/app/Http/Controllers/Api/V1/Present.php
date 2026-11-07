@@ -115,6 +115,8 @@ final class Present
     {
         return [
             'id' => $p->id, 'name' => $p->name, 'mode' => $p->mode->value, 'max_attempts' => $p->max_attempts, 'description' => $p->description,
+            'quality_routing' => $p->quality_routing, 'quality_min_asr' => $p->quality_min_asr, 'quality_max_pdd_ms' => $p->quality_max_pdd_ms,
+            'quality_min_attempts' => $p->quality_min_attempts,
             ...($withRoutes ? ['routes' => $p->routes->map(fn ($r) => self::route($r))->all()] : []),
         ];
     }

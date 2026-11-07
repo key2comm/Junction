@@ -2,6 +2,7 @@
 
 use App\Jobs\SyncSwitchConfig;
 use App\Services\LiveCalls;
+use App\Services\TrunkQuality;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schedule;
@@ -42,3 +43,6 @@ Schedule::call(function () {
 
 // Fraud and operational alerts.
 Schedule::command('softswitch:check-alerts')->everyMinute()->withoutOverlapping();
+
+// Quality-aware routing reads the last hour's per-trunk figures, refreshed every minute.
+Schedule::call(fn () => app(TrunkQuality::class)->refresh())->name('softswitch:trunk-quality')->everyMinute()->withoutOverlapping();

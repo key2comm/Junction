@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * Which trunks may carry which destination prefixes, and how to order them
  * (cheapest first, fixed priority, or weighted load balancing).
  */
-#[Fillable(['name', 'mode', 'max_attempts', 'description'])]
+#[Fillable(['name', 'mode', 'max_attempts', 'description', 'quality_routing', 'quality_min_asr', 'quality_max_pdd_ms', 'quality_min_attempts'])]
 class RoutingPlan extends Model
 {
     /** @use HasFactory<RoutingPlanFactory> */
@@ -24,6 +24,10 @@ class RoutingPlan extends Model
         return [
             'mode' => RoutingMode::class,
             'max_attempts' => 'integer',
+            'quality_routing' => 'boolean',
+            'quality_min_asr' => 'decimal:2',
+            'quality_max_pdd_ms' => 'integer',
+            'quality_min_attempts' => 'integer',
         ];
     }
 

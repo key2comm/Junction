@@ -848,6 +848,20 @@
             "items": {
               "$ref": "#/components/schemas/Route"
             }
+          },
+          "quality_routing": {
+            "type": "boolean",
+            "description": "Try trunks performing below the bar (last hour) after healthy ones"
+          },
+          "quality_min_asr": {
+            "type": "string",
+            "description": "ASR % below which a trunk is demoted"
+          },
+          "quality_max_pdd_ms": {
+            "type": "integer"
+          },
+          "quality_min_attempts": {
+            "type": "integer"
           }
         }
       },
@@ -873,6 +887,19 @@
               "string",
               "null"
             ]
+          },
+          "quality_routing": {
+            "type": "boolean",
+            "description": "Try trunks performing below the bar (last hour) after healthy ones"
+          },
+          "quality_min_asr": {
+            "type": "number"
+          },
+          "quality_max_pdd_ms": {
+            "type": "integer"
+          },
+          "quality_min_attempts": {
+            "type": "integer"
           }
         }
       },
@@ -988,6 +1015,9 @@
                       }
                     }
                   }
+                },
+                "quality_demoted": {
+                  "type": "boolean"
                 }
               }
             }

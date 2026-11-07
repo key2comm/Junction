@@ -248,4 +248,63 @@ class RouterTest extends TestCase
 
         $this->assertEmpty($grants, 'Routing functions must not be executable by PUBLIC: '.$grants->implode(', '));
     }
+
+    /** Last hour's figures for a trunk (as App\Services\TrunkQuality writes them). */
+    private function quality(Trunk $trunk, int $attempts, int $answered, ?int $pdd = null, string $prefix = ''): void
+    {
+        DB::table('trunk_quality')->updateOrInsert(['trunk_id' => $trunk->id, 'prefix' => $prefix],
+            ['attempts' => $attempts, 'answered' => $answered, 'pdd_count' => $pdd ? $attempts : 0, 'pdd_avg' => $pdd, 'updated_at' => now()]);
+    }
+
+    public function test_quality_routing_tries_failing_vendors_last(): void
+    {
+        $cheapButFailing = $this->vendor('Cheap', '0.010');
+        $healthy = $this->vendor('Healthy', '0.020');
+        $this->quality($cheapButFailing, 100, 2);   // 2% ASR
+        $this->quality($healthy, 100, 45);
+
+        // Off (the default): price decides.
+        $this->assertSame(['cheap-gw', 'healthy-gw'], $this->order($this->route()));
+
+        $this->plan->update(['quality_routing' => true, 'quality_min_asr' => 10, 'quality_min_attempts' => 30]);
+        $result = $this->route();
+        $this->assertSame(['healthy-gw', 'cheap-gw'], $this->order($result));    // still tried, just last
+        $this->assertFalse($result['attempts'][0]['quality_demoted']);
+        $this->assertTrue($result['attempts'][1]['quality_demoted']);
+
+        // Too few attempts to judge: no demotion.
+        $this->quality($cheapButFailing, 10, 0);
+        $this->assertSame(['cheap-gw', 'healthy-gw'], $this->order($this->route()));
+    }
+
+    public function test_quality_routing_uses_pdd_and_destination_figures(): void
+    {
+        $slow = $this->vendor('Slow', '0.010');
+        $this->vendor('Fast', '0.020');
+        $this->plan->update(['quality_routing' => true, 'quality_max_pdd_ms' => 5000, 'quality_min_attempts' => 30]);
+
+        $this->quality($slow, 100, 40, pdd: 12000);
+        $this->assertSame(['fast-gw', 'slow-gw'], $this->order($this->route()));
+
+        // Fine for this destination even though slow overall: destination figures win.
+        $this->quality($slow, 50, 25, pdd: 2000, prefix: '44');
+        $this->assertSame(['slow-gw', 'fast-gw'], $this->order($this->route()));
+    }
+
+    public function test_trunk_quality_is_refreshed_from_recent_attempts(): void
+    {
+        $t = $this->vendor('Q', '0.01');
+        foreach ([[true, 1500], [false, null], [false, 3000]] as [$ok, $pdd]) {
+            $cdr = \App\Models\Cdr::factory()->create(['uuid' => (string) Str::uuid(), 'customer_account_id' => $this->customer->id, 'callee' => '44', 'started_at' => now()]);
+            $cdr->attemptLog()->create(['attempt' => 1, 'trunk_id' => $t->id, 'buy_prefix' => '44', 'started_at' => now()->subMinutes(5),
+                'answered_at' => $ok ? now() : null, 'pdd_ms' => $pdd]);
+        }
+        app(\App\Services\TrunkQuality::class)->refresh();
+
+        $rows = DB::table('trunk_quality')->where('trunk_id', $t->id)->orderBy('prefix')->get()->keyBy('prefix');
+        $this->assertSame(['', '44'], $rows->pluck('prefix')->all());
+        $this->assertSame(3, $rows['']->attempts);
+        $this->assertSame(1, $rows['44']->answered);
+        $this->assertSame(2250, $rows['44']->pdd_avg);
+    }
 }

@@ -115,7 +115,8 @@ class RoutingController extends Controller
 
     public function updatePlan(Request $request, RoutingPlan $routingPlan, RoutingPlanController $admin): JsonResponse
     {
-        $request->replace([...$routingPlan->only(['name', 'max_attempts', 'description']), 'mode' => $routingPlan->mode->value, ...$request->all()]);
+        $request->replace([...$routingPlan->only(['name', 'max_attempts', 'description', 'quality_routing', 'quality_min_asr', 'quality_max_pdd_ms', 'quality_min_attempts']),
+            'mode' => $routingPlan->mode->value, ...$request->all()]);
         $routingPlan->update($admin->validated($request, $routingPlan));
 
         return response()->json(['data' => Present::plan($routingPlan->fresh()->load('routes'), true)]);
