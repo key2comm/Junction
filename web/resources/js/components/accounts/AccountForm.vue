@@ -5,6 +5,7 @@ import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useBilling } from '@/composables/useBilling';
 import { titleCase } from '@/lib/format';
 
 export type AccountFormOptions = {
@@ -54,6 +55,9 @@ const v: Partial<AccountFormValues> = {
 };
 
 const select = 'form-select';
+
+// Settings → Billing off: balances aren't used, so the billing fields are kept as they are (hidden).
+const billing = useBilling();
 </script>
 
 <template>
@@ -97,9 +101,16 @@ const select = 'form-select';
         </section>
 
         <section class="ss-grid gap-4 ss-cols-sm-2">
-            <h2 class="fw-semibold ss-span-sm-2">Billing</h2>
+            <h2 class="fw-semibold ss-span-sm-2">{{ billing ? 'Billing' : 'Currency and contacts' }}</h2>
 
-            <div class="ss-grid gap-2">
+            <template v-if="!billing">
+                <input type="hidden" name="billing_type" :value="v.billing_type" />
+                <input type="hidden" name="credit_limit" :value="v.credit_limit" />
+                <input type="hidden" name="low_balance_threshold" :value="v.low_balance_threshold ?? ''" />
+                <input type="hidden" name="billing_email" :value="v.billing_email ?? ''" />
+            </template>
+
+            <div v-if="billing" class="ss-grid gap-2">
                 <Label for="billing_type">Billing type</Label>
                 <select id="billing_type" name="billing_type" :class="select">
                     <option v-for="b in options.billingTypes" :key="b" :value="b" :selected="b === v.billing_type">{{ titleCase(b) }}</option>
@@ -107,14 +118,14 @@ const select = 'form-select';
                 <InputError :message="errors.billing_type" />
             </div>
 
-            <div class="ss-grid gap-2">
+            <div v-if="billing" class="ss-grid gap-2">
                 <Label for="credit_limit">Credit limit</Label>
                 <Input id="credit_limit" name="credit_limit" type="number" step="0.01" min="0" :default-value="v.credit_limit" required />
                 <p class="small text-secondary">How far below zero the balance may go before calls are refused.</p>
                 <InputError :message="errors.credit_limit" />
             </div>
 
-            <div class="ss-grid gap-2">
+            <div v-if="billing" class="ss-grid gap-2">
                 <Label for="low_balance_threshold">Low-balance alert below</Label>
                 <Input id="low_balance_threshold" name="low_balance_threshold" type="number" step="0.01" min="0" :default-value="v.low_balance_threshold ?? ''" placeholder="No alerts" />
                 <p class="small text-secondary">Emails the customer (and you) once when funds available for calls drop below this.</p>
@@ -128,14 +139,14 @@ const select = 'form-select';
             </div>
 
             <div class="ss-grid gap-2">
-                <Label for="timezone">Billing time zone</Label>
+                <Label for="timezone">{{ billing ? 'Billing time zone' : 'Time zone' }}</Label>
                 <select id="timezone" name="timezone" :class="select">
                     <option v-for="tz in options.timezones" :key="tz" :value="tz" :selected="tz === v.timezone">{{ tz }}</option>
                 </select>
                 <InputError :message="errors.timezone" />
             </div>
 
-            <div class="ss-grid gap-2">
+            <div v-if="billing" class="ss-grid gap-2">
                 <Label for="billing_email">Billing email</Label>
                 <Input id="billing_email" name="billing_email" type="email" :default-value="v.billing_email ?? ''" />
                 <InputError :message="errors.billing_email" />

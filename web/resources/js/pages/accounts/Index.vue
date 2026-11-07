@@ -7,6 +7,7 @@ import Pagination from '@/components/Pagination.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useBilling } from '@/composables/useBilling';
 import { money, titleCase } from '@/lib/format';
 import { create, index, show } from '@/routes/accounts';
 
@@ -37,6 +38,8 @@ const props = defineProps<{
 defineOptions({
     layout: { breadcrumbs: [{ title: 'Accounts', href: index() }] },
 });
+
+const billing = useBilling();
 
 const filters = reactive({ q: props.filters.q ?? '', role: props.filters.role ?? '', status: props.filters.status ?? '' });
 
@@ -86,9 +89,11 @@ const statusVariant = (s: string) => (s === 'active' ? 'default' : s === 'suspen
                         <th class="fw-medium">Account</th>
                         <th class="fw-medium">Role</th>
                         <th class="fw-medium">Status</th>
-                        <th class="fw-medium">Billing</th>
-                        <th class="text-end fw-medium">Balance</th>
-                        <th class="text-end fw-medium">Available</th>
+                        <template v-if="billing">
+                            <th class="fw-medium">Billing</th>
+                            <th class="text-end fw-medium">Balance</th>
+                            <th class="text-end fw-medium">Available</th>
+                        </template>
                     </tr>
                 </thead>
                 <tbody>
@@ -102,14 +107,16 @@ const statusVariant = (s: string) => (s === 'active' ? 'default' : s === 'suspen
                             <Badge v-if="a.is_vendor" variant="outline">Vendor</Badge>
                         </td>
                         <td><Badge :variant="statusVariant(a.status)">{{ titleCase(a.status) }}</Badge></td>
-                        <td>{{ titleCase(a.billing_type) }}</td>
-                        <td class="text-end tabular-nums" :class="{ 'text-danger': Number(a.balance) < 0 }">
-                            {{ money(a.balance, a.currency) }}
-                        </td>
-                        <td class="text-end tabular-nums">{{ money(a.available, a.currency) }}</td>
+                        <template v-if="billing">
+                            <td>{{ titleCase(a.billing_type) }}</td>
+                            <td class="text-end tabular-nums" :class="{ 'text-danger': Number(a.balance) < 0 }">
+                                {{ money(a.balance, a.currency) }}
+                            </td>
+                            <td class="text-end tabular-nums">{{ money(a.available, a.currency) }}</td>
+                        </template>
                     </tr>
                     <tr v-if="accounts.data.length === 0">
-                        <td colspan="6" class="text-center text-secondary">
+                        <td :colspan="billing ? 6 : 3" class="text-center text-secondary">
                             No accounts{{ filters.q || filters.role || filters.status ? ' match these filters' : ' yet' }}.
                         </td>
                     </tr>

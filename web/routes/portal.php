@@ -12,9 +12,11 @@ Route::middleware(['auth', 'customer'])->prefix('portal')->name('portal.')->grou
     Route::get('/', [PortalController::class, 'overview'])->name('home');
     Route::get('calls', [PortalController::class, 'calls'])->name('calls.index');
     Route::get('calls/export', [PortalController::class, 'exportCalls'])->middleware('throttle:10,1')->name('calls.download');
-    Route::get('invoices', [PortalController::class, 'invoices'])->name('invoices.index');
-    Route::get('invoices/{invoice}', [PortalController::class, 'invoice'])->name('invoices.show');
-    Route::get('invoices/{invoice}/csv', [PortalController::class, 'invoiceCsv'])->name('invoices.download');
+    Route::middleware('billing')->group(function () {
+        Route::get('invoices', [PortalController::class, 'invoices'])->name('invoices.index');
+        Route::get('invoices/{invoice}', [PortalController::class, 'invoice'])->name('invoices.show');
+        Route::get('invoices/{invoice}/csv', [PortalController::class, 'invoiceCsv'])->name('invoices.download');
+    });
     Route::get('phone', [PortalController::class, 'phone'])->name('phone');
     Route::get('rates', [PortalController::class, 'rates'])->name('rates.index');
     Route::get('rates/csv', [PortalController::class, 'ratesCsv'])->middleware('throttle:10,1')->name('rates.download');

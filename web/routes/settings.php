@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Settings\ApiTokenController;
+use App\Http\Controllers\Settings\BillingController;
 use App\Http\Controllers\Settings\CertificateController;
 use App\Http\Controllers\Settings\EmailController;
 use App\Http\Controllers\Settings\ProfileController;
@@ -42,6 +43,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('settings/email', [EmailController::class, 'edit'])->middleware('admin')->name('email.edit');
     Route::put('settings/email', [EmailController::class, 'update'])->middleware(RequirePassword::class)->middleware('admin')->name('email.update');
     Route::post('settings/email/test', [EmailController::class, 'test'])->middleware('throttle:6,1')->middleware('admin')->name('email.test');
+
+    // Built-in billing on/off and invoice options. Changing them requires a recent password confirmation.
+    Route::get('settings/billing', [BillingController::class, 'edit'])->middleware('admin')->name('billing.edit');
+    Route::put('settings/billing', [BillingController::class, 'update'])->middleware(RequirePassword::class)->middleware('admin')->name('billing.update');
 
     Route::delete('settings/certificate', [CertificateController::class, 'destroy'])
         ->middleware(RequirePassword::class)

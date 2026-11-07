@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useBilling } from '@/composables/useBilling';
 import { billingMonth, dateTime, money, titleCase } from '@/lib/format';
 import { edit, index, show } from '@/routes/accounts';
 import { show as showPbx } from '@/routes/accounts/pbx';
@@ -68,6 +69,8 @@ defineOptions({
 });
 
 const page = usePage();
+// Settings → Billing: with billing off the switch only routes, so no money figures.
+const billing = useBilling();
 // One-time password for a new portal login (only when email isn't set up).
 const portalPassword = computed(() => (page.flash as Record<string, unknown> | undefined)?.portalPassword as { email: string; password: string } | undefined);
 
@@ -85,7 +88,7 @@ const select = 'form-select w-auto';
                     <Badge :variant="account.status === 'active' ? 'default' : 'destructive'">{{ titleCase(account.status) }}</Badge>
                     <Badge v-if="account.is_customer" variant="outline">Customer</Badge>
                     <Badge v-if="account.is_vendor" variant="outline">Vendor</Badge>
-                    <Badge variant="secondary">{{ titleCase(account.billing_type) }}</Badge>
+                    <Badge v-if="billing" variant="secondary">{{ titleCase(account.billing_type) }}</Badge>
                 </div>
             </div>
             <div class="d-flex flex-wrap gap-2">
@@ -105,7 +108,7 @@ const select = 'form-select w-auto';
         </div>
 
         <!-- Money -->
-        <div class="ss-grid gap-3 ss-cols-sm-3">
+        <div v-if="billing" class="ss-grid gap-3 ss-cols-sm-3">
             <div class="card card-body">
                 <p class="small text-secondary">Balance</p>
                 <p class="fs-1 fw-semibold tabular-nums" :class="{ 'text-danger': Number(account.balance) < 0 }">
@@ -203,7 +206,7 @@ const select = 'form-select w-auto';
             <RouteTester v-if="account.is_customer" :account-id="account.id" :currency="account.currency" />
 
             <!-- Money movements -->
-            <section class="ss-stack-3">
+            <section v-if="billing" class="ss-stack-3">
                 <Heading variant="small" title="Payments and adjustments" description="Every change to the balance is recorded here and can't be edited." />
 
                 <Form
@@ -259,7 +262,11 @@ const select = 'form-select w-auto';
 
             <!-- Customer portal logins -->
             <section v-if="account.is_customer" class="ss-stack-3">
-                <Heading variant="small" title="Portal logins" description="People at this customer who can sign in to see their balance, calls, invoices and rates (never your vendors or costs)." />
+                <Heading
+                    variant="small"
+                    title="Portal logins"
+                    :description="`People at this customer who can sign in to see their ${billing ? 'balance, calls, invoices' : 'calls'} and rates (never your vendors or costs).`"
+                />
                 <div v-if="portalPassword" class="rounded border border-primary p-2">
                     <p class="fw-medium">Login created for {{ portalPassword.email }}</p>
                     <p class="text-secondary">Email isn't set up, so pass on this password securely; it won't be shown again. They can change it under Settings.</p>
@@ -288,7 +295,7 @@ const select = 'form-select w-auto';
             </section>
 
             <!-- Invoices -->
-            <section v-if="account.is_customer" class="ss-stack-3">
+            <section v-if="billing && account.is_customer" class="ss-stack-3">
                 <Heading variant="small" title="Invoices" description="Issued automatically after each month ends. Issue one by hand for any finished month (e.g. after voiding)." />
                 <ul class="list-group">
                     <li v-for="i in invoices" :key="i.id" class="list-group-item d-flex flex-wrap align-items-center justify-content-between gap-2 px-2 py-2" :class="{ 'opacity-50': i.status === 'void' }">
@@ -323,7 +330,7 @@ const select = 'form-select w-auto';
             </section>
 
             <VendorPayables
-                v-if="account.is_vendor"
+                v-if="billing && account.is_vendor"
                 :account-id="account.id"
                 :currency="account.currency"
                 :owed="account.vendor_balance"
@@ -335,8 +342,10 @@ const select = 'form-select w-auto';
             <section class="ss-stack-2">
                 <Heading variant="small" title="Details" />
                 <dl class="ss-grid ss-cols-2 gap-2">
-                    <dt class="text-secondary">Billing email</dt>
-                    <dd>{{ account.billing_email ?? '—' }}</dd>
+                    <template v-if="billing">
+                        <dt class="text-secondary">Billing email</dt>
+                        <dd>{{ account.billing_email ?? '—' }}</dd>
+                    </template>
                     <dt class="text-secondary">NOC email</dt>
                     <dd>{{ account.noc_email ?? '—' }}</dd>
                     <dt class="text-secondary">Time zone</dt>

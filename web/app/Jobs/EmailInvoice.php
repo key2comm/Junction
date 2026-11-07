@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Mail\InvoiceMail;
 use App\Models\Invoice;
 use App\Services\MailSettings;
+use App\Support\Billing;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Mail;
@@ -23,6 +24,9 @@ class EmailInvoice implements ShouldQueue
 
     public function handle(): void
     {
+        if (! Billing::enabled()) {
+            return; // turned off after this was queued: send nothing
+        }
         if (! MailSettings::fresh()) {
             throw new RuntimeException('Email is not configured.');
         }

@@ -2,6 +2,7 @@
 import { Head, Link } from '@inertiajs/vue3';
 import Heading from '@/components/Heading.vue';
 import { Badge } from '@/components/ui/badge';
+import { useBilling } from '@/composables/useBilling';
 import { date, money } from '@/lib/format';
 import { dashboard } from '@/routes';
 import { show as showAccount } from '@/routes/accounts';
@@ -24,6 +25,7 @@ defineProps<{
 
 defineOptions({ layout: { breadcrumbs: [{ title: 'Dashboard', href: dashboard() }] } });
 
+const billing = useBilling();
 const duration = (s: number | null) => (s === null ? '—' : s >= 60 ? `${Math.floor(s / 60)}m ${s % 60}s` : `${s}s`);
 const overdue = (iso: string | null) => iso !== null && new Date(iso) < new Date();
 </script>
@@ -33,7 +35,7 @@ const overdue = (iso: string | null) => iso !== null && new Date(iso) < new Date
 
     <div class="ss-stack-4">
         <p v-if="!mailConfigured" class="rounded border ss-border-dashed p-2 text-secondary">
-            Email isn't set up, so invoices and low-balance alerts can't be sent.
+            Email isn't set up, so {{ billing ? 'invoices and low-balance alerts' : 'alerts' }} can't be sent.
             <Link :href="editEmail()" class="fw-medium text-body">Set up email</Link>
         </p>
 
@@ -86,7 +88,7 @@ const overdue = (iso: string | null) => iso !== null && new Date(iso) < new Date
             </div>
         </section>
 
-        <div class="ss-grid gap-4 ss-cols-lg-3">
+        <div v-if="billing" class="ss-grid gap-4 ss-cols-lg-3">
             <section class="ss-stack-2">
                 <Heading variant="small" title="Low balance" description="Customers below their alert level right now" />
                 <ul class="list-group">

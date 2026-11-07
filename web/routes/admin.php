@@ -39,7 +39,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
         ->name('accounts.route-test');
 
     Route::post('accounts/{account}/ledger', [LedgerEntryController::class, 'store'])
-        ->middleware('throttle:30,1')
+        ->middleware(['billing', 'throttle:30,1'])
         ->name('accounts.ledger.store');
 
     // PBX of a customer account
@@ -74,20 +74,23 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('cdrs/export', [CdrController::class, 'export'])->middleware('throttle:10,1')->name('cdrs.download');
     Route::get('cdrs/{cdr}', [CdrController::class, 'show'])->whereNumber('cdr')->name('cdrs.show');
 
-    Route::get('invoices', [InvoiceController::class, 'index'])->name('invoices.index');
-    Route::get('invoices/{invoice}', [InvoiceController::class, 'show'])->name('invoices.show');
-    Route::get('invoices/{invoice}/csv', [InvoiceController::class, 'csv'])->name('invoices.csv');
-    Route::post('invoices/{invoice}/void', [InvoiceController::class, 'void'])->name('invoices.void');
-    Route::post('invoices/{invoice}/email', [InvoiceController::class, 'email'])->middleware('throttle:10,1')->name('invoices.email');
-    Route::post('accounts/{account}/invoices', [InvoiceController::class, 'store'])->middleware('throttle:20,1')->name('accounts.invoices.store');
+    // Billing (unavailable while it is turned off in Settings → Billing).
+    Route::middleware('billing')->group(function () {
+        Route::get('invoices', [InvoiceController::class, 'index'])->name('invoices.index');
+        Route::get('invoices/{invoice}', [InvoiceController::class, 'show'])->name('invoices.show');
+        Route::get('invoices/{invoice}/csv', [InvoiceController::class, 'csv'])->name('invoices.csv');
+        Route::post('invoices/{invoice}/void', [InvoiceController::class, 'void'])->name('invoices.void');
+        Route::post('invoices/{invoice}/email', [InvoiceController::class, 'email'])->middleware('throttle:10,1')->name('invoices.email');
+        Route::post('accounts/{account}/invoices', [InvoiceController::class, 'store'])->middleware('throttle:20,1')->name('accounts.invoices.store');
 
-    // Vendor payables and vendor invoice reconciliation
-    Route::post('accounts/{account}/vendor-ledger', [VendorBillingController::class, 'storeEntry'])->middleware('throttle:30,1')->name('accounts.vendor-ledger.store');
-    Route::post('accounts/{account}/vendor-invoices', [VendorBillingController::class, 'storeInvoice'])->middleware('throttle:20,1')->name('accounts.vendor-invoices.store');
-    Route::get('vendor-invoices/{vendor_invoice}', [VendorBillingController::class, 'showInvoice'])->name('vendor-invoices.show');
-    Route::post('vendor-invoices/{vendor_invoice}/accept', [VendorBillingController::class, 'accept'])->name('vendor-invoices.accept');
-    Route::post('vendor-invoices/{vendor_invoice}/dispute', [VendorBillingController::class, 'dispute'])->name('vendor-invoices.dispute');
-    Route::post('vendor-invoices/{vendor_invoice}/refresh', [VendorBillingController::class, 'refresh'])->name('vendor-invoices.refresh');
+        // Vendor payables and vendor invoice reconciliation
+        Route::post('accounts/{account}/vendor-ledger', [VendorBillingController::class, 'storeEntry'])->middleware('throttle:30,1')->name('accounts.vendor-ledger.store');
+        Route::post('accounts/{account}/vendor-invoices', [VendorBillingController::class, 'storeInvoice'])->middleware('throttle:20,1')->name('accounts.vendor-invoices.store');
+        Route::get('vendor-invoices/{vendor_invoice}', [VendorBillingController::class, 'showInvoice'])->name('vendor-invoices.show');
+        Route::post('vendor-invoices/{vendor_invoice}/accept', [VendorBillingController::class, 'accept'])->name('vendor-invoices.accept');
+        Route::post('vendor-invoices/{vendor_invoice}/dispute', [VendorBillingController::class, 'dispute'])->name('vendor-invoices.dispute');
+        Route::post('vendor-invoices/{vendor_invoice}/refresh', [VendorBillingController::class, 'refresh'])->name('vendor-invoices.refresh');
+    });
 
     Route::resource('rate-decks', RateDeckController::class)->except(['destroy']);
     Route::post('rate-decks/{rate_deck}/imports', [RateImportController::class, 'store'])

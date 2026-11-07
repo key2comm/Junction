@@ -22,7 +22,6 @@ type Mail = {
     from_address: string | null;
     from_name: string | null;
     admin_address: string | null;
-    auto_invoices: boolean;
 };
 
 const props = defineProps<{
@@ -46,7 +45,7 @@ watch(waiting, (w) => (w ? start() : stop()), { immediate: true });
 
     <div class="ss-stack-4">
         <div class="d-flex align-items-start justify-content-between gap-3">
-            <Heading variant="small" title="Outgoing email" description="The SMTP server used to send invoices and low-balance alerts" />
+            <Heading variant="small" title="Outgoing email" description="The SMTP server used to send invoices, low-balance alerts and fraud alerts" />
             <Badge :variant="configured ? 'default' : 'secondary'">{{ configured ? 'Configured' : 'Not set up' }}</Badge>
         </div>
 
@@ -95,10 +94,6 @@ watch(waiting, (w) => (w ? start() : stop()), { immediate: true });
                 <Input id="admin_address" name="admin_address" type="email" :default-value="mail.admin_address ?? ''" placeholder="noc@example.com (defaults to the From address)" />
                 <InputError :message="errors.admin_address" />
             </div>
-            <label class="d-flex align-items-center gap-2 ss-span-sm-2">
-                <input type="checkbox" name="auto_invoices" value="1" :checked="mail.auto_invoices" class="form-check-input m-0" />
-                Email invoices to customers automatically when they're issued
-            </label>
             <div class="ss-span-sm-2">
                 <Button :disabled="processing">Save</Button>
             </div>

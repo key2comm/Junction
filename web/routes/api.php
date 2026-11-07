@@ -29,14 +29,14 @@ Route::prefix('v1')->group(function () {
             Route::get('accounts', [AccountsController::class, 'index']);
             Route::get('accounts/{account}', [AccountsController::class, 'show']);
             Route::get('accounts/{account}/ips', [AccountsController::class, 'ips']);
-            Route::get('accounts/{account}/ledger', [AccountsController::class, 'ledger']);
+            Route::get('accounts/{account}/ledger', [AccountsController::class, 'ledger'])->middleware('billing');
         });
         Route::middleware($can('accounts:write'))->group(function () {
             Route::post('accounts', [AccountsController::class, 'store']);
             Route::patch('accounts/{account}', [AccountsController::class, 'update']);
             Route::post('accounts/{account}/ips', [AccountsController::class, 'storeIp']);
             Route::delete('accounts/{account}/ips/{ip}', [AccountsController::class, 'destroyIp'])->scopeBindings();
-            Route::post('accounts/{account}/ledger', [AccountsController::class, 'storeLedgerEntry']);
+            Route::post('accounts/{account}/ledger', [AccountsController::class, 'storeLedgerEntry'])->middleware('billing');
         });
 
         Route::middleware($can('rates:read'))->group(function () {
@@ -81,7 +81,7 @@ Route::prefix('v1')->group(function () {
         Route::middleware($can('alerts:read'))->group(function () {
             Route::get('alerts', [AlertController::class, 'api']);
         });
-        Route::middleware($can('billing:read'))->group(function () {
+        Route::middleware([$can('billing:read'), 'billing'])->group(function () {
             Route::get('invoices', [CdrsController::class, 'invoices']);
             Route::get('invoices/{invoice}', [CdrsController::class, 'invoice']);
         });

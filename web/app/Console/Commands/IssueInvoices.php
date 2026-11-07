@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\Account;
 use App\Services\InvoiceGenerator;
+use App\Support\Billing;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use RuntimeException;
@@ -22,6 +23,11 @@ class IssueInvoices extends Command
 
     public function handle(InvoiceGenerator $generator): int
     {
+        if (! Billing::enabled()) {
+            $this->info('Billing is turned off (Settings → Billing): no invoices issued.');
+
+            return $this->option('account') ? self::FAILURE : self::SUCCESS;
+        }
         if ($id = $this->option('account')) {
             $account = Account::query()->findOrFail((int) $id);
             $month = $this->option('month') ? CarbonImmutable::parse($this->option('month').'-01 12:00', $account->timezone) : now()->subMonthNoOverflow();

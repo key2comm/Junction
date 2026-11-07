@@ -22,6 +22,7 @@ import {
     Moon,
     Phone,
     PhoneCall,
+    Receipt,
     Route,
     Settings,
     ShieldCheck,
@@ -34,11 +35,13 @@ import { computed, ref, useTemplateRef } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
 import { Toaster } from '@/components/ui/sonner';
 import { useAppearance } from '@/composables/useAppearance';
+import { useBilling } from '@/composables/useBilling';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
 import { dashboard, logout } from '@/routes';
 import { index as accounts } from '@/routes/accounts';
 import { index as alerts } from '@/routes/alerts';
 import { index as apiTokens } from '@/routes/api-tokens';
+import { edit as billingSettings } from '@/routes/billing';
 import { edit as certificate } from '@/routes/certificate';
 import { index as cdrs } from '@/routes/cdrs';
 import { edit as email } from '@/routes/email';
@@ -62,12 +65,14 @@ const { breadcrumbs = [] } = defineProps<{ breadcrumbs?: BreadcrumbItem[] }>();
 const page = usePage();
 const user = computed(() => (page.props.auth as { user: User & { account_id?: number | null } }).user);
 const isPortal = computed(() => Boolean(user.value?.account_id));
+const billing = useBilling();
 const openAlerts = computed(() => (page.props as { openAlerts?: number | null }).openAlerts ?? 0);
 
 type NavGroup = { title: string; icon: NavItem['icon']; items: NavItem[] };
 type NavEntry = NavItem | NavGroup;
 
-const adminNav: NavEntry[] = [
+// With billing off (Settings → Billing) there are no invoices, so Accounts stands on its own.
+const adminNav = computed((): NavEntry[] => [
     { title: 'Dashboard', href: dashboard(), icon: LayoutGrid },
     { title: 'Alerts', href: alerts(), icon: BellRing },
     {
@@ -79,14 +84,16 @@ const adminNav: NavEntry[] = [
             { title: 'Vendor quality', href: quality(), icon: Activity },
         ],
     },
-    {
-        title: 'Billing',
-        icon: FileText,
-        items: [
-            { title: 'Accounts', href: accounts(), icon: Building2 },
-            { title: 'Invoices', href: invoices(), icon: FileText },
-        ],
-    },
+    billing.value
+        ? {
+              title: 'Billing',
+              icon: FileText,
+              items: [
+                  { title: 'Accounts', href: accounts(), icon: Building2 },
+                  { title: 'Invoices', href: invoices(), icon: FileText },
+              ],
+          }
+        : { title: 'Accounts', href: accounts(), icon: Building2 },
     {
         title: 'Routing',
         icon: Route,
@@ -102,20 +109,21 @@ const adminNav: NavEntry[] = [
         icon: Settings,
         items: [
             { title: 'SSL certificate', href: certificate(), icon: ShieldCheck },
+            { title: 'Billing', href: billingSettings(), icon: Receipt },
             { title: 'Email (SMTP)', href: email(), icon: Mail },
             { title: 'API tokens', href: apiTokens(), icon: KeyRound },
         ],
     },
-];
-const portalNav: NavEntry[] = [
+]);
+const portalNav = computed((): NavEntry[] => [
     { title: 'Overview', href: portalHome(), icon: LayoutGrid },
     { title: 'Calls', href: portalCalls(), icon: PhoneCall },
-    { title: 'Invoices', href: portalInvoices(), icon: FileText },
+    ...(billing.value ? [{ title: 'Invoices', href: portalInvoices(), icon: FileText }] : []),
     { title: 'Rates', href: portalRates(), icon: Tags },
     { title: 'Web phone', href: portalPhone(), icon: Headphones },
     { title: 'API tokens', href: portalTokens(), icon: KeyRound },
-];
-const nav = computed(() => (isPortal.value ? portalNav : adminNav));
+]);
+const nav = computed(() => (isPortal.value ? portalNav.value : adminNav.value));
 const home = computed(() => (isPortal.value ? portalHome() : dashboard()));
 const isGroup = (e: NavEntry): e is NavGroup => 'items' in e;
 

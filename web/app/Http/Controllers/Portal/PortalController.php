@@ -10,6 +10,7 @@ use App\Models\ApiToken;
 use App\Models\Cdr;
 use App\Models\Invoice;
 use App\Models\Rate;
+use App\Support\Billing;
 use App\Support\CdrFilters;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
@@ -46,10 +47,11 @@ class PortalController extends Controller
                 'available_now' => $account->availableFundsNow(),
             ],
             'last24h' => array_intersect_key($summary, array_flip(['calls', 'answered', 'asr', 'acd', 'minutes', 'sell'])),
-            'payments' => $account->ledgerEntries()->whereIn('type', ['payment', 'adjustment'])->latest('id')->limit(10)
-                ->get(['id', 'type', 'amount', 'description', 'effective_at']),
-            'invoices' => Invoice::query()->where('account_id', $account->id)->where('status', 'issued')->orderByDesc('period_start')->limit(3)
-                ->get(['id', 'number', 'period_start', 'timezone', 'currency', 'usage_total', 'amount_due', 'due_at']),
+            // Not shown while billing is off (Settings → Billing).
+            'payments' => Billing::enabled() ? $account->ledgerEntries()->whereIn('type', ['payment', 'adjustment'])->latest('id')->limit(10)
+                ->get(['id', 'type', 'amount', 'description', 'effective_at']) : [],
+            'invoices' => Billing::enabled() ? Invoice::query()->where('account_id', $account->id)->where('status', 'issued')->orderByDesc('period_start')->limit(3)
+                ->get(['id', 'number', 'period_start', 'timezone', 'currency', 'usage_total', 'amount_due', 'due_at']) : [],
         ]);
     }
 

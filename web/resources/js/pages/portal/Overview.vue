@@ -2,6 +2,7 @@
 import { Head, Link } from '@inertiajs/vue3';
 import Heading from '@/components/Heading.vue';
 import { Badge } from '@/components/ui/badge';
+import { useBilling } from '@/composables/useBilling';
 import { billingMonth, date, money, titleCase } from '@/lib/format';
 import { home } from '@/routes/portal';
 import { index as calls } from '@/routes/portal/calls';
@@ -30,6 +31,7 @@ const props = defineProps<{
 
 defineOptions({ layout: { breadcrumbs: [{ title: 'Overview', href: home() }] } });
 
+const billing = useBilling();
 const m = (v: string) => money(v, props.account.currency);
 const duration = (s: number | null) => (s === null ? '—' : s >= 60 ? `${Math.floor(s / 60)}m ${s % 60}s` : `${s}s`);
 </script>
@@ -42,18 +44,21 @@ const duration = (s: number | null) => (s === null ? '—' : s >= 60 ? `${Math.f
             <Heading :title="account.name" :description="`Account ${account.code}`" />
             <div class="d-flex flex-wrap gap-1">
                 <Badge :variant="account.status === 'active' ? 'default' : 'destructive'">{{ titleCase(account.status) }}</Badge>
-                <Badge variant="secondary">{{ titleCase(account.billing_type) }}</Badge>
+                <Badge v-if="billing" variant="secondary">{{ titleCase(account.billing_type) }}</Badge>
             </div>
         </div>
 
         <p v-if="account.status !== 'active'" class="rounded border border-danger p-2 text-danger">
             Your account is {{ account.status }}: calls are not being accepted. Please contact us.
         </p>
-        <p v-else-if="account.low_balance_alerted_at" class="rounded border border-danger p-2 text-danger">
+        <p v-else-if="billing && account.low_balance_alerted_at" class="rounded border border-danger p-2 text-danger">
             Your available funds are below {{ m(account.low_balance_threshold ?? '0') }}. Calls are refused when funds run out.
         </p>
 
-        <div class="ss-grid gap-3 ss-cols-sm-3">
+        <p v-if="!billing" class="text-secondary">
+            Limits: {{ account.max_channels ?? 'unlimited' }} concurrent calls · {{ account.max_cps ?? 'unlimited' }} calls/second
+        </p>
+        <div v-else class="ss-grid gap-3 ss-cols-sm-3">
             <div class="card card-body">
                 <p class="small text-secondary">Available for calls</p>
                 <p class="fs-1 fw-semibold tabular-nums" :class="{ 'text-danger': Number(account.available_now) <= 0 }">{{ m(account.available_now) }}</p>
@@ -86,7 +91,7 @@ const duration = (s: number | null) => (s === null ? '—' : s >= 60 ? `${Math.f
             </div>
         </section>
 
-        <div class="ss-grid gap-4 ss-cols-lg-2">
+        <div v-if="billing" class="ss-grid gap-4 ss-cols-lg-2">
             <section class="ss-stack-2">
                 <Heading variant="small" title="Recent payments and credits" />
                 <ul class="list-group">

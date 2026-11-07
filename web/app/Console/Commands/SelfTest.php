@@ -19,6 +19,7 @@ use App\Services\Freeswitch\EventSocket;
 use App\Services\Freeswitch\GatewaySync;
 use App\Services\Freeswitch\PbxSync;
 use App\Services\Router;
+use App\Support\Billing;
 use App\Support\SipWebSocketProbe;
 use Closure;
 use Illuminate\Console\Command;
@@ -87,8 +88,13 @@ class SelfTest extends Command
                 'Busy is final (no failover)' => fn () => $this->busy($esl, $ip),
                 'Unknown customer is refused (403)' => fn () => $this->unknownCustomer($esl, $ip),
                 'Blocked destination is refused (403)' => fn () => $this->blocked($esl, $ip),
-                'No funds: call refused (402)' => fn () => $this->noFunds($esl, $ip),
-                'Call is cut off when funds run out' => fn () => $this->cutOff($esl, $ip),
+                // Funds checks only apply while the built-in billing is on (Settings → Billing).
+                ...(Billing::enabled() ? [
+                    'No funds: call refused (402)' => fn () => $this->noFunds($esl, $ip),
+                    'Call is cut off when funds run out' => fn () => $this->cutOff($esl, $ip),
+                ] : [
+                    'Billing off: call with no funds goes through' => fn () => $this->billingOff($esl, $ip),
+                ]),
                 'PBX: extension registers over WebSocket (wss)' => fn () => $this->pbxWebSocket($esl),
                 'PBX: extension calls out through LCR' => fn () => $this->pbxOutbound($esl, $ip),
                 'PBX: unanswered extension goes to voicemail' => fn () => $this->pbxVoicemail($esl, $ip),
@@ -210,6 +216,19 @@ class SelfTest extends Command
         $this->check($cdr->sip_code === 402, "SIP {$cdr->sip_code}");
 
         return '402, reason insufficient_funds';
+    }
+
+    private function billingOff(EventSocket $esl, string $ip): string
+    {
+        $this->routes(['ok']);
+        // Far below zero with no credit: refused if the switch were checking funds.
+        DB::table('accounts')->where('id', $this->f['customer']->id)->update(['balance' => '-1000', 'credit_limit' => 0]);
+        $cdr = $this->placeCall($esl, $ip, self::TECH.self::DEST, hold: 3, expectAnswer: true);
+
+        $this->check($cdr->billsec > 0, "billsec {$cdr->billsec}");
+        $this->check($cdr->sell_cost !== null, 'not rated');
+
+        return "answered with a balance of -1000, rated {$cdr->sell_cost}";
     }
 
     private function cutOff(EventSocket $esl, string $ip): string

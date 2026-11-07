@@ -6,7 +6,7 @@ use App\Enums\BillingType;
 use App\Jobs\EmailInvoice;
 use App\Models\Account;
 use App\Models\Invoice;
-use App\Support\Settings;
+use App\Support\Billing;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -36,6 +36,9 @@ class InvoiceGenerator
 
     public function generate(Account $account, CarbonImmutable $start, CarbonImmutable $end): Invoice
     {
+        if (! Billing::enabled()) {
+            throw new RuntimeException('Billing is turned off (Settings → Billing).');
+        }
         if (! $account->is_customer) {
             throw new RuntimeException("{$account->code} is not a customer account.");
         }
@@ -103,7 +106,7 @@ class InvoiceGenerator
                 'calls' => (int) $lines->sum('calls'),
                 'billsec' => (int) $lines->sum('billsec'),
                 'issued_at' => $issued,
-                'due_at' => $postpaid ? $issued->addDays((int) config('softswitch.invoice_due_days', 15)) : null,
+                'due_at' => $postpaid ? $issued->addDays(Billing::dueDays()) : null,
             ]);
 
             foreach ($lines->values() as $i => $l) {
@@ -118,8 +121,8 @@ class InvoiceGenerator
                 ]);
             }
 
-            // Sent after the transaction commits (setting in Settings → Email).
-            if (Settings::get('mail.auto_invoices') && $invoice->billing_email) {
+            // Sent after the transaction commits (setting in Settings → Billing).
+            if (Billing::autoEmailInvoices() && $invoice->billing_email) {
                 EmailInvoice::dispatch($invoice)->afterCommit();
             }
 
@@ -130,13 +133,16 @@ class InvoiceGenerator
     /**
      * Issue last month's invoice for every customer whose month (in their own
      * time zone) ended at least $graceHours ago and has none yet. Accounts with
-     * no balance and no activity are skipped.
+     * no balance and no activity are skipped. Nothing is issued while billing is off.
      *
      * @return list<array{account: string, result: string}>
      */
     public function issueDue(int $graceHours = 2): array
     {
         $results = [];
+        if (! Billing::enabled()) {
+            return $results;
+        }
         foreach (Account::query()->customers()->where('status', '!=', 'closed')->orderBy('id')->get() as $account) {
             [$start, $end] = self::monthPeriod($account, now()->subMonthNoOverflow());
             if ($end->addHours($graceHours)->isAfter(now())) {

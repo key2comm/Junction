@@ -30,7 +30,6 @@ class EmailController extends Controller
                 'from_address' => Settings::get('mail.from_address'),
                 'from_name' => Settings::get('mail.from_name', config('app.name')),
                 'admin_address' => Settings::get('mail.admin_address'),
-                'auto_invoices' => (bool) Settings::get('mail.auto_invoices', false),
             ],
             'configured' => MailSettings::configured(),
             'test' => Cache::get(SendTestEmail::RESULT),
@@ -50,7 +49,6 @@ class EmailController extends Controller
             'from_address' => ['required', 'email', 'max:255'],
             'from_name' => ['nullable', 'string', 'max:255'],
             'admin_address' => ['nullable', 'email', 'max:255'],
-            'auto_invoices' => ['nullable', 'boolean'],
         ], ['host.regex' => 'Enter a hostname such as smtp.office365.com.']);
 
         $values = [
@@ -61,7 +59,6 @@ class EmailController extends Controller
             'mail.from_address' => $data['from_address'],
             'mail.from_name' => $data['from_name'] ?? null,
             'mail.admin_address' => $data['admin_address'] ?? null,
-            'mail.auto_invoices' => $request->boolean('auto_invoices'),
         ];
         // Blank password keeps the saved one; tick "clear" to remove it.
         if ($request->boolean('clear_password')) {

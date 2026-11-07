@@ -18,6 +18,12 @@ _Last updated: 2026-11-07. All 8 phases of `docs/PLAN.md` are done._
   - REST API at `/api/v1` with an OpenAPI spec, and the customer portal at `/portal`
   - vendor quality stats, live calls, and fraud and operational alerts
   - minimal PBX (phase 8): extensions, voicemail, IVR with WAV greeting, DIDs, WebRTC at `wss://<host>/ws`, and a JsSIP web phone (admin: PBX → account → Web phone; portal: Web phone)
+- **Settings → Billing** (new): the built-in billing can be turned off ("Routing only") for switches where another platform bills the customers. Off means:
+  - no invoices, invoice emails or low-balance alerts
+  - balances, payments, invoices and vendor payables are hidden (UI, portal and API return 404), but nothing is deleted
+  - `softswitch_route()` skips the funds check (`softswitch_billing_enabled()` reads `app_settings`)
+  - Sell and buy rates still apply: LCR, the margin guard, and CDR rating. Usage is still posted to the ledger, so a later switch back on is consistent; the page warns that balances may then be negative.
+  - The page also holds invoice options (payment terms; auto-email, moved from the Email page). New billing options go there.
 - **Admin UI restyled with Tabler** (the user's choice, replacing the starter kit's Tailwind/shadcn look). Every admin page was screenshot-checked with headless Firefox. Portal pages share the same components but weren't individually screenshot-checked.
 - **Tests:** 185 automated tests pass (`scripts/test-on-server.sh theswitch`). The built-in call self-test passes all 11 scenarios, 4 of them PBX.
 - **Git:** everything is committed and pushed to `github.com/key2comm/Softswitch` (private), on branch `main`.

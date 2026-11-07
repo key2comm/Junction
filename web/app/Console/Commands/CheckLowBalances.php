@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Mail\LowBalanceMail;
 use App\Models\Account;
 use App\Services\MailSettings;
+use App\Support\Billing;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -23,6 +24,11 @@ class CheckLowBalances extends Command
 
     public function handle(): int
     {
+        if (! Billing::enabled()) {
+            $this->info('Billing is turned off: no low-balance alerts.');
+
+            return self::SUCCESS;
+        }
         $mail = MailSettings::fresh();
         $alerted = $cleared = 0;
 

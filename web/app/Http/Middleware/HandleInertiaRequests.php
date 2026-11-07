@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\Alert;
+use App\Support\Billing;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -46,6 +47,8 @@ class HandleInertiaRequests extends Middleware
             ],
             // Admins: open alerts, for the sidebar badge.
             'openAlerts' => fn () => $request->user()?->isAdmin() ? Alert::query()->where('status', 'open')->count() : null,
+            // Settings → Billing: hides billing pages and figures when off.
+            'billing' => fn () => Billing::enabled(),
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
     }
