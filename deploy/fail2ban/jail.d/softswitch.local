@@ -1,0 +1,21 @@
+[DEFAULT]
+banaction = nftables-multiport
+banaction_allports = nftables-allports
+bantime = 1h
+bantime.increment = true
+bantime.maxtime = 1w
+findtime = 10m
+maxretry = 5
+ignoreip = 127.0.0.1/8 ::1
+
+[sshd]
+enabled = true
+backend = systemd
+
+# Enabled in phase 2 once FreeSWITCH is logging.
+[freeswitch]
+enabled = false
+filter = freeswitch
+logpath = /var/log/freeswitch/freeswitch.log
+banaction = %(banaction_allports)s
+maxretry = 5

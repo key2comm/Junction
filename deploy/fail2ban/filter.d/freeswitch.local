@@ -1,0 +1,5 @@
+[Definition]
+# Only failures; "auth challenge" lines are normal for every legit REGISTER.
+failregex = \[WARNING\] sofia_reg\.c:\d+ SIP auth failure \((?:REGISTER|INVITE)\) on sofia profile '[^']+' for \[[^\]]*\] from ip <HOST>
+            \[WARNING\] sofia_reg\.c:\d+ Can't find user \[[^\]]*\] from <HOST>
+ignoreregex =
