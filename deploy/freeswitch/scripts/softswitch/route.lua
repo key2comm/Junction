@@ -166,7 +166,7 @@ if offered then session:setVariable("absolute_codec_string", offered) end
 -- The customer can't talk longer than they can pay for.
 session:setVariable("execute_on_answer", "sched_hangup +" .. max_duration .. " ALLOTTED_TIMEOUT")
 
-local log_rows, last_cause, answered = {}, "NO_ROUTE_DESTINATION", false
+local log_rows, last_cause, last_code, answered = {}, "NO_ROUTE_DESTINATION", nil, false
 
 local function record(a, gw, started, cause, code, ok)
   table.insert(log_rows, string.format(
@@ -209,6 +209,7 @@ for n = 1, #attempts do
         break
       end
       last_cause = cause ~= "" and cause or "NORMAL_TEMPORARY_FAILURE"
+      last_code = code
       if not (FAILOVER_SIP[code] or FAILOVER_CAUSE[last_cause]) then
         stop = true -- final answer from the vendor (busy, not found, no answer...)
         break
@@ -224,6 +225,10 @@ for n = 1, #attempts do
 end
 
 -- 5. Tell the customer how it went (an answered call simply ends).
+if not answered then
+  -- Record what the customer was told (the last vendor's answer, e.g. 486).
+  if last_code then setvar("softswitch_sip_code", last_code) end
+end
 if not answered and session:ready() then
   log("NOTICE", "no vendor completed the call (" .. last_cause .. ")")
   session:hangup(last_cause)

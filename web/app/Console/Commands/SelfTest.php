@@ -341,10 +341,11 @@ class SelfTest extends Command
             $ids = Account::query()->whereIn('code', [self::CUSTOMER, self::VENDOR])->pluck('id');
             DB::table('active_calls')->whereIn('account_id', $ids)->delete();
             Cdr::query()->whereIn('customer_account_id', $ids)->orWhereIn('vendor_account_id', $ids)->delete();
-            if (isset($this->runStart)) {
-                // The "unknown customer" scenario's CDR has no account.
+            // The "unknown customer" scenario's CDRs have no account: they are the
+            // test number, sent from the switch's own IP (no real carrier can be).
+            if ($ip = config('softswitch.public_ip')) {
                 Cdr::query()->whereNull('customer_account_id')->where('callee', self::DEST)
-                    ->where('started_at', '>=', $this->runStart)->delete();
+                    ->where('source_ip', $ip)->delete();
             }
             Trunk::query()->whereIn('account_id', $ids)->get()->each->delete();
             Account::query()->whereIn('id', $ids)->get()->each->delete();
