@@ -113,12 +113,12 @@ const initials = computed(() =>
 
 <template>
     <div class="page">
-        <aside class="navbar navbar-vertical navbar-expand-lg" data-bs-theme="dark">
+        <aside class="navbar navbar-vertical navbar-expand-lg">
             <div class="container-fluid">
                 <button class="navbar-toggler" type="button" :aria-expanded="menuOpen" aria-label="Menu" @click="menuOpen = !menuOpen">
                     <Menu class="icon" />
                 </button>
-                <div class="navbar-brand navbar-brand-autodark">
+                <div class="navbar-brand">
                     <Link :href="home" class="text-reset text-decoration-none"><AppLogo /></Link>
                 </div>
                 <div class="navbar-nav flex-row d-lg-none">
