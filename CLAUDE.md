@@ -6,7 +6,7 @@ This project is worked on from multiple devices and synced through GitHub.
 - Never commit secrets. Keep machine-specific config in `.env` or `.claude/settings.local.json` (both gitignored).
 
 ## Project
-Class 4 softswitch on FreeSWITCH with light PBX features. See `docs/PLAN.md` for the phases and port layout.
+Class 4 (wholesale carrier) softswitch on FreeSWITCH: routes high-volume traffic between customer and vendor carriers, with light PBX features on the side. See `docs/PLAN.md` for the phases and port layout.
 - Server: SSH alias `theswitch` (rocky@theswitch.key2pbx.ca), Rocky 10.2, passwordless sudo.
 - `deploy/` mirrors where files go on the server (`deploy/nftables/` → `/etc/nftables/`, etc.). Edit here, commit, then push to the server.
 - Never commit the SignalWire token or any SIP/ESL/DB passwords.
