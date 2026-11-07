@@ -28,7 +28,18 @@ Generated secrets (event socket password and others) are kept in `/etc/softswitc
 | 60-freeswitch-config | Secures the stock config and starts FreeSWITCH |
 | 70-postgresql | Sets up PostgreSQL on localhost: database, user, and a generated password |
 | 80-web | Sets up nginx and PHP-FPM, a self-signed certificate, and the Let's Encrypt helper |
-| 90-app | Deploys the admin UI (Laravel + Vue + Inertia) to `/var/www/html`, runs migrations, starts the queue worker and scheduler, and creates the first admin |
+| 90-app | Deploys the admin UI (Laravel + Vue + Inertia) to `/var/www/html`, runs migrations, starts the queue worker and scheduler, creates the first admin, and syncs gateways and the firewall |
+| 95-selftest | Places real test calls through the switch and checks routing, failover, rejections, the funds cut-off, and billing |
+
+### Self-test
+
+The switch can test itself without any external tools. A loopback-only SIP profile acts as a fake customer and fake vendors, and every call goes through the real routing engine and billing:
+
+```sh
+sudo -u softswitch bash -c 'cd /var/www/html && php artisan softswitch:selftest'
+```
+
+It creates temporary `SELFTEST-*` records and removes them afterwards. Run it after changing FreeSWITCH config or upgrading.
 
 After installing, open `https://<your-server>` and sign in as `admin@<hostname>`. Get the initial password with `sudo grep ADMIN_INITIAL_PASSWORD /etc/softswitch/secrets`. To switch to a trusted certificate, go to **Settings → SSL certificate**. Public sign-up is disabled, so add more admins with:
 
