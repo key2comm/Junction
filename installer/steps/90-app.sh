@@ -1,0 +1,88 @@
+# Deploy the Laravel admin UI / API (web/) to $SS_WEB_ROOT, build it, migrate,
+# and run its queue worker + scheduler under systemd.
+
+pkg_install rsync
+
+app="$SS_WEB_ROOT"
+home=/var/lib/softswitch
+as_app() { (cd "$app" && runuser -u "$SS_APP_USER" -- env HOME="$home" COMPOSER_HOME="$home/.composer" \
+	npm_config_cache="$home/.npm" "$@"); }
+artisan() { as_app php artisan "$@"; }
+
+# --- Code. .env, storage/ and build outputs survive redeploys.
+rsync -a --delete \
+	--exclude=/.env --exclude=/storage/ --exclude=/vendor/ --exclude=/node_modules/ \
+	--exclude=/public/build/ --exclude=/public/hot --exclude='/bootstrap/cache/*.php' \
+	"$SS_ROOT/web/" "$app/"
+rsync -a --ignore-existing "$SS_ROOT/web/storage/" "$app/storage/"
+chown -R "$SS_APP_USER:nginx" "$app"
+find "$app" -type d -exec chmod 0750 {} +
+find "$app" -type f -exec chmod 0640 {} +
+chmod 0750 "$app/artisan"
+# The app writes here; nginx must not need to.
+chmod -R u+rwX,g-w "$app/storage" "$app/bootstrap/cache"
+command -v restorecon >/dev/null && restorecon -R "$app"
+
+# --- .env (first run creates it; DB settings are always kept in sync).
+env_file="$app/.env"
+if [ ! -f "$env_file" ]; then
+	install -o "$SS_APP_USER" -g "$SS_APP_USER" -m 0600 "$app/.env.example" "$env_file"
+fi
+set_env() { # set_env KEY VALUE - replace (or append) KEY=VALUE, also if commented out
+	local key="$1" val="$2" esc
+	esc="$(printf '%s' "$val" | sed 's/[\\&|]/\\&/g')"
+	if grep -qE "^#? *${key}=" "$env_file"; then
+		sed -i -E "s|^#? *${key}=.*|${key}=${esc}|" "$env_file"
+	else
+		printf '%s=%s\n' "$key" "$val" >> "$env_file"
+	fi
+}
+set_env APP_NAME Softswitch
+set_env APP_ENV production
+set_env APP_DEBUG false
+set_env APP_URL "https://$SS_HOSTNAME"
+set_env LOG_CHANNEL daily
+set_env DB_CONNECTION pgsql
+set_env DB_HOST 127.0.0.1
+set_env DB_PORT 5432
+set_env DB_DATABASE "$SS_DB_NAME"
+set_env DB_USERNAME "$SS_DB_USER"
+set_env DB_PASSWORD "$(secret DB_PASSWORD)"
+set_env SESSION_DRIVER database
+set_env SESSION_SECURE_COOKIE true
+set_env QUEUE_CONNECTION database
+set_env CACHE_STORE database
+chown "$SS_APP_USER:$SS_APP_USER" "$env_file"; chmod 0600 "$env_file"
+
+# --- Dependencies + assets.
+info "Installing PHP dependencies"
+as_app composer install --no-dev --optimize-autoloader --no-interaction --no-progress
+grep -qE '^APP_KEY=.+' "$env_file" || artisan key:generate --force --no-interaction
+
+info "Building frontend assets (slow on small servers)"
+as_app npm ci --no-audit --no-fund --loglevel=error
+as_app npm run build --silent >/dev/null
+rm -rf "$app/node_modules"
+
+# --- Database + caches.
+artisan migrate --force --no-interaction
+artisan optimize --no-interaction >/dev/null
+
+# --- First admin login (only if there are no users yet).
+admin_email="${SS_ADMIN_EMAIL:-admin@$SS_HOSTNAME}"
+admin_pw="$(secret ADMIN_INITIAL_PASSWORD)"
+artisan softswitch:admin "$admin_email" --password="$admin_pw" --if-none >/dev/null
+
+# --- Background services.
+for unit in softswitch-queue.service softswitch-scheduler.service; do
+	render "$SS_ROOT/deploy/systemd/$unit" "/etc/systemd/system/$unit"
+done
+systemctl daemon-reload
+systemctl enable -q softswitch-queue softswitch-scheduler
+systemctl restart softswitch-queue softswitch-scheduler php-fpm
+
+code="$(curl -sk -o /dev/null -w '%{http_code}' --resolve "$SS_HOSTNAME:443:127.0.0.1" "https://$SS_HOSTNAME/login")"
+[ "$code" = 200 ] || die "admin UI did not respond (HTTP $code); see $app/storage/logs and /var/log/php-fpm/softswitch-error.log"
+
+info "Admin UI: https://$SS_HOSTNAME"
+info "First admin login: $admin_email (initial password: sudo grep ADMIN_INITIAL_PASSWORD /etc/softswitch/secrets)"
