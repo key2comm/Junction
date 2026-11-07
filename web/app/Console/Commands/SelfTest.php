@@ -16,6 +16,7 @@ use App\Services\Freeswitch\EventSocket;
 use App\Services\Freeswitch\GatewaySync;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 use Throwable;
@@ -178,7 +179,10 @@ class SelfTest extends Command
     private function noFunds(EventSocket $esl, string $ip): string
     {
         $this->routes(['ok']);
-        $this->f['customer']->update(['credit_limit' => '0.001']); // less than one 6s increment (0.006)
+        // Less than one 6s increment (0.006) beyond what earlier calls already used.
+        $unposted = (string) Cdr::query()->where('customer_account_id', $this->f['customer']->id)
+            ->whereNull('posted_at')->sum('sell_cost');
+        $this->f['customer']->update(['credit_limit' => bcadd($unposted, '0.001', 6)]);
         $cdr = $this->placeCall($esl, $ip, self::TECH.self::DEST, hold: 0, expectAnswer: false);
 
         $this->check($cdr->hangup_cause === 'insufficient_funds', "reason {$cdr->hangup_cause}");
@@ -190,8 +194,11 @@ class SelfTest extends Command
     private function cutOff(EventSocket $esl, string $ip): string
     {
         $this->routes(['ok']);
-        // Exactly 12 seconds of credit at 0.06/min (two 6s increments).
-        $this->f['customer']->update(['credit_limit' => '0.012']);
+        // Exactly 12 seconds of credit at 0.06/min (two 6s increments) on top of
+        // the earlier scenarios' usage, which isn't posted yet but already counts.
+        $unposted = (string) Cdr::query()->where('customer_account_id', $this->f['customer']->id)
+            ->whereNull('posted_at')->sum('sell_cost');
+        $this->f['customer']->update(['credit_limit' => bcadd($unposted, '0.012', 6)]);
         $cdr = $this->placeCall($esl, $ip, self::TECH.self::DEST, hold: 25, expectAnswer: true, expectRemoteHangup: true);
 
         $this->check($cdr->billsec >= 11 && $cdr->billsec <= 13, "billsec {$cdr->billsec}, expected 12");
@@ -280,6 +287,13 @@ class SelfTest extends Command
 
     private function fixtures(string $ip): void
     {
+        // Without model events: this command syncs FreeSWITCH itself, and queued
+        // sync jobs would reload gateways in the middle of the test calls.
+        Model::withoutEvents(fn () => $this->createFixtures($ip));
+    }
+
+    private function createFixtures(string $ip): void
+    {
         $deck = function (string $name, string $rate): RateDeck {
             $deck = RateDeck::create(['name' => "SELFTEST {$name}", 'currency' => 'USD']);
             Rate::create(['rate_deck_id' => $deck->id, 'prefix' => '990', 'rate' => $rate, 'connect_fee' => 0,
@@ -319,7 +333,7 @@ class SelfTest extends Command
 
     private function cleanup(): void
     {
-        DB::transaction(function () {
+        Model::withoutEvents(fn () => DB::transaction(function () {
             $ids = Account::query()->whereIn('code', [self::CUSTOMER, self::VENDOR])->pluck('id');
             DB::table('active_calls')->whereIn('account_id', $ids)->delete();
             Cdr::query()->whereIn('customer_account_id', $ids)->orWhereIn('vendor_account_id', $ids)->delete();
@@ -332,6 +346,6 @@ class SelfTest extends Command
             Account::query()->whereIn('id', $ids)->get()->each->delete();
             RoutingPlan::query()->where('name', 'SELFTEST plan')->delete();
             RateDeck::query()->where('name', 'like', 'SELFTEST %')->delete();
-        });
+        }));
     }
 }

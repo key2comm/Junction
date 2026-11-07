@@ -4,6 +4,7 @@ namespace App\Services\Freeswitch;
 
 use App\Enums\Transport;
 use App\Models\Gateway;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
@@ -22,8 +23,19 @@ class GatewaySync
 
     public function __construct(private EventSocket $esl, private string $directory) {}
 
-    /** @return array{written: list<string>, removed: list<string>, unchanged: int, reloaded: bool} */
+    /**
+     * Serialised with a lock: two concurrent syncs (queue + scheduler + CLI)
+     * would otherwise reload FreeSWITCH gateways under each other.
+     *
+     * @return array{written: list<string>, removed: list<string>, unchanged: int, reloaded: bool}
+     */
     public function sync(): array
+    {
+        return Cache::lock('softswitch:gateway-sync', 120)->block(60, fn () => $this->syncNow());
+    }
+
+    /** @return array{written: list<string>, removed: list<string>, unchanged: int, reloaded: bool} */
+    private function syncNow(): array
     {
         if (! is_dir($this->directory) || ! is_writable($this->directory)) {
             throw new RuntimeException("Gateway directory {$this->directory} is missing or not writable.");
