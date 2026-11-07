@@ -201,6 +201,7 @@ class CallFlowTest extends TestCase
         $esl = Mockery::mock(EventSocket::class);
         $esl->shouldReceive('api')->with('sofia profile carrier killgw vendor-a')->once();
         $esl->shouldReceive('api')->with('sofia profile carrier killgw stale-gw')->once();
+        $esl->shouldReceive('api')->with('reloadxml')->once();
         $esl->shouldReceive('api')->with('sofia profile carrier rescan')->once();
         $sync = new GatewaySync($esl, $dir);
 

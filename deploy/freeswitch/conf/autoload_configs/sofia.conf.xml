@@ -14,7 +14,8 @@
     <profile name="carrier">
       <gateways>
         <!-- One file per vendor gateway, generated from the database. -->
-        <X-PRE-PROCESS cmd="include" data="sip_profiles/carrier/*.xml"/>
+        <!-- Relative to this file (autoload_configs/). -->
+        <X-PRE-PROCESS cmd="include" data="../sip_profiles/carrier/*.xml"/>
       </gateways>
       <domains/>
       <settings>

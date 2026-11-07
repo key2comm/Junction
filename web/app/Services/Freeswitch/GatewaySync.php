@@ -66,6 +66,8 @@ class GatewaySync
                 foreach ([...$written, ...$removed] as $name) {
                     $this->esl->api('sofia profile '.self::PROFILE." killgw {$name}");
                 }
+                // Includes are only re-read by reloadxml; rescan then loads new gateways.
+                $this->esl->api('reloadxml');
                 $this->esl->api('sofia profile '.self::PROFILE.' rescan');
                 $reloaded = true;
             } catch (Throwable $e) {
