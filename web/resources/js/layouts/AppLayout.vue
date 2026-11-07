@@ -17,14 +17,17 @@ import {
     KeyRound,
     LayoutGrid,
     LogOut,
+    Mail,
     Menu,
     Moon,
     Phone,
     PhoneCall,
     Route,
     Settings,
+    ShieldCheck,
     Sun,
     Tags,
+    UserRound,
 } from '@lucide/vue';
 import { onClickOutside } from '@vueuse/core';
 import { computed, ref, useTemplateRef } from 'vue';
@@ -35,7 +38,10 @@ import { useCurrentUrl } from '@/composables/useCurrentUrl';
 import { dashboard, logout } from '@/routes';
 import { index as accounts } from '@/routes/accounts';
 import { index as alerts } from '@/routes/alerts';
+import { index as apiTokens } from '@/routes/api-tokens';
+import { edit as certificate } from '@/routes/certificate';
 import { index as cdrs } from '@/routes/cdrs';
+import { edit as email } from '@/routes/email';
 import { index as invoices } from '@/routes/invoices';
 import { index as live } from '@/routes/live';
 import { index as pbx } from '@/routes/pbx';
@@ -91,6 +97,15 @@ const adminNav: NavEntry[] = [
         ],
     },
     { title: 'PBX', href: pbx(), icon: Phone },
+    {
+        title: 'Settings',
+        icon: Settings,
+        items: [
+            { title: 'SSL certificate', href: certificate(), icon: ShieldCheck },
+            { title: 'Email (SMTP)', href: email(), icon: Mail },
+            { title: 'API tokens', href: apiTokens(), icon: KeyRound },
+        ],
+    },
 ];
 const portalNav: NavEntry[] = [
     { title: 'Overview', href: portalHome(), icon: LayoutGrid },
@@ -162,7 +177,7 @@ const initials = computed(() =>
                             <ChevronDown class="icon ms-1" />
                         </button>
                         <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow" :class="{ show: userOpen }" style="right: 0; left: auto">
-                            <Link :href="profile()" class="dropdown-item"><Settings class="icon dropdown-item-icon" /> Settings</Link>
+                            <Link :href="profile()" class="dropdown-item"><UserRound class="icon dropdown-item-icon" /> My account</Link>
                             <div class="dropdown-divider"></div>
                             <Link :href="logout()" as="button" class="dropdown-item" data-test="logout-button" @click="router.flushAll()">
                                 <LogOut class="icon dropdown-item-icon" /> Log out

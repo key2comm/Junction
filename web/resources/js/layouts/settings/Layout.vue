@@ -1,37 +1,26 @@
 <script setup lang="ts">
-import { Link, usePage } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { Link } from '@inertiajs/vue3';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
 import { toUrl } from '@/lib/utils';
-import { index as apiTokens } from '@/routes/api-tokens';
 import { edit as editAppearance } from '@/routes/appearance';
-import { edit as editCertificate } from '@/routes/certificate';
-import { edit as editEmail } from '@/routes/email';
 import { edit as editProfile } from '@/routes/profile';
 import { edit as editSecurity } from '@/routes/security';
 import type { NavItem } from '@/types';
 
-const allNavItems: (NavItem & { adminOnly?: boolean })[] = [
+// The signed-in user's own account. Server settings live under the top menu's Settings.
+const items: NavItem[] = [
     { title: 'Profile', href: editProfile() },
     { title: 'Security', href: editSecurity() },
     { title: 'Appearance', href: editAppearance() },
-    { title: 'API tokens', adminOnly: true, href: apiTokens() },
-    { title: 'Email', adminOnly: true, href: editEmail() },
-    { title: 'SSL certificate', adminOnly: true, href: editCertificate() },
 ];
-
-const page = usePage();
-// Portal (customer) users only see their own profile settings here.
-const isAdmin = computed(() => !(page.props.auth as { user?: { account_id?: number | null } }).user?.account_id);
-const items = computed(() => allNavItems.filter((item) => isAdmin.value || !item.adminOnly));
 
 const { isCurrentOrParentUrl } = useCurrentUrl();
 </script>
 
 <template>
     <div class="page-header p-0 mb-3">
-        <h2 class="page-title">Settings</h2>
-        <div class="text-secondary">Your account and the server's settings</div>
+        <h2 class="page-title">My account</h2>
+        <div class="text-secondary">Your profile, password and sign-in security</div>
     </div>
     <div class="card">
         <div class="row g-0">
