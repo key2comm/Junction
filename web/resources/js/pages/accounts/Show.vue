@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { dateTime, money, titleCase } from '@/lib/format';
 import { edit, index, show } from '@/routes/accounts';
+import { index as cdrIndex } from '@/routes/cdrs';
 
 type Account = {
     id: number;
@@ -69,9 +70,17 @@ const select =
                     <Badge variant="secondary">{{ titleCase(account.billing_type) }}</Badge>
                 </div>
             </div>
-            <Button variant="outline" as-child>
-                <Link :href="edit(account.id)"><Pencil class="size-4" /> Edit</Link>
-            </Button>
+            <div class="flex gap-2">
+                <Button v-if="account.is_customer" variant="outline" as-child>
+                    <Link :href="cdrIndex({ query: { customer: account.id } })">Calls sent</Link>
+                </Button>
+                <Button v-if="account.is_vendor" variant="outline" as-child>
+                    <Link :href="cdrIndex({ query: { vendor: account.id } })">Calls carried</Link>
+                </Button>
+                <Button variant="outline" as-child>
+                    <Link :href="edit(account.id)"><Pencil class="size-4" /> Edit</Link>
+                </Button>
+            </div>
         </div>
 
         <!-- Money -->

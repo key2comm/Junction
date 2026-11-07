@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AccountController;
 use App\Http\Controllers\Admin\AccountIpController;
+use App\Http\Controllers\Admin\CdrController;
 use App\Http\Controllers\Admin\GatewayController;
 use App\Http\Controllers\Admin\LedgerEntryController;
 use App\Http\Controllers\Admin\RateDeckController;
@@ -30,6 +31,10 @@ Route::middleware(['auth'])->group(function () {
     Route::post('accounts/{account}/ledger', [LedgerEntryController::class, 'store'])
         ->middleware('throttle:30,1')
         ->name('accounts.ledger.store');
+
+    Route::get('cdrs', [CdrController::class, 'index'])->name('cdrs.index');
+    Route::get('cdrs/export', [CdrController::class, 'export'])->middleware('throttle:10,1')->name('cdrs.download');
+    Route::get('cdrs/{cdr}', [CdrController::class, 'show'])->whereNumber('cdr')->name('cdrs.show');
 
     Route::resource('rate-decks', RateDeckController::class)->except(['destroy']);
     Route::post('rate-decks/{rate_deck}/imports', [RateImportController::class, 'store'])
