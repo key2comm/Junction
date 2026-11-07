@@ -102,7 +102,8 @@ class TrunkController extends Controller
         ];
     }
 
-    private function validated(Request $request, ?Trunk $trunk = null): array
+    /** Also used by the REST API, so both validate identically. */
+    public function validated(Request $request, ?Trunk $trunk = null): array
     {
         $request->merge(['enabled' => $request->boolean('enabled'), 'tech_prefix' => trim((string) $request->input('tech_prefix'))]);
 

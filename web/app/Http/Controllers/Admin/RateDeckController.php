@@ -100,7 +100,8 @@ class RateDeckController extends Controller
         return to_route('rate-decks.show', $rateDeck);
     }
 
-    private function validated(Request $request, ?RateDeck $deck = null): array
+    /** Also used by the REST API, so both validate identically. */
+    public function validated(Request $request, ?RateDeck $deck = null): array
     {
         $request->merge(['currency' => strtoupper(trim((string) $request->input('currency', 'USD')))]);
 

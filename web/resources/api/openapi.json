@@ -1,0 +1,3708 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Softswitch API",
+    "version": "1.0.0",
+    "description": "REST API for the Softswitch Class 4 switch. Authenticate with a bearer token from Settings → API tokens. Each operation lists the token ability it needs (x-ability). Money is a decimal string; times are UTC ISO 8601. Rate limit: 120 requests per minute per token."
+  },
+  "servers": [
+    {
+      "url": "/api/v1"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "ss_… token"
+      }
+    },
+    "responses": {
+      "Unauthorized": {
+        "description": "Missing, invalid, expired or revoked token",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "The token lacks the required ability (or is a customer token)",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Invalid": {
+        "description": "Validation failed",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "errors": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "PageMeta": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer"
+          },
+          "per_page": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          },
+          "last_page": {
+            "type": "integer"
+          }
+        }
+      },
+      "CursorMeta": {
+        "type": "object",
+        "properties": {
+          "per_page": {
+            "type": "integer"
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "Account": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "suspended",
+              "closed"
+            ]
+          },
+          "currency": {
+            "type": "string"
+          },
+          "billing_type": {
+            "type": "string",
+            "enum": [
+              "prepaid",
+              "postpaid"
+            ]
+          },
+          "credit_limit": {
+            "type": "string",
+            "description": "Decimal string, e.g. \"12.500000\"",
+            "examples": [
+              "12.500000"
+            ]
+          },
+          "balance": {
+            "type": "string",
+            "description": "Decimal string, e.g. \"12.500000\"",
+            "examples": [
+              "12.500000"
+            ]
+          },
+          "available_funds": {
+            "type": "string",
+            "description": "What routing sees now: balance + credit - calls in progress - unposted usage",
+            "examples": [
+              "12.500000"
+            ]
+          },
+          "timezone": {
+            "type": "string"
+          },
+          "billing_email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "is_customer": {
+            "type": "boolean",
+            "description": "Admin tokens only"
+          },
+          "is_vendor": {
+            "type": "boolean"
+          },
+          "vendor_balance": {
+            "type": "string",
+            "description": "What we owe this vendor",
+            "examples": [
+              "12.500000"
+            ]
+          },
+          "low_balance_threshold": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Decimal string or null"
+          },
+          "noc_email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sell_rate_deck_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "routing_plan_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "max_channels": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "max_cps": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Decimal string or null"
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AccountInput": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,32}$"
+          },
+          "is_customer": {
+            "type": "boolean"
+          },
+          "is_vendor": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "suspended",
+              "closed"
+            ]
+          },
+          "currency": {
+            "type": "string",
+            "examples": [
+              "USD"
+            ]
+          },
+          "billing_type": {
+            "type": "string",
+            "enum": [
+              "prepaid",
+              "postpaid"
+            ]
+          },
+          "credit_limit": {
+            "type": "number"
+          },
+          "low_balance_threshold": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "timezone": {
+            "type": "string",
+            "examples": [
+              "America/Toronto"
+            ]
+          },
+          "billing_email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "noc_email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sell_rate_deck_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "routing_plan_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "max_channels": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "max_cps": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "AccountIp": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "ip": {
+            "type": "string",
+            "description": "Host or CIDR"
+          },
+          "tech_prefix": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        }
+      },
+      "AccountIpInput": {
+        "type": "object",
+        "properties": {
+          "ip": {
+            "type": "string",
+            "examples": [
+              "198.51.100.0/24"
+            ]
+          },
+          "tech_prefix": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "ip"
+        ]
+      },
+      "LedgerEntry": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "payment",
+              "usage",
+              "adjustment"
+            ]
+          },
+          "amount": {
+            "type": "string",
+            "description": "Decimal string, e.g. \"12.500000\"",
+            "examples": [
+              "12.500000"
+            ]
+          },
+          "balance_after": {
+            "type": "string",
+            "description": "Decimal string, e.g. \"12.500000\"",
+            "examples": [
+              "12.500000"
+            ]
+          },
+          "description": {
+            "type": "string"
+          },
+          "effective_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "LedgerEntryInput": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "payment",
+              "adjustment"
+            ]
+          },
+          "amount": {
+            "type": "number",
+            "description": "Payments positive; adjustments ±"
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "amount",
+          "description"
+        ]
+      },
+      "RateDeck": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "RateDeckInput": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "Rate": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "prefix": {
+            "type": "string"
+          },
+          "destination": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "rate": {
+            "type": "string",
+            "description": "Per minute",
+            "examples": [
+              "12.500000"
+            ]
+          },
+          "connect_fee": {
+            "type": "string",
+            "description": "Decimal string, e.g. \"12.500000\"",
+            "examples": [
+              "12.500000"
+            ]
+          },
+          "initial_increment": {
+            "type": "integer"
+          },
+          "increment": {
+            "type": "integer"
+          },
+          "effective_from": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "effective_to": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "RateImport": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "rate_deck_id": {
+            "type": "integer"
+          },
+          "filename": {
+            "type": "string"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "update",
+              "replace"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "done",
+              "failed"
+            ]
+          },
+          "effective_from": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "stats": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "added, changed, unchanged, ended, increases_within_notice"
+          },
+          "errors": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "finished_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "Gateway": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "trunk_id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "host": {
+            "type": "string"
+          },
+          "port": {
+            "type": "integer"
+          },
+          "transport": {
+            "type": "string",
+            "enum": [
+              "udp",
+              "tcp",
+              "tls"
+            ]
+          },
+          "username": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "has_password": {
+            "type": "boolean",
+            "description": "Passwords are write-only"
+          },
+          "register": {
+            "type": "boolean"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "priority": {
+            "type": "integer"
+          },
+          "weight": {
+            "type": "integer"
+          }
+        }
+      },
+      "GatewayInput": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "FreeSWITCH gateway name; generated if omitted"
+          },
+          "host": {
+            "type": "string"
+          },
+          "port": {
+            "type": "integer"
+          },
+          "transport": {
+            "type": "string",
+            "enum": [
+              "udp",
+              "tcp",
+              "tls"
+            ]
+          },
+          "username": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "password": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Write-only. On update: omit to keep, null to remove"
+          },
+          "register": {
+            "type": "boolean"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "priority": {
+            "type": "integer"
+          },
+          "weight": {
+            "type": "integer"
+          }
+        }
+      },
+      "Trunk": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "vendor_id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "rate_deck_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "max_channels": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "max_cps": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Decimal string or null"
+          },
+          "tech_prefix": {
+            "type": "string"
+          },
+          "strip_digits": {
+            "type": "integer"
+          },
+          "gateways": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Gateway"
+            }
+          }
+        }
+      },
+      "TrunkInput": {
+        "type": "object",
+        "properties": {
+          "vendor_id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "rate_deck_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "max_channels": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "max_cps": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "tech_prefix": {
+            "type": "string"
+          },
+          "strip_digits": {
+            "type": "integer"
+          }
+        }
+      },
+      "Route": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "prefix": {
+            "type": "string",
+            "description": "Empty = every destination"
+          },
+          "trunk_id": {
+            "type": "integer"
+          },
+          "priority": {
+            "type": "integer"
+          },
+          "weight": {
+            "type": "integer"
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        }
+      },
+      "RouteInput": {
+        "type": "object",
+        "properties": {
+          "prefix": {
+            "type": "string"
+          },
+          "trunk_id": {
+            "type": "integer"
+          },
+          "priority": {
+            "type": "integer"
+          },
+          "weight": {
+            "type": "integer"
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        }
+      },
+      "RoutingPlan": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "lcr",
+              "priority",
+              "weight"
+            ]
+          },
+          "max_attempts": {
+            "type": "integer"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "routes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Route"
+            }
+          }
+        }
+      },
+      "RoutingPlanInput": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "lcr",
+              "priority",
+              "weight"
+            ]
+          },
+          "max_attempts": {
+            "type": "integer"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "RouteTestInput": {
+        "type": "object",
+        "properties": {
+          "customer_id": {
+            "type": "integer"
+          },
+          "number": {
+            "type": "string",
+            "examples": [
+              "+44 20 7946 0000"
+            ]
+          }
+        },
+        "required": [
+          "customer_id",
+          "number"
+        ]
+      },
+      "RouteTestResult": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "reject"
+            ]
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "unknown_customer, account_inactive, invalid_number, blocked_destination, no_sell_rate, no_routing_plan, insufficient_funds, no_route, negative_margin"
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "destination": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sell_rate_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "sell_prefix": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sell_rate": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Decimal string or null"
+          },
+          "max_duration": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "attempts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "attempt": {
+                  "type": "integer"
+                },
+                "trunk_id": {
+                  "type": "integer"
+                },
+                "dial_number": {
+                  "type": "string"
+                },
+                "buy_rate_id": {
+                  "type": "integer"
+                },
+                "buy_prefix": {
+                  "type": "string"
+                },
+                "buy_rate": {
+                  "type": "string",
+                  "description": "Decimal string, e.g. \"12.500000\"",
+                  "examples": [
+                    "12.500000"
+                  ]
+                },
+                "gateways": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "integer"
+                      },
+                      "name": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "Cdr": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "uuid": {
+            "type": "string"
+          },
+          "customer_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "caller": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "callee": {
+            "type": "string"
+          },
+          "destination": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "answered_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "ended_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "billsec": {
+            "type": "integer"
+          },
+          "sip_code": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "hangup_cause": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sell_prefix": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sell_destination": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sell_rate": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Decimal string or null"
+          },
+          "sell_cost": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Decimal string or null"
+          },
+          "source_ip": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Admin tokens only (as are the fields below)"
+          },
+          "attempts": {
+            "type": "integer"
+          },
+          "vendor_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "trunk_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "gateway_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "buy_prefix": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "buy_rate": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Decimal string or null"
+          },
+          "buy_cost": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Decimal string or null"
+          },
+          "margin": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Decimal string or null"
+          },
+          "posted_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "attempt_log": {
+            "type": "array",
+            "description": "On GET /cdrs/{id}, admin tokens only",
+            "items": {
+              "type": "object",
+              "properties": {
+                "attempt": {
+                  "type": "integer"
+                },
+                "trunk_id": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "gateway_id": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "buy_prefix": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "buy_rate": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Decimal string or null"
+                },
+                "started_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "answered": {
+                  "type": "boolean"
+                },
+                "sip_code": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "hangup_cause": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "CdrSummary": {
+        "type": "object",
+        "properties": {
+          "calls": {
+            "type": "integer"
+          },
+          "answered": {
+            "type": "integer"
+          },
+          "rejected": {
+            "type": "integer"
+          },
+          "asr": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "% of routed calls"
+          },
+          "acd": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "minutes": {
+            "type": "number"
+          },
+          "sell": {
+            "type": "string",
+            "description": "Decimal string, e.g. \"12.500000\"",
+            "examples": [
+              "12.500000"
+            ]
+          },
+          "buy": {
+            "type": "string",
+            "description": "Admin tokens only",
+            "examples": [
+              "12.500000"
+            ]
+          },
+          "margin": {
+            "type": "string",
+            "description": "Decimal string, e.g. \"12.500000\"",
+            "examples": [
+              "12.500000"
+            ]
+          }
+        }
+      },
+      "Invoice": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "number": {
+            "type": "string"
+          },
+          "customer_id": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "issued",
+              "void"
+            ]
+          },
+          "period_start": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "period_end": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "timezone": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "billing_type": {
+            "type": "string"
+          },
+          "opening_balance": {
+            "type": "string",
+            "description": "Decimal string, e.g. \"12.500000\"",
+            "examples": [
+              "12.500000"
+            ]
+          },
+          "usage_total": {
+            "type": "string",
+            "description": "Decimal string, e.g. \"12.500000\"",
+            "examples": [
+              "12.500000"
+            ]
+          },
+          "payments_total": {
+            "type": "string",
+            "description": "Decimal string, e.g. \"12.500000\"",
+            "examples": [
+              "12.500000"
+            ]
+          },
+          "adjustments_total": {
+            "type": "string",
+            "description": "Decimal string, e.g. \"12.500000\"",
+            "examples": [
+              "12.500000"
+            ]
+          },
+          "closing_balance": {
+            "type": "string",
+            "description": "Decimal string, e.g. \"12.500000\"",
+            "examples": [
+              "12.500000"
+            ]
+          },
+          "amount_due": {
+            "type": "string",
+            "description": "Decimal string, e.g. \"12.500000\"",
+            "examples": [
+              "12.500000"
+            ]
+          },
+          "calls": {
+            "type": "integer"
+          },
+          "billsec": {
+            "type": "integer"
+          },
+          "issued_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "due_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "voided_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "lines": {
+            "type": "array",
+            "description": "On GET /invoices/{id}",
+            "items": {
+              "type": "object",
+              "properties": {
+                "prefix": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "destination": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "calls": {
+                  "type": "integer"
+                },
+                "billsec": {
+                  "type": "integer"
+                },
+                "rate": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Decimal string or null"
+                },
+                "amount": {
+                  "type": "string",
+                  "description": "Decimal string, e.g. \"12.500000\"",
+                  "examples": [
+                    "12.500000"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "Me": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer"
+              },
+              "name": {
+                "type": "string"
+              },
+              "prefix": {
+                "type": "string"
+              },
+              "abilities": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "expires_at": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              }
+            }
+          },
+          "customer": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Account"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/me": {
+      "get": {
+        "summary": "The calling token",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Me"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      }
+    },
+    "/accounts": {
+      "get": {
+        "summary": "List accounts",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "x-ability": "accounts:read",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "customer",
+                "vendor"
+              ]
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "1-100, default 50"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Account"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/PageMeta"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        },
+        "description": "Customer tokens see only their own account."
+      },
+      "post": {
+        "summary": "Create an account",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "x-ability": "accounts:write",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Account"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/accounts/{account}": {
+      "get": {
+        "summary": "Get an account",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "x-ability": "accounts:read",
+        "parameters": [
+          {
+            "name": "account",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Account"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      },
+      "patch": {
+        "summary": "Update an account (partial)",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "x-ability": "accounts:write",
+        "parameters": [
+          {
+            "name": "account",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Account"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/accounts/{account}/ips": {
+      "get": {
+        "summary": "List a customer's IPs",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "x-ability": "accounts:read",
+        "parameters": [
+          {
+            "name": "account",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/AccountIp"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      },
+      "post": {
+        "summary": "Add a customer IP",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "x-ability": "accounts:write",
+        "parameters": [
+          {
+            "name": "account",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/AccountIp"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        },
+        "description": "The firewall allowlist is updated automatically.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountIpInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/accounts/{account}/ips/{ip}": {
+      "delete": {
+        "summary": "Remove a customer IP",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "x-ability": "accounts:write",
+        "parameters": [
+          {
+            "name": "account",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "ip",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No content"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      }
+    },
+    "/accounts/{account}/ledger": {
+      "get": {
+        "summary": "Balance history",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "x-ability": "accounts:read",
+        "parameters": [
+          {
+            "name": "account",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "1-100, default 50"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/LedgerEntry"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/PageMeta"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      },
+      "post": {
+        "summary": "Record a payment or adjustment",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "x-ability": "accounts:write",
+        "parameters": [
+          {
+            "name": "account",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/LedgerEntry"
+                    },
+                    "balance": {
+                      "type": "string",
+                      "description": "Decimal string, e.g. \"12.500000\"",
+                      "examples": [
+                        "12.500000"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LedgerEntryInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rate-decks": {
+      "get": {
+        "summary": "List rate decks",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "x-ability": "rates:read",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "1-100, default 50"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/RateDeck"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/PageMeta"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a rate deck",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "x-ability": "rates:write",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/RateDeck"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RateDeckInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rate-decks/{rate_deck}": {
+      "get": {
+        "summary": "Get a rate deck",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "x-ability": "rates:read",
+        "parameters": [
+          {
+            "name": "rate_deck",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/RateDeck"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      },
+      "patch": {
+        "summary": "Update a rate deck (partial)",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "x-ability": "rates:write",
+        "parameters": [
+          {
+            "name": "rate_deck",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/RateDeck"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RateDeckInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rate-decks/{rate_deck}/rates": {
+      "get": {
+        "summary": "List rates",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "x-ability": "rates:read",
+        "parameters": [
+          {
+            "name": "rate_deck",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "prefix",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Prefix starts with"
+          },
+          {
+            "name": "at",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "In effect at (default now)"
+          },
+          {
+            "name": "all",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Include expired and scheduled"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "1-100, default 50"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Rate"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/PageMeta"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      }
+    },
+    "/rate-decks/{rate_deck}/imports": {
+      "post": {
+        "summary": "Import a rate deck CSV",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "x-ability": "rates:write",
+        "parameters": [
+          {
+            "name": "rate_deck",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/RateImport"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        },
+        "description": "Columns: prefix, rate; optional destination, connect_fee, initial_increment, increment, effective_from. Validated in full; any error rejects the file. Poll the import for the result.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "mode": {
+                    "type": "string",
+                    "enum": [
+                      "update",
+                      "replace"
+                    ]
+                  },
+                  "effective_from": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                },
+                "required": [
+                  "file",
+                  "mode"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rate-decks/{rate_deck}/imports/{import}": {
+      "get": {
+        "summary": "Get an import's status",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "x-ability": "rates:read",
+        "parameters": [
+          {
+            "name": "rate_deck",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "import",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/RateImport"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      }
+    },
+    "/trunks": {
+      "get": {
+        "summary": "List vendor trunks",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "x-ability": "routing:read",
+        "parameters": [
+          {
+            "name": "vendor_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "1-100, default 50"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Trunk"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/PageMeta"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a trunk",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "x-ability": "routing:write",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Trunk"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TrunkInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/trunks/{trunk}": {
+      "get": {
+        "summary": "Get a trunk with its gateways",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "x-ability": "routing:read",
+        "parameters": [
+          {
+            "name": "trunk",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Trunk"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      },
+      "patch": {
+        "summary": "Update a trunk (partial)",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "x-ability": "routing:write",
+        "parameters": [
+          {
+            "name": "trunk",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Trunk"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TrunkInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/trunks/{trunk}/gateways": {
+      "post": {
+        "summary": "Add a gateway",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "x-ability": "routing:write",
+        "parameters": [
+          {
+            "name": "trunk",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Gateway"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        },
+        "description": "FreeSWITCH and the firewall are updated automatically.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GatewayInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/trunks/{trunk}/gateways/{gateway}": {
+      "patch": {
+        "summary": "Update a gateway (partial)",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "x-ability": "routing:write",
+        "parameters": [
+          {
+            "name": "trunk",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "gateway",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Gateway"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GatewayInput"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Remove a gateway",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "x-ability": "routing:write",
+        "parameters": [
+          {
+            "name": "trunk",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "gateway",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No content"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      }
+    },
+    "/routing-plans": {
+      "get": {
+        "summary": "List routing plans",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "x-ability": "routing:read",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "1-100, default 50"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/RoutingPlan"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/PageMeta"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a routing plan",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "x-ability": "routing:write",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/RoutingPlan"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoutingPlanInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/routing-plans/{routing_plan}": {
+      "get": {
+        "summary": "Get a routing plan with its routes",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "x-ability": "routing:read",
+        "parameters": [
+          {
+            "name": "routing_plan",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/RoutingPlan"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      },
+      "patch": {
+        "summary": "Update a routing plan (partial)",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "x-ability": "routing:write",
+        "parameters": [
+          {
+            "name": "routing_plan",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/RoutingPlan"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoutingPlanInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/routing-plans/{routing_plan}/routes": {
+      "post": {
+        "summary": "Add a route",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "x-ability": "routing:write",
+        "parameters": [
+          {
+            "name": "routing_plan",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Route"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RouteInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/routing-plans/{routing_plan}/routes/{route}": {
+      "patch": {
+        "summary": "Update a route (enabled, priority, weight)",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "x-ability": "routing:write",
+        "parameters": [
+          {
+            "name": "routing_plan",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "route",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Route"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RouteInput"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Remove a route",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "x-ability": "routing:write",
+        "parameters": [
+          {
+            "name": "routing_plan",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "route",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No content"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      }
+    },
+    "/route-test": {
+      "post": {
+        "summary": "Test how a number would route",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "x-ability": "routing:read",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/RouteTestResult"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        },
+        "description": "Runs the same routing function FreeSWITCH uses. Nothing is reserved.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RouteTestInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cdrs": {
+      "get": {
+        "summary": "List call records (newest first)",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "x-ability": "cdrs:read",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Default: 24h before `to`. Range max 31 days."
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Default: now"
+          },
+          {
+            "name": "customer_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "vendor_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "trunk_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "number",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Destination prefix"
+          },
+          {
+            "name": "caller",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "answered",
+                "failed",
+                "rejected"
+              ]
+            }
+          },
+          {
+            "name": "sip",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "reason",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Cdr"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/CursorMeta"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        },
+        "description": "Customer tokens see only their own calls, without vendor or cost fields."
+      }
+    },
+    "/cdrs/summary": {
+      "get": {
+        "summary": "Totals for the filtered calls",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "x-ability": "cdrs:read",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Default: 24h before `to`. Range max 31 days."
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Default: now"
+          },
+          {
+            "name": "customer_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "vendor_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "trunk_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "number",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Destination prefix"
+          },
+          {
+            "name": "caller",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "answered",
+                "failed",
+                "rejected"
+              ]
+            }
+          },
+          {
+            "name": "sip",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "reason",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/CdrSummary"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      }
+    },
+    "/cdrs/{cdr}": {
+      "get": {
+        "summary": "Get a call record with its vendor attempts",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "x-ability": "cdrs:read",
+        "parameters": [
+          {
+            "name": "cdr",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Cdr"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      }
+    },
+    "/invoices": {
+      "get": {
+        "summary": "List invoices",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "x-ability": "billing:read",
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "issued",
+                "void"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "1-100, default 50"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Invoice"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/PageMeta"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      }
+    },
+    "/invoices/{invoice}": {
+      "get": {
+        "summary": "Get an invoice with its lines",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "x-ability": "billing:read",
+        "parameters": [
+          {
+            "name": "invoice",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Invoice"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      }
+    }
+  }
+}

@@ -6,6 +6,9 @@ use App\Services\Freeswitch\EventSocket;
 use App\Services\MailSettings;
 use App\Services\Freeswitch\GatewaySync;
 use Carbon\CarbonImmutable;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
@@ -35,6 +38,10 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+
+        // REST API: 120 requests a minute per token (per IP before authentication).
+        RateLimiter::for('api', fn (Request $request) => Limit::perMinute(120)
+            ->by(($request->attributes->get('api_token')?->id ? 'token:'.$request->attributes->get('api_token')->id : 'ip:'.$request->ip())));
 
         // SMTP settings come from Settings → Email, applied only when mail is sent.
         $this->app->afterResolving('mail.manager', fn () => MailSettings::apply());

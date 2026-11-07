@@ -114,7 +114,8 @@ class RoutingPlanController extends Controller
         return back();
     }
 
-    private function validated(Request $request, ?RoutingPlan $plan = null): array
+    /** Also used by the REST API, so both validate identically. */
+    public function validated(Request $request, ?RoutingPlan $plan = null): array
     {
         return $request->validate([
             'name' => ['required', 'string', 'max:255', Rule::unique('routing_plans', 'name')->ignore($plan)],

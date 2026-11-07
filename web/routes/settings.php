@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Settings\ApiTokenController;
 use App\Http\Controllers\Settings\CertificateController;
 use App\Http\Controllers\Settings\EmailController;
 use App\Http\Controllers\Settings\ProfileController;
@@ -32,6 +33,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('settings/certificate', [CertificateController::class, 'store'])
         ->middleware([RequirePassword::class, 'throttle:6,1'])
         ->name('certificate.store');
+    // REST API tokens. Creating and revoking require a recent password confirmation.
+    Route::get('settings/api-tokens', [ApiTokenController::class, 'index'])->name('api-tokens.index');
+    Route::post('settings/api-tokens', [ApiTokenController::class, 'store'])->middleware(RequirePassword::class)->name('api-tokens.store');
+    Route::delete('settings/api-tokens/{api_token}', [ApiTokenController::class, 'destroy'])->middleware(RequirePassword::class)->name('api-tokens.destroy');
+
     // Outgoing email (SMTP) for invoices and alerts. Changing it requires a recent password confirmation.
     Route::get('settings/email', [EmailController::class, 'edit'])->name('email.edit');
     Route::put('settings/email', [EmailController::class, 'update'])->middleware(RequirePassword::class)->name('email.update');

@@ -63,7 +63,8 @@ class GatewayController extends Controller
         return to_route('trunks.show', $trunk);
     }
 
-    private function validated(Request $request, Trunk $trunk, ?Gateway $gateway = null): array
+    /** Also used by the REST API, so both validate identically. */
+    public function validated(Request $request, Trunk $trunk, ?Gateway $gateway = null): array
     {
         $request->merge([
             'name' => Str::slug((string) ($request->input('name') ?: $trunk->account->code.'-'.$trunk->name.'-'.Str::lower(Str::random(4)))),
