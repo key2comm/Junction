@@ -17,7 +17,7 @@ A Class 4 softswitch routes and manages high-volume long-distance and internatio
 
 FreeSWITCH relays every call's media (RTP). The current 1 vCPU droplet is for building and testing only, and handles roughly 30–50 calls without transcoding. Production needs a larger server, or several media servers behind a Kamailio SIP proxy. That's revisited after phase 3.
 
-## Server
+## Test server
 
 | | |
 |---|---|
@@ -38,24 +38,54 @@ FreeSWITCH relays every call's media (RTP). The current 1 vCPU droplet is for bu
 | 16384-32768/udp | RTP media | anywhere |
 | 9090 | Cockpit | closed |
 
+## Architecture
+
+```mermaid
+flowchart LR
+  C[Customer carriers] -- SIP 5080 --> FS
+  FS[FreeSWITCH B2BUA<br/>Lua routing] -- SIP 5080 --> V[Vendor carriers]
+  FS -- "routing lookups (read-only)" --> DB[(PostgreSQL)]
+  FS -- CDRs --> DB
+  L[Laravel<br/>billing + API + admin UI] --> DB
+  L -- ESL --> FS
+  U[Admin UI<br/>Vue + Inertia] --> L
+  API[API clients /<br/>customer portal] -- REST /api/v1 --> L
+```
+
+- **The call path never waits on PHP.** FreeSWITCH's Lua routing reads PostgreSQL directly, using cached prepared queries, so calls keep routing even if the web app is down or slow.
+- **Laravel is the system of record.** It owns every write (carriers, rates, routes, balances), billing, the API, and the admin UI.
+- **One API, two consumers.** The admin UI and outside API clients use the same domain logic. Inertia pages and the REST controllers call the same services.
+
+## Billing
+
+- **Accounts:** a company can be a customer, a vendor, or both. Customers are prepaid or postpaid, with a credit limit, currency, and time zone.
+- **Rating:** rate decks are versioned with effective dates (increases need notice; decreases apply immediately). Each rate has its own billing increments (60/60, 6/6, 1/1), a minimum duration, and a connection fee. Every CDR is rated twice, at sell (customer) and buy (vendor) prices, which gives the margin per call.
+- **Real-time enforcement:** at call setup, Lua checks the customer's available balance (balance + credit − amount reserved by calls in progress), works out the maximum call duration at the sell rate, and schedules a hangup at that point. A blocked prefix, a below-cost margin, or no funds rejects the call with a configurable SIP code.
+- **Money flow:** balances, payments, and manual adjustments are recorded in an immutable ledger. Invoices are generated per billing cycle as PDF and CSV. Vendor invoices are reconciled against our CDRs later.
+
+## LCR
+
+- Longest-prefix match against each vendor's current rate deck, filtered by the customer's routing plan (allowed vendors, route classes such as premium/standard/CLI).
+- Vendors ranked by cost, then priority or weight, and adjusted by quality (ASR/ACD/PDD). Static overrides are available (fixed order, load-balance percentages, blocked vendors per prefix).
+- Failover to the next vendor on configurable SIP codes (503/502/408/480 and others), with a maximum number of attempts and a time budget. 486 (busy) and 404 (not found) are final and don't trigger failover.
+- Every attempt is logged so "why did this call go to vendor X" can be answered from the CDR.
+
+## API
+
+- Versioned REST API at `/api/v1` (Laravel). Authentication with Sanctum tokens; scopes separate admin access from customer-portal access.
+- Resources: accounts, carrier IPs and gateways, rate decks (including CSV import), routing plans, CDRs (filter and export), balances and payments, invoices, live calls, and stats.
+- An OpenAPI spec is generated from the code and published with the docs. Webhooks (low balance, gateway down, rate import finished) come later.
+
 ## Phases
 
-1. **Harden the host:** nftables firewall, fail2ban (sshd now, SIP after phase 2), SSH key-only.
-2. **FreeSWITCH:** install from the SignalWire EL10 repo (needs a SignalWire personal access token, which is never stored in git). Strip the demo config. Bind the profiles as in the port layout. Set up an event socket on localhost with a strong password.
-3. **Class 4 core:** this is the main work.
-   - PostgreSQL schema for carriers (customer or vendor), their IPs, rate decks, routes, and CDRs.
-   - Identify the customer from the source IP, then normalize the number to E.164.
-   - LCR lookup with longest-prefix match. Vendor failover on 503/486/408-type responses, with limits on how many vendors are tried.
-   - CPS and channel limits through `mod_hash`/`limit`. Margin check. Blocked prefixes.
-   - CDRs into PostgreSQL with both buy and sell rating.
-   - Routing logic in Lua, so routes stay in the database rather than in XML.
-4. **Quality and operations:** per-vendor ASR/ACD/PDD, alerts, and rate deck CSV import.
-5. **nginx and admin UI:** Let's Encrypt for `theswitch.key2pbx.ca`.
-   - Admin UI is **Laravel** (backend) with **Vue 3 + Inertia** (frontend), built with Vite. It's served by nginx and PHP-FPM.
-   - The app is installed under `/var/www/html` (`SS_WEB_ROOT`), and nginx serves `/var/www/html/public`.
-   - Laravel uses the same PostgreSQL database as the routing engine, which makes it the source of truth for carriers, rate decks, and routes. It talks to FreeSWITCH through the event socket (ESL) for live calls, reloads, and gateway status. Queue workers and the scheduler run as systemd units, and handle rate deck imports and stats.
-   - Pages: carriers and their IPs, rate decks, routes, CDRs and stats, and live calls.
-6. **Minimal PBX:** extensions, voicemail, simple IVR, and WebRTC through nginx WSS. Calls to outside numbers go through the same LCR engine as wholesale traffic.
+1. **Harden the host** (done on the test server): nftables firewall, fail2ban, SSH key-only.
+2. **FreeSWITCH** (building): from public source with no SignalWire token. Replace the stock config with a Softswitch config that has two profiles (`carrier` on 5080, `internal` on 5060) and the event socket on localhost.
+3. **Data model and Laravel skeleton:** PostgreSQL install step. Laravel + Vue + Inertia app under `/var/www/html`, with nginx, PHP-FPM, and Let's Encrypt. Migrations for accounts, IPs, gateways, rate decks, routing plans, CDRs, and the ledger. Admin login.
+4. **Routing engine:** Lua dialplan with customer identification by source IP (and tech-prefix), number normalization, LCR, failover, CPS and channel limits, balance checks, and maximum duration. FreeSWITCH gateways and the firewall `carriers` set generated from the database.
+5. **Billing:** CDRs into PostgreSQL, rating, ledger, invoices, rate deck import with effective dates.
+6. **API:** `/api/v1` with token scopes and OpenAPI docs. A customer portal built on the same API.
+7. **Quality and operations:** ASR/ACD/PDD stats, alerts, live calls view, and dashboards.
+8. **Minimal PBX:** extensions, voicemail, simple IVR, and WebRTC through nginx WSS, with outbound calls routed through LCR.
 
 ## Deploy model
 
