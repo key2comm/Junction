@@ -31,6 +31,14 @@ Generated secrets (event socket password and others) are kept in `/etc/softswitc
 | 90-app | Deploys the admin UI (Laravel + Vue + Inertia) to `/var/www/html`, runs migrations, starts the queue worker and scheduler, creates the first admin, and syncs gateways and the firewall |
 | 95-selftest | Places real test calls through the switch and checks routing, failover, rejections, the funds cut-off, and billing |
 
+### REST API
+
+Create a token in **Settings → API tokens**, then call `https://<your-server>/api/v1/...` with `Authorization: Bearer ss_…`. The OpenAPI 3.1 spec is at `/api/v1/openapi.json`. Customer-scoped tokens only see that customer's account, calls, and invoices.
+
+```sh
+curl -H "Authorization: Bearer $TOKEN" https://switch.example.com/api/v1/cdrs/summary
+```
+
 ### Self-test
 
 The switch can test itself without any external tools. A loopback-only SIP profile acts as a fake customer and fake vendors, and every call goes through the real routing engine and billing:
