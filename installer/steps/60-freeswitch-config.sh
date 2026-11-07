@@ -24,7 +24,11 @@ if [ -d "$conf" ] && [ ! -f "$conf/.softswitch" ]; then
 	info "Stock FreeSWITCH config moved to $stock"
 fi
 
-checksum() { find "$conf" "$scripts" -type f ! -path "$conf/sip_profiles/carrier/*" -print0 2>/dev/null | sort -z | xargs -0 -r sha256sum | sha256sum; }
+# (Tolerates missing directories: on first install the config doesn't exist yet.)
+checksum() {
+	{ find "$conf" "$scripts" -type f ! -path "$conf/sip_profiles/carrier/*" -print0 2>/dev/null || true; } \
+		| sort -z | xargs -0 -r sha256sum | sha256sum
+}
 before="$(checksum)"
 
 # Render every file in the repo tree; remove files the repo no longer has
