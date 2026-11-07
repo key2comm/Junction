@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\RateDeckController;
 use App\Http\Controllers\Admin\RateImportController;
 use App\Http\Controllers\Admin\RoutingPlanController;
 use App\Http\Controllers\Admin\TrunkController;
+use App\Http\Controllers\Admin\VendorBillingController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -42,6 +43,14 @@ Route::middleware(['auth'])->group(function () {
     Route::get('invoices/{invoice}/csv', [InvoiceController::class, 'csv'])->name('invoices.csv');
     Route::post('invoices/{invoice}/void', [InvoiceController::class, 'void'])->name('invoices.void');
     Route::post('accounts/{account}/invoices', [InvoiceController::class, 'store'])->middleware('throttle:20,1')->name('accounts.invoices.store');
+
+    // Vendor payables and vendor invoice reconciliation
+    Route::post('accounts/{account}/vendor-ledger', [VendorBillingController::class, 'storeEntry'])->middleware('throttle:30,1')->name('accounts.vendor-ledger.store');
+    Route::post('accounts/{account}/vendor-invoices', [VendorBillingController::class, 'storeInvoice'])->middleware('throttle:20,1')->name('accounts.vendor-invoices.store');
+    Route::get('vendor-invoices/{vendor_invoice}', [VendorBillingController::class, 'showInvoice'])->name('vendor-invoices.show');
+    Route::post('vendor-invoices/{vendor_invoice}/accept', [VendorBillingController::class, 'accept'])->name('vendor-invoices.accept');
+    Route::post('vendor-invoices/{vendor_invoice}/dispute', [VendorBillingController::class, 'dispute'])->name('vendor-invoices.dispute');
+    Route::post('vendor-invoices/{vendor_invoice}/refresh', [VendorBillingController::class, 'refresh'])->name('vendor-invoices.refresh');
 
     Route::resource('rate-decks', RateDeckController::class)->except(['destroy']);
     Route::post('rate-decks/{rate_deck}/imports', [RateImportController::class, 'store'])

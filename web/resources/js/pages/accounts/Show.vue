@@ -5,6 +5,7 @@ import AccountIpController from '@/actions/App/Http/Controllers/Admin/AccountIpC
 import InvoiceController from '@/actions/App/Http/Controllers/Admin/InvoiceController';
 import LedgerEntryController from '@/actions/App/Http/Controllers/Admin/LedgerEntryController';
 import RouteTester from '@/components/accounts/RouteTester.vue';
+import VendorPayables from '@/components/accounts/VendorPayables.vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
 import { Badge } from '@/components/ui/badge';
@@ -27,6 +28,7 @@ type Account = {
     currency: string;
     credit_limit: string;
     balance: string;
+    vendor_balance: string;
     available: string;
     timezone: string;
     billing_email: string | null;
@@ -43,6 +45,9 @@ const props = defineProps<{
     ips: { id: number; ip: string; tech_prefix: string; description: string | null; enabled: boolean }[];
     trunks: { id: number; name: string; enabled: boolean; gateways_count: number }[];
     ledger: { id: number; type: string; amount: string; balance_after: string; description: string; created_at: string; effective_at: string }[];
+    timezones: string[];
+    vendorLedger: { id: number; type: string; amount: string; balance_after: string; description: string; effective_at: string }[];
+    vendorInvoices: { id: number; reference: string; period_start: string; period_end: string; timezone: string; amount: string; our_amount: string; status: string; difference: string }[];
     invoices: { id: number; number: string; status: string; period_start: string; timezone: string; currency: string; usage_total: string; amount_due: string }[];
 }>();
 
@@ -268,6 +273,16 @@ const select =
                     <li v-if="trunks.length === 0" class="px-3 py-6 text-center text-muted-foreground">No trunks yet.</li>
                 </ul>
             </section>
+
+            <VendorPayables
+                v-if="account.is_vendor"
+                :account-id="account.id"
+                :currency="account.currency"
+                :owed="account.vendor_balance"
+                :timezones="timezones"
+                :entries="vendorLedger"
+                :invoices="vendorInvoices"
+            />
 
             <section class="space-y-2 text-sm">
                 <Heading variant="small" title="Details" />

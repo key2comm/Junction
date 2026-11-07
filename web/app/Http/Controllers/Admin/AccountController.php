@@ -78,7 +78,7 @@ class AccountController extends Controller
         return Inertia::render('accounts/Show', [
             'account' => [
                 ...$account->only(['id', 'name', 'code', 'is_customer', 'is_vendor', 'currency', 'credit_limit',
-                    'balance', 'timezone', 'billing_email', 'noc_email', 'max_channels', 'max_cps', 'notes']),
+                    'balance', 'vendor_balance', 'timezone', 'billing_email', 'noc_email', 'max_channels', 'max_cps', 'notes']),
                 'status' => $account->status->value,
                 'billing_type' => $account->billing_type->value,
                 'available' => $account->availableFunds(),
@@ -89,6 +89,15 @@ class AccountController extends Controller
             'trunks' => $account->trunks->map->only(['id', 'name', 'enabled', 'gateways_count']),
             'ledger' => $account->ledgerEntries()->latest('id')->limit(50)
                 ->get(['id', 'type', 'amount', 'balance_after', 'description', 'created_at', 'effective_at']),
+            'timezones' => $account->is_vendor ? timezone_identifiers_list() : [],
+            'vendorLedger' => $account->is_vendor
+                ? $account->vendorLedgerEntries()->latest('id')->limit(50)->get(['id', 'type', 'amount', 'balance_after', 'description', 'effective_at'])
+                : [],
+            'vendorInvoices' => $account->is_vendor
+                ? $account->vendorInvoices()->orderByDesc('period_start')->limit(24)
+                    ->get(['id', 'reference', 'period_start', 'period_end', 'timezone', 'amount', 'our_amount', 'status'])
+                    ->map(fn ($i) => [...$i->toArray(), 'difference' => $i->difference()])
+                : [],
             'invoices' => $account->is_customer
                 ? Invoice::query()->where('account_id', $account->id)->orderByDesc('period_start')->orderByDesc('id')->limit(24)
                     ->get(['id', 'number', 'status', 'period_start', 'period_end', 'timezone', 'currency', 'usage_total', 'amount_due'])

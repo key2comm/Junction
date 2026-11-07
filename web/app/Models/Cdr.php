@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * One customer call. Vendor attempts (failover) are in cdr_attempts; the
  * buy-side columns describe the attempt that carried the call.
  */
-#[Fillable(['uuid', 'customer_account_id', 'source_ip', 'caller', 'callee', 'destination', 'started_at', 'answered_at', 'ended_at', 'billsec', 'pdd_ms', 'sip_code', 'hangup_cause', 'attempts', 'sell_prefix', 'sell_destination', 'sell_rate', 'sell_cost', 'vendor_account_id', 'trunk_id', 'gateway_id', 'buy_prefix', 'buy_rate', 'buy_cost', 'rated_at', 'posted_at'])]
+#[Fillable(['uuid', 'customer_account_id', 'source_ip', 'caller', 'callee', 'destination', 'started_at', 'answered_at', 'ended_at', 'billsec', 'pdd_ms', 'sip_code', 'hangup_cause', 'attempts', 'sell_prefix', 'sell_destination', 'sell_rate', 'sell_cost', 'vendor_account_id', 'trunk_id', 'gateway_id', 'buy_prefix', 'buy_rate', 'buy_cost', 'rated_at', 'posted_at', 'vendor_posted_at'])]
 class Cdr extends Model
 {
     /** @use HasFactory<CdrFactory> */
@@ -27,6 +27,7 @@ class Cdr extends Model
             'ended_at' => 'datetime',
             'rated_at' => 'datetime',
             'posted_at' => 'datetime',
+            'vendor_posted_at' => 'datetime',
             'billsec' => 'integer',
             'pdd_ms' => 'integer',
             'sip_code' => 'integer',

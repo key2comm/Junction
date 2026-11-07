@@ -71,8 +71,8 @@ class CdrIngestor
             DB::delete('DELETE FROM active_calls WHERE uuid = ?::uuid', [$uuid]);
 
             $existing = Cdr::query()->where('uuid', $uuid)->lockForUpdate()->first();
-            if ($existing?->posted_at) {
-                return $existing; // already billed: never re-rate
+            if ($existing?->posted_at || $existing?->vendor_posted_at) {
+                return $existing; // already on a ledger: never re-rate
             }
 
             $cdr = $existing ?? new Cdr(['uuid' => $uuid]);

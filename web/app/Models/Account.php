@@ -30,6 +30,7 @@ class Account extends Model
 
     protected $attributes = [
         'balance' => 0,
+        'vendor_balance' => 0,
     ];
 
     protected function casts(): array
@@ -41,6 +42,7 @@ class Account extends Model
             'billing_type' => BillingType::class,
             'credit_limit' => 'decimal:4',
             'balance' => 'decimal:6',
+            'vendor_balance' => 'decimal:6',
             'max_channels' => 'integer',
             'max_cps' => 'decimal:2',
         ];
@@ -74,6 +76,17 @@ class Account extends Model
     public function ledgerEntries(): HasMany
     {
         return $this->hasMany(LedgerEntry::class);
+    }
+
+    /** What we owe this account as a vendor (payables). */
+    public function vendorLedgerEntries(): HasMany
+    {
+        return $this->hasMany(VendorLedgerEntry::class);
+    }
+
+    public function vendorInvoices(): HasMany
+    {
+        return $this->hasMany(VendorInvoice::class);
     }
 
     /**
