@@ -18,6 +18,7 @@ _Last updated: 2026-11-07. All 8 phases of `docs/PLAN.md` are done._
   - REST API at `/api/v1` with an OpenAPI spec, and the customer portal at `/portal`
   - vendor quality stats, live calls, and fraud and operational alerts
   - minimal PBX (phase 8): extensions, voicemail, IVR with WAV greeting, DIDs, WebRTC at `wss://<host>/ws`, and a JsSIP web phone (admin: PBX → account → Web phone; portal: Web phone)
+- **Admin UI restyled with Tabler** (the user's choice, replacing the starter kit's Tailwind/shadcn look). Every admin page was screenshot-checked with headless Firefox. Portal pages share the same components but weren't individually screenshot-checked.
 - **Tests:** 185 automated tests pass (`scripts/test-on-server.sh theswitch`). The built-in call self-test passes all 11 scenarios, 4 of them PBX.
 - **Git:** everything is committed and pushed to `github.com/key2comm/Softswitch` (private), on branch `main`.
 - **Test server** `theswitch.key2pbx.ca` (147.182.148.63, Rocky 10, 1 vCPU, 1.7 GB):
@@ -41,6 +42,8 @@ _Last updated: 2026-11-07. All 8 phases of `docs/PLAN.md` are done._
    - server-generated PDF invoices (needs a new PDF library dependency, so ask first)
 
 ## Things to remember
+
+- **UI checks without a browser here:** headless Firefox driven over WebDriver BiDi (a small stdlib-only Python client) can log in and screenshot pages. It needs a login. Create a temporary admin only with the user's OK, and delete it afterwards. Tabler gotcha: a horizontal `.navbar` as a sibling of `.navbar-vertical` hides the sidebar, so the top bar lives inside `.page-wrapper`.
 
 - **Deploying:** commit, then `scripts/push-to-server.sh theswitch -- --steps 90` (copy plus app step). Add `60` when `deploy/freeswitch` changes and `80` when `deploy/nginx` changes. Run the self-test after anything that touches calls: `sudo -u softswitch bash -c 'cd /var/www/html && php artisan softswitch:selftest'`.
 - **No PHP or Node on this laptop.** Tests run on the server through `scripts/test-on-server.sh`. To change npm dependencies, regenerate `package-lock.json` on the server (`npm install --package-lock-only`) and copy it back.
