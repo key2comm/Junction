@@ -26,11 +26,21 @@ Generated secrets (event socket password and others) are kept in `/etc/softswitc
 | 40-ssh | Turns off SSH password and root login (only when you already log in with a key) |
 | 50-freeswitch | Builds FreeSWITCH, sofia-sip, and spandsp from source |
 | 60-freeswitch-config | Secures the stock config and starts FreeSWITCH |
+| 70-postgresql | Sets up PostgreSQL on localhost: database, user, and a generated password |
+| 80-web | Sets up nginx and PHP-FPM, a self-signed certificate, and the Let's Encrypt helper |
+| 90-app | Deploys the admin UI (Laravel + Vue + Inertia) to `/var/www/html`, runs migrations, starts the queue worker and scheduler, and creates the first admin |
+
+After installing, open `https://<your-server>` and sign in as `admin@<hostname>`. Get the initial password with `sudo grep ADMIN_INITIAL_PASSWORD /etc/softswitch/secrets`. To switch to a trusted certificate, go to **Settings → SSL certificate**. Public sign-up is disabled, so add more admins with:
+
+```sh
+sudo -u softswitch bash -c 'cd /var/www/html && php artisan softswitch:admin someone@example.com'
+```
 
 ## Development
 
 The repo is synced across devices through GitHub. `git pull` before you start; commit and `git push` when you're done.
 
-`scripts/push-to-server.sh theswitch -- --steps 20` copies the committed code to the test server and runs the chosen installer steps there.
+- `scripts/push-to-server.sh theswitch -- --steps 90` copies the committed code to the test server and runs the chosen installer steps there.
+- `scripts/test-on-server.sh theswitch` runs the Laravel tests, frontend build, and type check on the server. It works from devices that don't have PHP or Node installed.
 
 See [docs/PLAN.md](docs/PLAN.md) for the architecture and roadmap.
