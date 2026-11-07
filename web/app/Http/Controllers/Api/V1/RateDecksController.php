@@ -18,7 +18,10 @@ class RateDecksController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        return $this->paged(RateDeck::query()->orderBy('id')->paginate($this->perPage($request)), fn ($d) => Present::deck($d));
+        $request->validate(['kind' => ['nullable', 'in:tariff,carrier']]);
+
+        return $this->paged(RateDeck::query()->when($request->query('kind'), fn ($q, $k) => $q->where('kind', $k))
+            ->orderBy('id')->paginate($this->perPage($request)), fn ($d) => Present::deck($d));
     }
 
     public function show(RateDeck $rateDeck): JsonResponse
@@ -35,7 +38,7 @@ class RateDecksController extends Controller
 
     public function update(Request $request, RateDeck $rateDeck, RateDeckController $admin): JsonResponse
     {
-        $request->replace([...$rateDeck->only(['name', 'currency', 'description']), ...$request->all()]);
+        $request->replace([...$rateDeck->only(['name', 'currency', 'description']), 'kind' => $rateDeck->kind->value, ...$request->all()]);
         $rateDeck->update($admin->validated($request, $rateDeck));
 
         return response()->json(['data' => Present::deck($rateDeck->fresh())]);

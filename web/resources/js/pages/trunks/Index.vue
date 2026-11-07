@@ -30,7 +30,7 @@ defineOptions({ layout: { breadcrumbs: [{ title: 'Trunks', href: index() }] } })
 
     <div class="ss-stack-4">
         <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
-            <Heading title="Carrier trunks" description="Where traffic goes: each trunk is a carrier product with a buy rate deck and one or more gateways" />
+            <Heading title="Carrier trunks" description="Where traffic goes: each trunk is a carrier product with its carrier rates and one or more gateways" />
             <Button as-child><Link :href="create()"><Plus class="icon" /> New trunk</Link></Button>
         </div>
 
@@ -40,7 +40,7 @@ defineOptions({ layout: { breadcrumbs: [{ title: 'Trunks', href: index() }] } })
                     <tr>
                         <th class="fw-medium">Carrier</th>
                         <th class="fw-medium">Trunk</th>
-                        <th class="fw-medium">Buy rates</th>
+                        <th class="fw-medium">Carrier rates</th>
                         <th class="text-end fw-medium">Gateways</th>
                         <th class="text-end fw-medium">Routes</th>
                         <th class="fw-medium">Limits</th>

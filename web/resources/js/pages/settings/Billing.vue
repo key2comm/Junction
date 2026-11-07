@@ -55,7 +55,7 @@ const on = ref(props.settings.enabled);
                         <span class="fw-medium">Routing only</span>
                         <span class="small text-secondary">
                             Another platform bills your customers. No invoices or low-balance emails are sent, and calls aren't limited by balance.
-                            Rate decks still drive least-cost routing, and call records still show cost and margin.
+                            Carrier rates still drive least-cost routing, and call records still show cost and margin.
                         </span>
                     </span>
                 </label>

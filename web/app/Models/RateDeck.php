@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\RateDeckKind;
 use App\Support\Prefixes;
 use Database\Factories\RateDeckFactory;
 use DateTimeInterface;
@@ -11,14 +12,26 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * A per-prefix price list. Used as a buy deck (attached to a vendor trunk)
- * or a sell deck (attached to customer accounts).
+ * A per-prefix price list of one kind: a tariff (what customers pay, attached
+ * to customer accounts) or carrier rates (what a carrier charges us, attached
+ * to carrier trunks).
  */
-#[Fillable(['name', 'currency', 'description'])]
+#[Fillable(['name', 'kind', 'currency', 'description'])]
 class RateDeck extends Model
 {
     /** @use HasFactory<RateDeckFactory> */
     use HasFactory;
+
+    protected function casts(): array
+    {
+        return ['kind' => RateDeckKind::class];
+    }
+
+    public function inUse(): bool
+    {
+        return Account::query()->where('sell_rate_deck_id', $this->id)->exists()
+            || Trunk::query()->where('rate_deck_id', $this->id)->exists();
+    }
 
     public function rates(): HasMany
     {

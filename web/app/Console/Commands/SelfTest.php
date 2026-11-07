@@ -428,8 +428,8 @@ class SelfTest extends Command
 
     private function createFixtures(string $ip): void
     {
-        $deck = function (string $name, string $rate): RateDeck {
-            $deck = RateDeck::create(['name' => "SELFTEST {$name}", 'currency' => 'USD']);
+        $deck = function (string $name, string $rate, string $kind = 'carrier'): RateDeck {
+            $deck = RateDeck::create(['name' => "SELFTEST {$name}", 'kind' => $kind, 'currency' => 'USD']);
             Rate::create(['rate_deck_id' => $deck->id, 'prefix' => '990', 'rate' => $rate, 'connect_fee' => 0,
                 'initial_increment' => 6, 'increment' => 6, 'effective_from' => now()->subDay()]);
 
@@ -440,7 +440,7 @@ class SelfTest extends Command
         $customer = Account::create([
             'name' => 'Self-test customer', 'code' => self::CUSTOMER, 'is_customer' => true, 'status' => 'active',
             'currency' => 'USD', 'billing_type' => 'postpaid', 'credit_limit' => '100', 'timezone' => 'UTC',
-            'sell_rate_deck_id' => $deck('sell', '0.06')->id, 'routing_plan_id' => $plan->id,
+            'sell_rate_deck_id' => $deck('sell', '0.06', 'tariff')->id, 'routing_plan_id' => $plan->id,
         ]);
         AccountIp::create(['account_id' => $customer->id, 'ip' => $ip, 'tech_prefix' => self::TECH, 'description' => 'selftest']);
         $vendor = Account::create([

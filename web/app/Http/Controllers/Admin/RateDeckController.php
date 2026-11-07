@@ -2,25 +2,35 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\RateDeckKind;
 use App\Http\Controllers\Controller;
 use App\Models\Account;
 use App\Models\RateDeck;
 use App\Models\RateImport;
 use App\Models\Trunk;
+use App\Support\Currencies;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
+/**
+ * Tariffs (what customers pay) and carrier rates (what carriers charge us):
+ * both are rate decks, listed separately by kind.
+ */
 class RateDeckController extends Controller
 {
-    public function index(): Response
+    /** /tariffs and /carrier-rates (the route supplies the kind). */
+    public function index(Request $request): Response
     {
+        $kind = RateDeckKind::from($request->route('kind'));
         $now = now();
 
         return Inertia::render('rate-decks/Index', [
-            'decks' => RateDeck::query()
+            'kind' => $kind->value,
+            'decks' => RateDeck::query()->where('kind', $kind)
                 ->withCount(['rates as current_rates_count' => fn ($q) => $q->effectiveAt($now)])
                 ->addSelect([
                     'customers_count' => Account::query()->selectRaw('count(*)')->whereColumn('sell_rate_deck_id', 'rate_decks.id'),
@@ -31,15 +41,17 @@ class RateDeckController extends Controller
         ]);
     }
 
-    public function create(): Response
+    public function create(Request $request): Response
     {
-        return Inertia::render('rate-decks/Form', ['deck' => null]);
+        $kind = RateDeckKind::tryFrom((string) $request->query('kind')) ?? RateDeckKind::Carrier;
+
+        return Inertia::render('rate-decks/Form', ['deck' => null, 'kind' => $kind->value, 'canChangeKind' => true, 'currencies' => Currencies::options()]);
     }
 
     public function store(Request $request): RedirectResponse
     {
         $deck = RateDeck::create($this->validated($request));
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Rate deck created. Import a CSV to add rates.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => ($deck->kind === RateDeckKind::Tariff ? 'Tariff' : 'Carrier rates').' created. Import a CSV to add rates.']);
 
         return to_route('rate-decks.show', $deck);
     }
@@ -72,7 +84,7 @@ class RateDeckController extends Controller
         $imports = $rateDeck->imports()->with('user:id,name')->latest('id')->limit(10)->get();
 
         return Inertia::render('rate-decks/Show', [
-            'deck' => $rateDeck->only(['id', 'name', 'currency', 'description']),
+            'deck' => [...$rateDeck->only(['id', 'name', 'currency', 'description']), 'kind' => $rateDeck->kind->value],
             'rates' => $rates,
             'filters' => ['q' => $filters['q'] ?? '', 'when' => $when],
             'imports' => $imports->map(fn (RateImport $i) => [
@@ -89,13 +101,18 @@ class RateDeckController extends Controller
 
     public function edit(RateDeck $rateDeck): Response
     {
-        return Inertia::render('rate-decks/Form', ['deck' => $rateDeck->only(['id', 'name', 'currency', 'description'])]);
+        return Inertia::render('rate-decks/Form', [
+            'deck' => $rateDeck->only(['id', 'name', 'currency', 'description']),
+            'kind' => $rateDeck->kind->value,
+            'canChangeKind' => ! $rateDeck->inUse(),
+            'currencies' => Currencies::options(),
+        ]);
     }
 
     public function update(Request $request, RateDeck $rateDeck): RedirectResponse
     {
         $rateDeck->update($this->validated($request, $rateDeck));
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Rate deck updated.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Saved.']);
 
         return to_route('rate-decks.show', $rateDeck);
     }
@@ -103,12 +120,20 @@ class RateDeckController extends Controller
     /** Also used by the REST API, so both validate identically. */
     public function validated(Request $request, ?RateDeck $deck = null): array
     {
-        $request->merge(['currency' => strtoupper(trim((string) $request->input('currency', 'USD')))]);
+        $request->merge(['currency' => strtoupper(trim((string) $request->input('currency', Currencies::DEFAULT)))]);
 
-        return $request->validate([
+        $data = $request->validate([
             'name' => ['required', 'string', 'max:255', Rule::unique('rate_decks', 'name')->ignore($deck)],
-            'currency' => ['required', 'regex:/^[A-Z]{3}$/'],
+            'kind' => [$deck ? 'sometimes' : 'required', Rule::enum(RateDeckKind::class)],
+            'currency' => ['required', Rule::in(array_keys(Currencies::ALL))],
             'description' => ['nullable', 'string', 'max:2000'],
-        ]);
+        ], ['kind.required' => 'Choose tariff or carrier rates.', 'currency.in' => 'Choose a currency from the list.']);
+
+        // A deck in use keeps its kind (customers use tariffs, trunks use carrier rates).
+        if ($deck && isset($data['kind']) && $data['kind'] !== $deck->kind->value && $deck->inUse()) {
+            throw ValidationException::withMessages(['kind' => "This is in use, so it can't change between tariff and carrier rates."]);
+        }
+
+        return $data;
     }
 }

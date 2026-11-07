@@ -12,10 +12,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { dateTime, money } from '@/lib/format';
+import { deckKind } from '@/lib/rateDecks';
 import type { Paginated } from '@/lib/ui';
 import { selectClass } from '@/lib/ui';
 import { show as showAccount } from '@/routes/accounts';
-import { edit, index, show } from '@/routes/rate-decks';
+import { edit, show } from '@/routes/rate-decks';
 import { show as showTrunk } from '@/routes/trunks';
 
 type Rate = {
@@ -43,7 +44,7 @@ type Import = {
 };
 
 const props = defineProps<{
-    deck: { id: number; name: string; currency: string; description: string | null };
+    deck: { id: number; name: string; kind: 'tariff' | 'carrier'; currency: string; description: string | null };
     rates: Paginated<Rate>;
     filters: { q: string; when: string };
     imports: Import[];
@@ -52,9 +53,9 @@ const props = defineProps<{
 }>();
 
 defineOptions({
-    layout: (props: { deck: { id: number; name: string } }) => ({
+    layout: (props: { deck: { id: number; name: string; kind: 'tariff' | 'carrier' } }) => ({
         breadcrumbs: [
-            { title: 'Rate decks', href: index() },
+            { title: deckKind(props.deck.kind).plural, href: deckKind(props.deck.kind).index() },
             { title: props.deck.name, href: show(props.deck.id) },
         ],
     }),
@@ -147,15 +148,15 @@ const increments = (r: Rate) => `${r.initial_increment}/${r.increment}`;
             <!-- Usage -->
             <section class="ss-stack-3">
                 <Heading variant="small" title="Used by" />
-                <div>
-                    <p class="text-secondary">Customers (sell)</p>
+                <div v-if="deck.kind === 'tariff'">
+                    <p class="text-secondary">Customers</p>
                     <ul>
                         <li v-for="c in usage.customers" :key="c.id"><Link :href="showAccount(c.id)">{{ c.name }}</Link></li>
                         <li v-if="!usage.customers.length" class="text-secondary">—</li>
                     </ul>
                 </div>
-                <div>
-                    <p class="text-secondary">Carrier trunks (buy)</p>
+                <div v-else>
+                    <p class="text-secondary">Carrier trunks</p>
                     <ul>
                         <li v-for="t in usage.trunks" :key="t.id"><Link :href="showTrunk(t.id)">{{ t.account.code }} / {{ t.name }}</Link></li>
                         <li v-if="!usage.trunks.length" class="text-secondary">—</li>

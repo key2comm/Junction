@@ -98,7 +98,7 @@ class TrunkController extends Controller
     {
         return [
             'vendors' => Account::query()->vendors()->orderBy('name')->get(['id', 'name', 'code']),
-            'rateDecks' => RateDeck::query()->orderBy('name')->get(['id', 'name', 'currency']),
+            'rateDecks' => RateDeck::query()->where('kind', 'carrier')->orderBy('name')->get(['id', 'name', 'currency']),
         ];
     }
 
@@ -111,13 +111,13 @@ class TrunkController extends Controller
             'account_id' => ['required', 'integer', Rule::exists('accounts', 'id')->where('is_vendor', true)],
             'name' => ['required', 'string', 'max:255',
                 Rule::unique('trunks', 'name')->where('account_id', $request->integer('account_id'))->ignore($trunk)],
-            'rate_deck_id' => ['nullable', 'integer', 'exists:rate_decks,id'],
+            'rate_deck_id' => ['nullable', 'integer', Rule::exists('rate_decks', 'id')->where('kind', 'carrier')],
             'enabled' => ['boolean'],
             'max_channels' => ['nullable', 'integer', 'min:1', 'max:100000'],
             'max_cps' => ['nullable', 'numeric', 'min:0.1', 'max:10000'],
             'tech_prefix' => ['nullable', 'string', 'max:16', 'regex:/^[0-9#*]*$/'],
             'strip_digits' => ['nullable', 'integer', 'min:0', 'max:15'],
-        ], ['account_id.exists' => 'Choose an account marked as a carrier.']);
+        ], ['account_id.exists' => 'Choose an account marked as a carrier.', 'rate_deck_id.exists' => 'Choose carrier rates (not a customer tariff).']);
 
         return [...$data, 'tech_prefix' => $data['tech_prefix'] ?? '', 'strip_digits' => $data['strip_digits'] ?? 0];
     }

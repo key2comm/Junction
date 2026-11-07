@@ -446,6 +446,14 @@
           "name": {
             "type": "string"
           },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "tariff",
+              "carrier"
+            ],
+            "description": "tariff: what customers pay (used as a customer's sell_rate_deck_id). carrier: what a carrier charges us (used as a trunk's rate_deck_id)."
+          },
           "currency": {
             "type": "string"
           },
@@ -470,6 +478,14 @@
         "properties": {
           "name": {
             "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "tariff",
+              "carrier"
+            ],
+            "description": "tariff: what customers pay (used as a customer's sell_rate_deck_id). carrier: what a carrier charges us (used as a trunk's rate_deck_id). Required when creating; can't change while in use."
           },
           "currency": {
             "type": "string"
@@ -2325,6 +2341,19 @@
         ],
         "x-ability": "rates:read",
         "parameters": [
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "tariff",
+                "carrier"
+              ]
+            },
+            "description": "Only tariffs or only carrier rates."
+          },
           {
             "name": "page",
             "in": "query",

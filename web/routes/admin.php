@@ -92,7 +92,11 @@ Route::middleware(['auth', 'admin'])->group(function () {
         Route::post('vendor-invoices/{vendor_invoice}/refresh', [VendorBillingController::class, 'refresh'])->name('vendor-invoices.refresh');
     });
 
-    Route::resource('rate-decks', RateDeckController::class)->except(['destroy']);
+    // Rate decks, listed by kind: tariffs (customers) and carrier rates (trunks).
+    Route::get('tariffs', [RateDeckController::class, 'index'])->defaults('kind', 'tariff')->name('tariffs.index');
+    Route::get('carrier-rates', [RateDeckController::class, 'index'])->defaults('kind', 'carrier')->name('carrier-rates.index');
+    Route::redirect('rate-decks', '/carrier-rates');
+    Route::resource('rate-decks', RateDeckController::class)->except(['index', 'destroy']);
     Route::post('rate-decks/{rate_deck}/imports', [RateImportController::class, 'store'])
         ->middleware('throttle:10,1')
         ->name('rate-decks.imports.store');

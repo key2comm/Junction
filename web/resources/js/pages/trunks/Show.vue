@@ -60,7 +60,7 @@ defineOptions({
                 <Heading :title="trunk.name" />
                 <p>
                     Carrier <Link :href="showAccount(trunk.vendor.id)" class="fw-medium">{{ trunk.vendor.name }}</Link>
-                    · Buy rates
+                    · Carrier rates
                     <Link v-if="trunk.rate_deck" :href="showDeck(trunk.rate_deck.id)" class="fw-medium">{{ trunk.rate_deck.name }}</Link>
                     <span v-else class="text-danger">not set</span>
                 </p>

@@ -43,6 +43,7 @@ import { index as alerts } from '@/routes/alerts';
 import { index as apiTokens } from '@/routes/api-tokens';
 import { edit as billingSettings } from '@/routes/billing';
 import { edit as certificate } from '@/routes/certificate';
+import { index as carrierRates } from '@/routes/carrier-rates';
 import { index as cdrs } from '@/routes/cdrs';
 import { edit as email } from '@/routes/email';
 import { index as invoices } from '@/routes/invoices';
@@ -55,8 +56,8 @@ import { index as portalInvoices } from '@/routes/portal/invoices';
 import { index as portalRates } from '@/routes/portal/rates';
 import { edit as profile } from '@/routes/profile';
 import { index as quality } from '@/routes/quality';
-import { index as rateDecks } from '@/routes/rate-decks';
 import { index as routingPlans } from '@/routes/routing-plans';
+import { index as tariffs } from '@/routes/tariffs';
 import { index as trunks } from '@/routes/trunks';
 import type { BreadcrumbItem, NavItem, User } from '@/types';
 
@@ -98,7 +99,8 @@ const adminNav = computed((): NavEntry[] => [
         title: 'Routing',
         icon: Route,
         items: [
-            { title: 'Rate decks', href: rateDecks(), icon: Tags },
+            { title: 'Tariffs', href: tariffs(), icon: Tags },
+            { title: 'Carrier rates', href: carrierRates(), icon: Tags },
             { title: 'Trunks', href: trunks(), icon: Cable },
             { title: 'Routing plans', href: routingPlans(), icon: Route },
         ],

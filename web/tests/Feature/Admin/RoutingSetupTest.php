@@ -36,7 +36,7 @@ class RoutingSetupTest extends TestCase
 
     public function test_pages_require_login(): void
     {
-        foreach (['rate-decks.index', 'trunks.index', 'routing-plans.index'] as $route) {
+        foreach (['tariffs.index', 'carrier-rates.index', 'trunks.index', 'routing-plans.index'] as $route) {
             $this->get(route($route))->assertRedirect(route('login'));
         }
     }
@@ -48,7 +48,7 @@ class RoutingSetupTest extends TestCase
         $plan = RoutingPlan::factory()->create();
 
         $pages = [
-            [route('rate-decks.index'), 'rate-decks/Index'], [route('rate-decks.create'), 'rate-decks/Form'],
+            [route('tariffs.index'), 'rate-decks/Index'], [route('carrier-rates.index'), 'rate-decks/Index'], [route('rate-decks.create'), 'rate-decks/Form'],
             [route('rate-decks.show', $deck), 'rate-decks/Show'], [route('rate-decks.edit', $deck), 'rate-decks/Form'],
             [route('trunks.index'), 'trunks/Index'], [route('trunks.create'), 'trunks/Form'],
             [route('trunks.show', $trunk), 'trunks/Show'], [route('trunks.edit', $trunk), 'trunks/Form'],
@@ -65,9 +65,10 @@ class RoutingSetupTest extends TestCase
         Queue::fake();
         Storage::fake('local');
 
-        $this->actingAs($this->admin)->post(route('rate-decks.store'), ['name' => 'A-Z Wholesale', 'currency' => 'cad'])->assertSessionHasNoErrors();
+        $this->actingAs($this->admin)->post(route('rate-decks.store'), ['name' => 'A-Z Wholesale', 'kind' => 'carrier', 'currency' => 'cad'])->assertSessionHasNoErrors();
         $deck = RateDeck::query()->sole();
         $this->assertSame('CAD', $deck->currency);
+        $this->assertSame('carrier', $deck->kind->value);
 
         $file = UploadedFile::fake()->createWithContent('az.csv', "prefix,rate\n1,0.01\n");
         $this->actingAs($this->admin)->post(route('rate-decks.imports.store', $deck), ['file' => $file, 'mode' => 'replace', 'effective_from' => '2026-12-01T00:00'])
@@ -82,6 +83,35 @@ class RoutingSetupTest extends TestCase
         // Only one import per deck at a time.
         $this->actingAs($this->admin)->post(route('rate-decks.imports.store', $deck), ['file' => UploadedFile::fake()->createWithContent('b.csv', "prefix,rate\n"), 'mode' => 'update'])
             ->assertSessionHasErrors('file');
+    }
+
+    public function test_tariffs_and_carrier_rates_are_kept_apart(): void
+    {
+        $tariff = RateDeck::factory()->tariff()->create(['name' => 'Retail']);
+        $carrier = RateDeck::factory()->create(['name' => 'Acme A-Z']);
+
+        // Each list shows only its own kind.
+        $this->actingAs($this->admin)->get(route('tariffs.index'))->assertInertia(fn (Assert $p) => $p->where('kind', 'tariff')->has('decks', 1)->where('decks.0.name', 'Retail'));
+        $this->actingAs($this->admin)->get(route('carrier-rates.index'))->assertInertia(fn (Assert $p) => $p->where('kind', 'carrier')->has('decks', 1)->where('decks.0.name', 'Acme A-Z'));
+        $this->actingAs($this->admin)->get('/rate-decks')->assertRedirect('/carrier-rates');
+        $this->actingAs($this->admin)->post(route('rate-decks.store'), ['name' => 'No kind', 'currency' => 'CAD'])->assertSessionHasErrors('kind');
+        $this->actingAs($this->admin)->post(route('rate-decks.store'), ['name' => 'Bad currency', 'kind' => 'tariff', 'currency' => 'XYZ'])->assertSessionHasErrors('currency');
+
+        // Customers pick tariffs, trunks pick carrier rates.
+        $this->actingAs($this->admin)->get(route('accounts.create'))->assertInertia(fn (Assert $p) => $p->has('options.rateDecks', 1)->where('options.rateDecks.0.id', $tariff->id));
+        $this->actingAs($this->admin)->get(route('trunks.create'))->assertInertia(fn (Assert $p) => $p->has('rateDecks', 1)->where('rateDecks.0.id', $carrier->id));
+        $form = ['name' => 'Cust', 'code' => 'CUST', 'role' => 'customer', 'status' => 'active', 'currency' => 'CAD', 'billing_type' => 'prepaid',
+            'credit_limit' => 0, 'timezone' => 'UTC'];
+        $this->actingAs($this->admin)->post(route('accounts.store'), [...$form, 'sell_rate_deck_id' => $carrier->id])->assertSessionHasErrors('sell_rate_deck_id');
+        $this->actingAs($this->admin)->post(route('accounts.store'), [...$form, 'sell_rate_deck_id' => $tariff->id])->assertSessionHasNoErrors();
+        $carrierAccount = Account::factory()->vendor()->create();
+        $this->actingAs($this->admin)->post(route('trunks.store'), ['account_id' => $carrierAccount->id, 'name' => 'Main', 'rate_deck_id' => $tariff->id])
+            ->assertSessionHasErrors('rate_deck_id');
+
+        // A tariff in use can't become carrier rates; an unused deck can change.
+        $this->actingAs($this->admin)->put(route('rate-decks.update', $tariff), ['name' => 'Retail', 'kind' => 'carrier', 'currency' => 'USD'])->assertSessionHasErrors('kind');
+        $this->actingAs($this->admin)->put(route('rate-decks.update', $carrier), ['name' => 'Acme A-Z', 'kind' => 'tariff', 'currency' => 'USD'])->assertSessionHasNoErrors();
+        $this->assertSame('tariff', $carrier->fresh()->kind->value);
     }
 
     public function test_trunks_require_a_vendor_account(): void

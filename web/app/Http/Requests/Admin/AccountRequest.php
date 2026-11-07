@@ -67,7 +67,7 @@ class AccountRequest extends FormRequest
             'timezone' => ['required', 'timezone:all'],
             'billing_email' => ['nullable', 'email', 'max:255'],
             'noc_email' => ['nullable', 'email', 'max:255'],
-            'sell_rate_deck_id' => ['nullable', 'integer', 'exists:rate_decks,id'],
+            'sell_rate_deck_id' => ['nullable', 'integer', Rule::exists('rate_decks', 'id')->where('kind', 'tariff')],
             'routing_plan_id' => ['nullable', 'integer', 'exists:routing_plans,id'],
             'max_channels' => ['nullable', 'integer', 'min:1', 'max:100000'],
             'max_cps' => ['nullable', 'numeric', 'min:0.1', 'max:10000'],
@@ -77,7 +77,7 @@ class AccountRequest extends FormRequest
 
     public static function messagesFor(): array
     {
-        return ['code.regex' => 'Use letters, digits, dashes and underscores only.', 'currency.in' => 'Choose a currency from the list.'];
+        return ['code.regex' => 'Use letters, digits, dashes and underscores only.', 'currency.in' => 'Choose a currency from the list.', 'sell_rate_deck_id.exists' => 'Choose a tariff (not carrier rates).'];
     }
 
     public static function checkRoles(Validator $validator): void

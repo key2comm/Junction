@@ -164,7 +164,7 @@ class AccountController extends Controller
             'options' => [
                 'statuses' => AccountStatus::values(),
                 'billingTypes' => BillingType::values(),
-                'rateDecks' => RateDeck::query()->orderBy('name')->get(['id', 'name', 'currency']),
+                'rateDecks' => RateDeck::query()->where('kind', 'tariff')->orderBy('name')->get(['id', 'name', 'currency']),
                 'routingPlans' => RoutingPlan::query()->orderBy('name')->get(['id', 'name']),
                 'timezones' => timezone_identifiers_list(),
                 'currencies' => Currencies::options(),

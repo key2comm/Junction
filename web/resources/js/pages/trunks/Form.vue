@@ -46,7 +46,7 @@ const vendorId = t?.account_id ?? props.defaults.account_id ?? null;
     <Head :title="t ? `Edit ${t.name}` : 'New trunk'" />
 
     <div class="ss-maxw-2xl ss-stack-4">
-        <Heading :title="t ? `Edit ${t.name}` : 'New trunk'" description="A carrier product: what we pay (buy rate deck) and where we send calls (gateways)" />
+        <Heading :title="t ? `Edit ${t.name}` : 'New trunk'" description="A carrier product: what we pay (carrier rates) and where we send calls (gateways)" />
 
         <p v-if="vendors.length === 0" class="rounded border ss-border-dashed p-3 text-secondary">
             There are no carrier accounts yet. Create an account and tick "Carrier" first.
@@ -67,7 +67,7 @@ const vendorId = t?.account_id ?? props.defaults.account_id ?? null;
                 <InputError :message="errors.name" />
             </div>
             <div class="ss-grid gap-2 ss-span-sm-2">
-                <Label for="rate_deck_id">Buy rate deck</Label>
+                <Label for="rate_deck_id">Carrier rates</Label>
                 <select id="rate_deck_id" name="rate_deck_id" :class="selectClass">
                     <option value="">— None —</option>
                     <option v-for="d in rateDecks" :key="d.id" :value="d.id" :selected="d.id === t?.rate_deck_id">{{ d.name }} ({{ d.currency }})</option>

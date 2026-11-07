@@ -14,7 +14,14 @@ class RateDeckFactory extends Factory
     {
         return [
             'name' => fake()->unique()->words(3, true),
+            'kind' => 'carrier',
             'currency' => 'USD',
         ];
+    }
+
+    /** A customer tariff (sell rates). */
+    public function tariff(): static
+    {
+        return $this->state(['kind' => 'tariff']);
     }
 }

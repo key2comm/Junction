@@ -76,7 +76,7 @@ final class Present
 
     public static function deck(RateDeck $d): array
     {
-        return ['id' => $d->id, 'name' => $d->name, 'currency' => $d->currency, 'description' => $d->description,
+        return ['id' => $d->id, 'name' => $d->name, 'kind' => $d->kind->value, 'currency' => $d->currency, 'description' => $d->description,
             'created_at' => self::t($d->created_at), 'updated_at' => self::t($d->updated_at)];
     }
 

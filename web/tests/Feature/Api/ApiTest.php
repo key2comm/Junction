@@ -140,7 +140,7 @@ class ApiTest extends TestCase
         Storage::fake('local');
         $plain = $this->token();
 
-        $id = $this->api($plain)->postJson('/api/v1/rate-decks', ['name' => 'A-Z', 'currency' => 'USD'])->assertCreated()->json('data.id');
+        $id = $this->api($plain)->postJson('/api/v1/rate-decks', ['name' => 'A-Z', 'kind' => 'carrier', 'currency' => 'USD'])->assertCreated()->json('data.id');
         Rate::factory()->for(RateDeck::query()->find($id))->create(['prefix' => '44', 'rate' => '0.01']);
         Rate::factory()->for(RateDeck::query()->find($id))->create(['prefix' => '33', 'rate' => '0.02', 'effective_from' => now()->addWeek()]);
 
