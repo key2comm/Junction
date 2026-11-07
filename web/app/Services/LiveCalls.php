@@ -44,11 +44,15 @@ class LiveCalls
         $legs = array_values(array_filter($json['rows'] ?? [], fn ($r) => ($r['direction'] ?? '') === 'inbound'
             && str_starts_with((string) ($r['name'] ?? ''), 'sofia/carrier/') && preg_match('/^[0-9a-f-]{36}$/i', (string) ($r['uuid'] ?? ''))));
 
+        // Per call: the live answer time (channel time variables are only filled
+        // in at hangup, so ask uuid_dump, and only for answered calls) and the
+        // gateway route.lua tagged on the vendor leg. 'uptime' is a cheap no-op.
         $commands = [];
         foreach ($legs as $r) {
-            $commands[] = "uuid_getvar {$r['uuid']} answer_epoch";
-            $commands[] = ! empty($r['b_uuid']) && preg_match('/^[0-9a-f-]{36}$/i', $r['b_uuid'])
-                ? "uuid_getvar {$r['b_uuid']} softswitch_gateway_id" : 'uptime';
+            $bridged = ! empty($r['b_uuid']) && preg_match('/^[0-9a-f-]{36}$/i', $r['b_uuid']);
+            $answered = $bridged && ($r['callstate'] ?? '') === 'ACTIVE' && ($r['b_callstate'] ?? '') === 'ACTIVE';
+            $commands[] = $answered ? "uuid_dump {$r['uuid']} json" : 'uptime';
+            $commands[] = $bridged ? "uuid_getvar {$r['b_uuid']} softswitch_gateway_id" : 'uptime';
         }
         $vars = $commands ? $this->esl->apiMany($commands) : [];
 
@@ -66,7 +70,9 @@ class LiveCalls
         $now = now()->getTimestamp();
         $calls = [];
         foreach ($legs as $i => $r) {
-            $answered = (int) trim($vars[$i * 2] ?? '0');
+            $dump = json_decode((string) ($vars[$i * 2] ?? ''), true);
+            $answeredUs = is_array($dump) ? (int) ($dump['Caller-Channel-Answered-Time'] ?? 0) : 0;
+            $answered = $answeredUs > 0 ? intdiv($answeredUs, 1_000_000) : 0;
             $reservation = $reservations[$r['uuid']] ?? null;
             $account = $reservation ? ($accounts[$reservation->account_id] ?? null) : null;
             $gateway = $gatewayIds[$i] ? ($gateways[$gatewayIds[$i]] ?? null) : null;

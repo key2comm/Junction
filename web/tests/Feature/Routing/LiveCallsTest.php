@@ -60,9 +60,9 @@ class LiveCallsTest extends TestCase
             ['uuid' => 'bbbbbbbb-0000-0000-0000-000000000000', 'direction' => 'outbound', 'name' => 'sofia/carrier/442079460000', 'created_epoch' => '1794036600'],
         ]]));
         $esl->shouldReceive('apiMany')->once()->with([
-            'uuid_getvar '.self::A.' answer_epoch', 'uuid_getvar '.self::B.' softswitch_gateway_id',
-            'uuid_getvar '.self::RINGING.' answer_epoch', 'uptime',
-        ])->andReturn(['1794036640', (string) $this->gateway->id, '0', '12345']);
+            'uuid_dump '.self::A.' json', 'uuid_getvar '.self::B.' softswitch_gateway_id',
+            'uptime', 'uptime',
+        ])->andReturn([json_encode(['Caller-Channel-Answered-Time' => '1794036640123456']), (string) $this->gateway->id, '12345', '12345']);
 
         return $esl;
     }
