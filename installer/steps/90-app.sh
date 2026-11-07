@@ -60,6 +60,10 @@ info "Installing PHP dependencies"
 as_app composer install --no-dev --optimize-autoloader --no-interaction --no-progress
 grep -qE '^APP_KEY=.+' "$env_file" || artisan key:generate --force --no-interaction
 
+# Stale route/config caches from the previous deploy would hide new routes
+# from Wayfinder (which generates the frontend route helpers during the build).
+artisan optimize:clear --no-interaction >/dev/null
+
 info "Building frontend assets (slow on small servers)"
 as_app npm ci --no-audit --no-fund --loglevel=error
 as_app npm run build --silent >/dev/null
