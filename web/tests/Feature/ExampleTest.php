@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\Account;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -9,10 +11,14 @@ class ExampleTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_returns_a_successful_response()
+    public function test_the_root_sends_people_to_the_right_place()
     {
-        $response = $this->get(route('home'));
+        $this->get(route('home'))->assertRedirect(route('login'));
+        $this->get(route('login'))->assertOk();
 
-        $response->assertOk();
+        $this->actingAs(User::factory()->create())->get(route('home'))->assertRedirect(route('dashboard'));
+        $this->actingAs(User::factory()->create(['account_id' => Account::factory()->create()->id]))
+            ->get(route('home'))->assertRedirect(route('dashboard'));
+        $this->get(route('dashboard'))->assertRedirect(route('portal.home'));
     }
 }
