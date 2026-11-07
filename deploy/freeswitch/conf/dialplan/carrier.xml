@@ -1,0 +1,10 @@
+<include>
+  <!-- Every call on the carrier profile goes through the routing engine. -->
+  <context name="carrier">
+    <extension name="softswitch-route">
+      <condition field="destination_number" expression="^.+$">
+        <action application="lua" data="softswitch/route.lua"/>
+      </condition>
+    </extension>
+  </context>
+</include>

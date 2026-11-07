@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\Transport;
+use App\Jobs\SyncSwitchConfig;
 use Database\Factories\GatewayFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -38,5 +39,12 @@ class Gateway extends Model
     public function trunk(): BelongsTo
     {
         return $this->belongsTo(Trunk::class);
+    }
+
+    protected static function booted(): void
+    {
+        // Gateways and the firewall allowlist follow the database.
+        static::saved(fn () => SyncSwitchConfig::soon());
+        static::deleted(fn () => SyncSwitchConfig::soon());
     }
 }

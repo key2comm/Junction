@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Jobs\SyncSwitchConfig;
 use Database\Factories\TrunkFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -52,5 +53,12 @@ class Trunk extends Model
     public function formatNumber(string $number): string
     {
         return $this->tech_prefix.substr($number, $this->strip_digits);
+    }
+
+    protected static function booted(): void
+    {
+        // Gateways and the firewall allowlist follow the database.
+        static::saved(fn () => SyncSwitchConfig::soon());
+        static::deleted(fn () => SyncSwitchConfig::soon());
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Jobs\SyncSwitchConfig;
 use Database\Factories\AccountIpFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -28,5 +29,12 @@ class AccountIp extends Model
     public function account(): BelongsTo
     {
         return $this->belongsTo(Account::class);
+    }
+
+    protected static function booted(): void
+    {
+        // Gateways and the firewall allowlist follow the database.
+        static::saved(fn () => SyncSwitchConfig::soon());
+        static::deleted(fn () => SyncSwitchConfig::soon());
     }
 }

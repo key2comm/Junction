@@ -1,0 +1,93 @@
+<configuration name="sofia.conf" description="SIP">
+  <global_settings>
+    <param name="log-level" value="0"/>
+    <param name="auto-restart" value="false"/>
+    <param name="debug-presence" value="0"/>
+  </global_settings>
+
+  <profiles>
+    <!--
+      carrier: all wholesale traffic, customers in and vendors out. Only
+      allowlisted carrier IPs reach this port (nftables); the routing engine
+      identifies the customer by source IP and rejects everyone else.
+    -->
+    <profile name="carrier">
+      <gateways>
+        <!-- One file per vendor gateway, generated from the database. -->
+        <X-PRE-PROCESS cmd="include" data="sip_profiles/carrier/*.xml"/>
+      </gateways>
+      <domains/>
+      <settings>
+        <param name="context" value="carrier"/>
+        <param name="dialplan" value="XML"/>
+        <param name="sip-ip" value="$${softswitch_public_ip}"/>
+        <param name="rtp-ip" value="$${softswitch_public_ip}"/>
+        <param name="ext-sip-ip" value="$${softswitch_public_ip}"/>
+        <param name="ext-rtp-ip" value="$${softswitch_public_ip}"/>
+        <param name="sip-port" value="$${carrier_sip_port}"/>
+        <param name="username" value="softswitch"/>
+        <param name="user-agent-string" value="Softswitch"/>
+
+        <param name="auth-calls" value="false"/>
+        <param name="disable-register" value="true"/>
+        <param name="accept-blind-reg" value="false"/>
+        <param name="accept-blind-auth" value="false"/>
+        <param name="manage-presence" value="false"/>
+        <param name="log-auth-failures" value="false"/>
+
+        <!-- Pass the caller's codec offer through to the vendor: no transcoding. -->
+        <param name="inbound-late-negotiation" value="true"/>
+        <param name="inbound-codec-negotiation" value="generous"/>
+        <param name="inbound-codec-prefs" value="$${carrier_codecs}"/>
+        <param name="outbound-codec-prefs" value="$${carrier_codecs}"/>
+        <param name="dtmf-type" value="rfc2833"/>
+        <param name="liberal-dtmf" value="true"/>
+        <param name="rtp-timer-name" value="soft"/>
+        <param name="rtp-timeout-sec" value="300"/>
+        <param name="rtp-hold-timeout-sec" value="1800"/>
+        <param name="enable-timer" value="false"/>
+        <param name="enable-100rel" value="false"/>
+        <param name="nonce-ttl" value="60"/>
+        <param name="tls" value="false"/>
+      </settings>
+    </profile>
+
+    <!--
+      internal: PBX phones (digest auth). No users exist yet, so every call and
+      registration is refused; fail2ban bans repeated failures.
+    -->
+    <profile name="internal">
+      <gateways/>
+      <domains>
+        <domain name="all" alias="false" parse="false"/>
+      </domains>
+      <settings>
+        <param name="context" value="internal"/>
+        <param name="dialplan" value="XML"/>
+        <param name="sip-ip" value="$${softswitch_public_ip}"/>
+        <param name="rtp-ip" value="$${softswitch_public_ip}"/>
+        <param name="ext-sip-ip" value="$${softswitch_public_ip}"/>
+        <param name="ext-rtp-ip" value="$${softswitch_public_ip}"/>
+        <param name="sip-port" value="$${internal_sip_port}"/>
+        <param name="username" value="softswitch"/>
+        <param name="user-agent-string" value="Softswitch"/>
+
+        <param name="auth-calls" value="true"/>
+        <param name="auth-all-packets" value="false"/>
+        <param name="accept-blind-reg" value="false"/>
+        <param name="accept-blind-auth" value="false"/>
+        <param name="log-auth-failures" value="true"/>
+        <param name="force-register-domain" value="$${domain}"/>
+        <param name="force-subscription-domain" value="$${domain}"/>
+        <param name="manage-presence" value="false"/>
+
+        <param name="inbound-codec-prefs" value="$${internal_codecs}"/>
+        <param name="outbound-codec-prefs" value="$${internal_codecs}"/>
+        <param name="dtmf-type" value="rfc2833"/>
+        <param name="rtp-timer-name" value="soft"/>
+        <param name="nonce-ttl" value="60"/>
+        <param name="tls" value="false"/>
+      </settings>
+    </profile>
+  </profiles>
+</configuration>

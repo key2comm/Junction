@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Services\Freeswitch\EventSocket;
+use App\Services\Freeswitch\GatewaySync;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -15,7 +17,15 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(EventSocket::class, fn () => new EventSocket(
+            config('softswitch.esl.host'),
+            (int) config('softswitch.esl.port'),
+            config('softswitch.esl.password'),
+        ));
+        $this->app->bind(GatewaySync::class, fn ($app) => new GatewaySync(
+            $app->make(EventSocket::class),
+            config('softswitch.freeswitch.gateway_dir'),
+        ));
     }
 
     /**

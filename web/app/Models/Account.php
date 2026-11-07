@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\AccountStatus;
 use App\Enums\BillingType;
+use App\Jobs\SyncSwitchConfig;
 use Database\Factories\AccountFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -92,5 +93,15 @@ class Account extends Model
     public function scopeVendors(Builder $query): void
     {
         $query->where('is_vendor', true);
+    }
+
+    protected static function booted(): void
+    {
+        // A customer's IPs leave the firewall when the account closes or stops being a customer.
+        static::updated(function (Account $account) {
+            if ($account->wasChanged(['status', 'is_customer'])) {
+                SyncSwitchConfig::soon();
+            }
+        });
     }
 }

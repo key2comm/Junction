@@ -47,8 +47,10 @@ return new class extends Migration
                 gateway_name text,
                 dial_number text,         -- number as sent to this trunk
                 destination text,         -- normalised digits
+                buy_rate_id bigint,
                 buy_prefix text,
                 buy_rate numeric,
+                sell_rate_id bigint,
                 sell_prefix text,
                 sell_rate numeric,
                 max_duration integer,     -- seconds the customer can afford (capped)
@@ -121,6 +123,7 @@ return new class extends Migration
                 IF NOT FOUND THEN
                     r.status := 'reject'; r.reason := 'no_sell_rate'; RETURN NEXT r; RETURN;
                 END IF;
+                r.sell_rate_id := sell.id;
                 r.sell_prefix := sell.prefix;
                 r.sell_rate := sell.rate;
 
@@ -169,11 +172,11 @@ return new class extends Migration
                 RETURN QUERY
                 WITH cand AS (
                     SELECT rr.trunk_id, rr.priority, rr.weight, t.tech_prefix, t.strip_digits,
-                           t.max_channels, t.max_cps, br.prefix AS buy_prefix, br.rate AS buy_rate
+                           t.max_channels, t.max_cps, br.id AS buy_rate_id, br.prefix AS buy_prefix, br.rate AS buy_rate
                     FROM routing_plan_routes rr
                     JOIN trunks t ON t.id = rr.trunk_id
                     JOIN LATERAL (
-                        SELECT x.prefix, x.rate FROM rates x
+                        SELECT x.id, x.prefix, x.rate FROM rates x
                         WHERE x.rate_deck_id = t.rate_deck_id AND x.prefix = ANY (prefixes)
                           AND x.effective_from <= p_at AND (x.effective_to IS NULL OR x.effective_to > p_at)
                         ORDER BY length(x.prefix) DESC, x.effective_from DESC
@@ -196,7 +199,7 @@ return new class extends Migration
                 )
                 SELECT 'ok'::text, NULL::text, gws.attempt::integer, gws.gateway_order::integer, gws.trunk_id, gws.gateway_id,
                        gws.gateway_name::text, (gws.tech_prefix || substr(num, gws.strip_digits + 1))::text, num,
-                       gws.buy_prefix::text, gws.buy_rate, sell.prefix::text, sell.rate, maxdur,
+                       gws.buy_rate_id, gws.buy_prefix::text, gws.buy_rate, sell.id, sell.prefix::text, sell.rate, maxdur,
                        gws.max_channels, gws.max_cps
                 FROM gws
                 ORDER BY gws.attempt, gws.gateway_order;

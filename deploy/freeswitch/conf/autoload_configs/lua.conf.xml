@@ -1,0 +1,5 @@
+<configuration name="lua.conf" description="Lua">
+  <settings>
+    <param name="module-directory" value="$${script_dir}/?.lua"/>
+  </settings>
+</configuration>

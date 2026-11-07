@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<!-- Softswitch FreeSWITCH configuration (rendered by install.sh; edit the repo, not the server). -->
+<document type="freeswitch/xml">
+  <X-PRE-PROCESS cmd="include" data="vars.xml"/>
+  <X-PRE-PROCESS cmd="include" data="secrets.xml"/>
+
+  <section name="configuration" description="Modules">
+    <X-PRE-PROCESS cmd="include" data="autoload_configs/*.xml"/>
+  </section>
+
+  <section name="dialplan" description="Dialplan">
+    <X-PRE-PROCESS cmd="include" data="dialplan/*.xml"/>
+  </section>
+
+  <section name="directory" description="Users">
+    <X-PRE-PROCESS cmd="include" data="directory/*.xml"/>
+  </section>
+</document>

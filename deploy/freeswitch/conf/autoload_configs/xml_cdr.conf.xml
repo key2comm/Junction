@@ -1,0 +1,16 @@
+<configuration name="xml_cdr.conf" description="Post every call's CDR to the Softswitch app">
+  <settings>
+    <param name="url" value="http://127.0.0.1:8008/internal/freeswitch/cdr"/>
+    <param name="cred" value="$${softswitch_internal_cred}"/>
+    <param name="auth-scheme" value="basic"/>
+    <param name="retries" value="5"/>
+    <param name="delay" value="3"/>
+    <param name="timeout" value="10"/>
+    <param name="log-b-leg" value="false"/>
+    <param name="prefix-a-leg" value="false"/>
+    <param name="encode" value="true"/>
+    <param name="disable-100-continue" value="true"/>
+    <!-- Posts that still fail are kept here for re-sending. -->
+    <param name="err-log-dir" value="$${log_dir}/xml_cdr"/>
+  </settings>
+</configuration>

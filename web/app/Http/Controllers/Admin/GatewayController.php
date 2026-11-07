@@ -84,8 +84,9 @@ class GatewayController extends Controller
             }],
             'port' => ['required', 'integer', 'between:1,65535'],
             'transport' => ['required', Rule::enum(Transport::class)],
-            'username' => ['nullable', 'string', 'max:128'],
-            'password' => ['nullable', 'string', 'max:128'],
+            // "${" would be expanded by FreeSWITCH's config preprocessor.
+            'password' => ['nullable', 'string', 'max:128', 'not_regex:/\$\{/'],
+            'username' => ['nullable', 'string', 'max:128', 'not_regex:/\$\{/'],
             'register' => ['boolean'],
             'enabled' => ['boolean'],
             'priority' => ['required', 'integer', 'between:1,100'],
