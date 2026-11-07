@@ -1,0 +1,5 @@
+# Rendered by install.sh to /etc/sudoers.d/softswitch
+# The admin UI's queue worker may run the certificate helper as root, nothing else.
+# The helper validates all of its arguments.
+Defaults:@SS_APP_USER@ !requiretty
+@SS_APP_USER@ ALL=(root) NOPASSWD: /usr/local/sbin/softswitch-cert

@@ -35,7 +35,8 @@ resolve_defaults() {
 	: "${SS_RTP_START:=16384}" "${SS_RTP_END:=32768}"
 	: "${SS_CARRIER_IPS:=}" "${SS_HARDEN_SSH:=auto}"
 	: "${SS_FREESWITCH_REF:=v1.11.3}" "${SS_SOFIA_SIP_REF:=v1.13.19}" "${SS_SPANDSP_REF:=v3.1.1}"
-	: "${SS_WEB_ROOT:=/var/www/html}"
+	: "${SS_WEB_ROOT:=/var/www/html}" "${SS_APP_USER:=softswitch}"
+	: "${SS_DB_NAME:=softswitch}" "${SS_DB_USER:=softswitch}"
 	: "${SS_BUILD_DIR:=/usr/local/src/softswitch}"
 	: "${SS_FS_PREFIX:=/usr/local/freeswitch}"
 	# FreeSWITCH uses an FHS layout under its prefix.

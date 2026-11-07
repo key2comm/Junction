@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# Softswitch TLS certificate helper. Installed to /usr/local/sbin/softswitch-cert.
+#
+# The admin UI's queue worker runs this through sudo (see /etc/sudoers.d/softswitch),
+# so every argument is validated here. Output is a single JSON line.
+#
+#   softswitch-cert status
+#   softswitch-cert issue DOMAIN EMAIL     # request/renew a Let's Encrypt cert and activate it
+#   softswitch-cert selfsigned             # switch back to the self-signed cert
+set -euo pipefail
+umask 077
+
+TLS=/etc/softswitch/tls
+WEBROOT=/var/www/acme
+
+json_escape() { printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g' | tr -d '\n'; }
+fail() { printf '{"ok":false,"error":"%s"}\n' "$(json_escape "$1")"; exit 1; }
+
+activate() { # activate CRT KEY MODE DOMAIN
+	ln -sfn "$1" "$TLS/current.crt"
+	ln -sfn "$2" "$TLS/current.key"
+	printf '%s %s\n' "$3" "$4" > "$TLS/mode"
+	nginx -t -q 2>/dev/null || fail "nginx rejected the certificate"
+	systemctl reload nginx
+}
+
+status() {
+	local mode domain expiry subject
+	read -r mode domain < "$TLS/mode" 2>/dev/null || { mode=selfsigned; domain=""; }
+	expiry="$(openssl x509 -in "$TLS/current.crt" -noout -enddate 2>/dev/null | cut -d= -f2)"
+	subject="$(openssl x509 -in "$TLS/current.crt" -noout -subject -nameopt RFC2253 2>/dev/null | sed 's/^subject=//')"
+	printf '{"ok":true,"mode":"%s","domain":"%s","expires":"%s","subject":"%s"}\n' \
+		"$(json_escape "$mode")" "$(json_escape "${domain:-}")" "$(json_escape "$expiry")" "$(json_escape "$subject")"
+}
+
+case "${1:-}" in
+	status)
+		status ;;
+	issue)
+		domain="${2:-}" email="${3:-}"
+		[[ "$domain" =~ ^([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$ ]] || fail "invalid domain name"
+		[[ "$email" =~ ^[A-Za-z0-9._%+-]+@([A-Za-z0-9-]+\.)+[A-Za-z]{2,63}$ ]] || fail "invalid email address"
+		out="$(certbot certonly --webroot -w "$WEBROOT" -d "$domain" --email "$email" \
+			--agree-tos --non-interactive --keep-until-expiring --no-eff-email 2>&1)" \
+			|| fail "certbot failed: $(printf '%s' "$out" | grep -iE 'error|detail|problem' | head -n 3 | tr '\n' ' ')"
+		activate "/etc/letsencrypt/live/$domain/fullchain.pem" "/etc/letsencrypt/live/$domain/privkey.pem" letsencrypt "$domain"
+		status ;;
+	selfsigned)
+		activate "$TLS/selfsigned.crt" "$TLS/selfsigned.key" selfsigned ""
+		status ;;
+	*)
+		fail "usage: softswitch-cert status | issue DOMAIN EMAIL | selfsigned" ;;
+esac
