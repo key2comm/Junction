@@ -12,6 +12,9 @@ getent group "$SS_APP_USER" >/dev/null || groupadd --system "$SS_APP_USER"
 getent passwd "$SS_APP_USER" >/dev/null \
 	|| useradd --system -g "$SS_APP_USER" -d /var/lib/softswitch -m -s /sbin/nologin "$SS_APP_USER"
 
+# Writes FreeSWITCH gateway files (sip_profiles/carrier is group-writable).
+getent group freeswitch >/dev/null && usermod -aG freeswitch "$SS_APP_USER"
+
 install -d -o "$SS_APP_USER" -g nginx -m 0750 "$SS_WEB_ROOT"
 install -d -m 0755 /var/www/acme
 

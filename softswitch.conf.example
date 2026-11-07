@@ -13,8 +13,16 @@ SS_CARRIER_PORT=5080    # wholesale customers + vendors, allowlisted IPs only
 SS_RTP_START=16384
 SS_RTP_END=32768
 
-# Space-separated IPv4 addresses/CIDRs allowed to reach SS_CARRIER_PORT.
+# Extra IPs/CIDRs always allowed to reach SS_CARRIER_PORT. Customer IPs and
+# vendor gateways from the admin UI are added automatically.
 SS_CARRIER_IPS=""
+
+# Call handling
+SS_MAX_CALL_DURATION=14400      # seconds; longest call allowed (funds are reserved for this)
+SS_PROGRESS_TIMEOUT=10          # seconds to wait for a vendor to ring (180/183) before failing over
+SS_ANSWER_TIMEOUT=60            # seconds a call may ring before giving up
+SS_MAX_SESSIONS=1000            # FreeSWITCH concurrent call legs (2 per call)
+SS_MAX_SESSIONS_PER_SECOND=100
 
 # Disable SSH password and root login: auto = only if the installing
 # user already has an SSH key set up (so you can't lock yourself out).

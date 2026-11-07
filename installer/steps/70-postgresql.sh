@@ -44,6 +44,18 @@ if [ -z "$(psql_admin -c "SELECT 1 FROM pg_database WHERE datname = '$SS_DB_NAME
 	psql_admin -c "CREATE DATABASE \"$SS_DB_NAME\" OWNER \"$SS_DB_USER\" ENCODING 'UTF8' TEMPLATE template0"
 fi
 
+# FreeSWITCH's role: may only connect and (after step 90) execute the routing functions.
+fs_pw="$(secret FS_DB_PASSWORD)"
+if [ -z "$(psql_admin -c "SELECT 1 FROM pg_roles WHERE rolname = '$SS_FS_DB_USER'")" ]; then
+	psql_admin -c "CREATE ROLE \"$SS_FS_DB_USER\" LOGIN"
+fi
+psql_admin <<-SQL
+	SET password_encryption = 'scram-sha-256';
+	ALTER ROLE "$SS_FS_DB_USER" PASSWORD '$fs_pw' CONNECTION LIMIT 200;
+	REVOKE ALL ON DATABASE "$SS_DB_NAME" FROM PUBLIC;
+	GRANT CONNECT ON DATABASE "$SS_DB_NAME" TO "$SS_DB_USER", "$SS_FS_DB_USER";
+SQL
+
 PGPASSWORD="$db_pw" psql -h 127.0.0.1 -U "$SS_DB_USER" -d "$SS_DB_NAME" -qAtX -c 'SELECT 1' >/dev/null \
 	|| die "cannot connect to PostgreSQL as $SS_DB_USER"
 info "PostgreSQL ready: database $SS_DB_NAME, user $SS_DB_USER (password in /etc/softswitch/secrets)"

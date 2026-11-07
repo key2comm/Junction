@@ -53,6 +53,12 @@ set_env SESSION_SECURE_COOKIE true
 set_env QUEUE_CONNECTION database
 set_env CACHE_STORE database
 set_env SOFTSWITCH_PUBLIC_IP "$SS_PUBLIC_IP"
+set_env SOFTSWITCH_ESL_PASSWORD "$(secret ESL_PASSWORD)"
+set_env SOFTSWITCH_INTERNAL_USER "$SS_INTERNAL_USER"
+set_env SOFTSWITCH_INTERNAL_PASSWORD "$(secret INTERNAL_PASSWORD)"
+set_env SOFTSWITCH_MAX_CALL_DURATION "$SS_MAX_CALL_DURATION"
+set_env SOFTSWITCH_FS_GATEWAY_DIR "$SS_FS_CONF/sip_profiles/carrier"
+set_env SOFTSWITCH_STATIC_CARRIER_IPS "$SS_CARRIER_IPS"
 chown "$SS_APP_USER:$SS_APP_USER" "$env_file"; chmod 0600 "$env_file"
 
 # --- Dependencies + assets.
@@ -71,6 +77,13 @@ rm -rf "$app/node_modules"
 
 # --- Database + caches.
 artisan migrate --force --no-interaction
+
+# FreeSWITCH's database role may only execute the routing functions.
+runuser -u postgres -- psql -v ON_ERROR_STOP=1 -qAtX -d "$SS_DB_NAME" <<-SQL
+	GRANT EXECUTE ON FUNCTION softswitch_identify(inet, text) TO "$SS_FS_DB_USER";
+	GRANT EXECUTE ON FUNCTION softswitch_route(bigint, text, uuid, timestamptz, integer) TO "$SS_FS_DB_USER";
+	GRANT EXECUTE ON FUNCTION softswitch_release(uuid) TO "$SS_FS_DB_USER";
+SQL
 artisan optimize --no-interaction >/dev/null
 
 # --- First admin login (only if there are no users yet).
@@ -85,6 +98,9 @@ done
 systemctl daemon-reload
 systemctl enable -q softswitch-queue softswitch-scheduler
 systemctl restart softswitch-queue softswitch-scheduler php-fpm
+
+# Push gateways and the carrier allowlist from the database to the switch.
+artisan softswitch:sync --no-interaction || warn "switch sync failed; it will be retried by the scheduler"
 
 code="$(curl -sk -o /dev/null -w '%{http_code}' --resolve "$SS_HOSTNAME:443:127.0.0.1" "https://$SS_HOSTNAME/login")"
 [ "$code" = 200 ] || die "admin UI did not respond (HTTP $code); see $app/storage/logs and /var/log/php-fpm/softswitch-error.log"

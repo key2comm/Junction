@@ -38,6 +38,9 @@ resolve_defaults() {
 	: "${SS_WEB_ROOT:=/var/www/html}" "${SS_APP_USER:=softswitch}"
 	: "${SS_DB_NAME:=softswitch}" "${SS_DB_USER:=softswitch}"
 	: "${SS_ADMIN_EMAIL:=admin@$SS_HOSTNAME}"
+	: "${SS_FS_DB_USER:=softswitch_fs}" "${SS_INTERNAL_USER:=freeswitch}"
+	: "${SS_MAX_CALL_DURATION:=14400}" "${SS_PROGRESS_TIMEOUT:=10}" "${SS_ANSWER_TIMEOUT:=60}"
+	: "${SS_MAX_SESSIONS:=1000}" "${SS_MAX_SESSIONS_PER_SECOND:=100}"
 	: "${SS_BUILD_DIR:=/usr/local/src/softswitch}"
 	: "${SS_FS_PREFIX:=/usr/local/freeswitch}"
 	# FreeSWITCH uses an FHS layout under its prefix.
