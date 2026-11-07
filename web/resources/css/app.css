@@ -28,14 +28,23 @@
     height: 1rem;
 }
 
-/* Menu dropdowns are positioned by CSS (no Popper/Bootstrap JS). */
+/* Menu dropdowns are positioned by CSS (no Popper/Bootstrap JS); on phones
+   they open inline inside the collapsed menu. */
+.navbar .nav-item.dropdown {
+    position: relative;
+}
 .navbar .dropdown-menu.show {
     position: absolute;
     top: 100%;
     margin-top: 0.25rem;
 }
-.navbar .nav-item.dropdown {
-    position: relative;
+@media (max-width: 767.98px) {
+    .navbar-collapse .dropdown-menu.show {
+        position: static;
+        box-shadow: none;
+        border: 0;
+        padding-left: 1.5rem;
+    }
 }
 
 /* A select in an inline row takes its natural width, like a button. */
