@@ -43,8 +43,6 @@
         <param name="dtmf-type" value="rfc2833"/>
         <param name="liberal-dtmf" value="true"/>
         <param name="rtp-timer-name" value="soft"/>
-        <param name="rtp-timeout-sec" value="300"/>
-        <param name="rtp-hold-timeout-sec" value="1800"/>
         <param name="enable-timer" value="false"/>
         <param name="enable-100rel" value="false"/>
         <param name="nonce-ttl" value="60"/>

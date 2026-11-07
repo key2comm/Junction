@@ -71,12 +71,16 @@ for _ in $(seq 1 30); do
 done
 "$fs_cli" -x status >/dev/null 2>&1 || die "FreeSWITCH did not start; check journalctl -u freeswitch and $SS_FS_LOG/freeswitch.log"
 
+# Profiles start a moment after the core answers; give them time.
 for profile in carrier internal; do
-	status="$("$fs_cli" -x "sofia status profile $profile")"
-	case "$status" in
-		*RUNNING*) ;;
-		*) die "SIP profile '$profile' is not running; check $SS_FS_LOG/freeswitch.log" ;;
-	esac
+	running=0
+	for _ in $(seq 1 20); do
+		case "$("$fs_cli" -x "sofia status profile $profile")" in
+			*RUNNING*) running=1; break ;;
+		esac
+		sleep 1
+	done
+	[ "$running" = 1 ] || die "SIP profile '$profile' is not running; check $SS_FS_LOG/freeswitch.log"
 done
 info "FreeSWITCH running: $("$fs_cli" -x version | awk 'NR==1')"
 info "SIP profiles: carrier on $SS_PUBLIC_IP:$SS_CARRIER_PORT, internal on $SS_PUBLIC_IP:$SS_PBX_PORT"
