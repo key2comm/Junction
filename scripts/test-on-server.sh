@@ -22,6 +22,8 @@ ssh "$host" "set -e
 	composer install --no-interaction --no-progress --quiet
 	[ -f .env ] || { cp .env.example .env; php artisan key:generate -q; }
 	npm ci --no-audit --no-fund --loglevel=error >/dev/null
-	echo '--- frontend build'; npm run build --silent >/dev/null && echo ok
-	echo '--- type check'; npm run types:check --silent && echo ok
-	echo '--- tests (PostgreSQL)'; php artisan test --compact $*"
+	failed=0
+	echo '--- frontend build'; if npm run build --silent >/dev/null; then echo ok; else failed=1; fi
+	echo '--- type check'; if npm run types:check --silent; then echo ok; else failed=1; fi
+	echo '--- tests (PostgreSQL)'; php artisan test --compact $* || failed=1
+	[ \$failed = 0 ] && echo 'ALL CHECKS PASSED' || { echo 'CHECKS FAILED'; exit 1; }"

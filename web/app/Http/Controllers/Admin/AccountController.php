@@ -1,0 +1,126 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Enums\AccountStatus;
+use App\Enums\BillingType;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\AccountRequest;
+use App\Models\Account;
+use App\Models\RateDeck;
+use App\Models\RoutingPlan;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Inertia\Response;
+
+class AccountController extends Controller
+{
+    public function index(Request $request): Response
+    {
+        $filters = $request->validate([
+            'q' => ['nullable', 'string', 'max:100'],
+            'role' => ['nullable', 'in:customer,vendor'],
+            'status' => ['nullable', 'in:'.implode(',', AccountStatus::values())],
+        ]);
+
+        $accounts = Account::query()
+            ->when($filters['q'] ?? null, fn ($q, $term) => $q->where(fn ($q) => $q
+                ->whereLike('name', "%{$term}%", caseSensitive: false)
+                ->orWhereLike('code', "%{$term}%", caseSensitive: false)))
+            ->when(($filters['role'] ?? null) === 'customer', fn ($q) => $q->customers())
+            ->when(($filters['role'] ?? null) === 'vendor', fn ($q) => $q->vendors())
+            ->when($filters['status'] ?? null, fn ($q, $status) => $q->where('status', $status))
+            ->orderBy('name')
+            ->paginate(25)
+            ->withQueryString()
+            ->through(fn (Account $a) => [
+                'id' => $a->id,
+                'name' => $a->name,
+                'code' => $a->code,
+                'is_customer' => $a->is_customer,
+                'is_vendor' => $a->is_vendor,
+                'status' => $a->status->value,
+                'billing_type' => $a->billing_type->value,
+                'currency' => $a->currency,
+                'balance' => $a->balance,
+                'available' => $a->availableFunds(),
+            ]);
+
+        return Inertia::render('accounts/Index', [
+            'accounts' => $accounts,
+            'filters' => (object) $filters,
+        ]);
+    }
+
+    public function create(): Response
+    {
+        return Inertia::render('accounts/Create', $this->formOptions());
+    }
+
+    public function store(AccountRequest $request): RedirectResponse
+    {
+        $account = Account::create($request->validated());
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => "Account {$account->code} created."]);
+
+        return to_route('accounts.show', $account);
+    }
+
+    public function show(Account $account): Response
+    {
+        $account->load(['sellRateDeck:id,name', 'routingPlan:id,name', 'trunks' => fn ($q) => $q->withCount('gateways')]);
+
+        return Inertia::render('accounts/Show', [
+            'account' => [
+                ...$account->only(['id', 'name', 'code', 'is_customer', 'is_vendor', 'currency', 'credit_limit',
+                    'balance', 'timezone', 'billing_email', 'noc_email', 'max_channels', 'max_cps', 'notes']),
+                'status' => $account->status->value,
+                'billing_type' => $account->billing_type->value,
+                'available' => $account->availableFunds(),
+                'sell_rate_deck' => $account->sellRateDeck?->only(['id', 'name']),
+                'routing_plan' => $account->routingPlan?->only(['id', 'name']),
+            ],
+            'ips' => $account->ips()->orderBy('ip')->get(['id', 'ip', 'tech_prefix', 'description', 'enabled']),
+            'trunks' => $account->trunks->map->only(['id', 'name', 'enabled', 'gateways_count']),
+            'ledger' => $account->ledgerEntries()->latest('id')->limit(50)
+                ->get(['id', 'type', 'amount', 'balance_after', 'description', 'created_at']),
+        ]);
+    }
+
+    public function edit(Account $account): Response
+    {
+        return Inertia::render('accounts/Edit', [
+            ...$this->formOptions(),
+            'account' => [
+                ...$account->only(['id', 'name', 'code', 'is_customer', 'is_vendor', 'currency', 'credit_limit',
+                    'timezone', 'billing_email', 'noc_email', 'sell_rate_deck_id', 'routing_plan_id',
+                    'max_channels', 'max_cps', 'notes']),
+                'status' => $account->status->value,
+                'billing_type' => $account->billing_type->value,
+            ],
+        ]);
+    }
+
+    public function update(AccountRequest $request, Account $account): RedirectResponse
+    {
+        $account->update($request->validated());
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Account updated.']);
+
+        return to_route('accounts.show', $account);
+    }
+
+    private function formOptions(): array
+    {
+        return [
+            'options' => [
+                'statuses' => AccountStatus::values(),
+                'billingTypes' => BillingType::values(),
+                'rateDecks' => RateDeck::query()->orderBy('name')->get(['id', 'name', 'currency']),
+                'routingPlans' => RoutingPlan::query()->orderBy('name')->get(['id', 'name']),
+                'timezones' => timezone_identifiers_list(),
+            ],
+        ];
+    }
+}
