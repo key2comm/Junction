@@ -16,46 +16,46 @@ defineOptions({ layout: { breadcrumbs: [{ title: 'PBX', href: index() }] } });
 <template>
     <Head title="PBX" />
 
-    <div class="space-y-6 p-4">
+    <div class="ss-stack-4">
         <Heading
             title="PBX"
             description="Extensions, IVRs and DIDs belong to a customer account. Calls from extensions to outside numbers use that account's routing plan, rates and funds, like its carrier traffic."
         />
 
-        <div class="grid gap-2 rounded-lg border p-4 text-sm sm:grid-cols-2">
+        <div class="card card-body ss-grid gap-2 ss-cols-sm-2">
             <div>
-                <div class="text-muted-foreground">SIP phones (UDP/TCP)</div>
-                <div class="font-mono">{{ connection.sip }}</div>
+                <div class="text-secondary">SIP phones (UDP/TCP)</div>
+                <div class="font-monospace">{{ connection.sip }}</div>
             </div>
             <div>
-                <div class="text-muted-foreground">WebRTC phones (SIP over WebSocket)</div>
-                <div class="font-mono">{{ connection.wss }}</div>
+                <div class="text-secondary">WebRTC phones (SIP over WebSocket)</div>
+                <div class="font-monospace">{{ connection.wss }}</div>
             </div>
         </div>
 
-        <div class="overflow-x-auto rounded-lg border">
-            <table class="w-full text-sm">
-                <thead class="bg-muted/50 text-left text-muted-foreground">
+        <div class="card table-responsive">
+            <table class="table table-vcenter card-table table-tight">
+                <thead>
                     <tr>
-                        <th class="px-3 py-2 font-medium">Customer</th>
-                        <th class="px-3 py-2 text-right font-medium">Extensions</th>
-                        <th class="px-3 py-2 text-right font-medium">IVRs</th>
-                        <th class="px-3 py-2 text-right font-medium">DIDs</th>
+                        <th>Customer</th>
+                        <th class="text-end">Extensions</th>
+                        <th class="text-end">IVRs</th>
+                        <th class="text-end">DIDs</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="a in accounts" :key="a.id" class="border-t">
-                        <td class="px-3 py-2">
-                            <Link :href="showPbx(a.id)" class="font-medium hover:underline">{{ a.name }}</Link>
-                            <span class="ml-2 font-mono text-xs text-muted-foreground">{{ a.code }}</span>
-                            <Badge v-if="a.status !== 'active'" variant="secondary" class="ml-2">{{ a.status }}</Badge>
+                    <tr v-for="a in accounts" :key="a.id">
+                        <td>
+                            <Link :href="showPbx(a.id)" class="fw-medium">{{ a.name }}</Link>
+                            <span class="ms-2 font-monospace small text-secondary">{{ a.code }}</span>
+                            <Badge v-if="a.status !== 'active'" variant="secondary" class="ms-2">{{ a.status }}</Badge>
                         </td>
-                        <td class="px-3 py-2 text-right tabular-nums">{{ a.extensions }}</td>
-                        <td class="px-3 py-2 text-right tabular-nums">{{ a.ivrs }}</td>
-                        <td class="px-3 py-2 text-right tabular-nums">{{ a.dids }}</td>
+                        <td class="text-end tabular-nums">{{ a.extensions }}</td>
+                        <td class="text-end tabular-nums">{{ a.ivrs }}</td>
+                        <td class="text-end tabular-nums">{{ a.dids }}</td>
                     </tr>
                     <tr v-if="accounts.length === 0">
-                        <td colspan="4" class="px-3 py-6 text-center text-muted-foreground">No customer accounts yet.</td>
+                        <td colspan="4" class="py-3 text-center text-secondary">No customer accounts yet.</td>
                     </tr>
                 </tbody>
             </table>

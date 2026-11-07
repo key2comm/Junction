@@ -27,14 +27,14 @@ defineOptions({
 <template>
     <Head :title="`Edit ${props.gateway.name}`" />
 
-    <div class="max-w-3xl space-y-6 p-4">
+    <div class="ss-maxw-3xl ss-stack-4">
         <Heading :title="`Edit gateway ${gateway.name}`" />
-        <Form v-bind="GatewayController.update.form([trunk.id, gateway.id])" class="space-y-6" v-slot="{ errors, processing }">
+        <Form v-bind="GatewayController.update.form([trunk.id, gateway.id])" class="ss-stack-4" v-slot="{ errors, processing }">
             <GatewayFields :gateway="gateway" :transports="transports" :errors="errors" />
-            <label v-if="gateway.has_password" class="flex items-center gap-2 text-sm">
-                <input type="checkbox" name="clear_password" value="1" class="size-4" /> Remove the saved password
+            <label v-if="gateway.has_password" class="d-flex align-items-center gap-2">
+                <input type="checkbox" name="clear_password" value="1" class="form-check-input m-0" /> Remove the saved password
             </label>
-            <div class="flex gap-3">
+            <div class="d-flex gap-2">
                 <Button :disabled="processing">Save changes</Button>
                 <Button variant="ghost" as-child><Link :href="show(trunk.id)">Cancel</Link></Button>
             </div>

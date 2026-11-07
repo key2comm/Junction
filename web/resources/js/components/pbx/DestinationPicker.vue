@@ -23,14 +23,14 @@ const needsTarget = computed(() => type.value === 'number' || type.value === 'vo
 </script>
 
 <template>
-    <div class="flex flex-wrap gap-2">
-        <select :id="id" v-model="type" :name="`${name}[type]`" :class="selectClass" class="w-auto min-w-36">
+    <div class="d-flex flex-wrap gap-2">
+        <select :id="id" v-model="type" :name="`${name}[type]`" :class="selectClass" class="w-auto ss-minw-36">
             <option v-if="optional" value="">Repeat, then hang up</option>
             <option value="number">Ring / go to</option>
             <option value="voicemail">Voicemail of</option>
             <option value="hangup">Hang up</option>
         </select>
-        <select v-if="needsTarget" v-model="target" :name="`${name}[target]`" :class="selectClass" class="w-auto min-w-48" :aria-label="`${name} target`">
+        <select v-if="needsTarget" v-model="target" :name="`${name}[target]`" :class="selectClass" class="w-auto ss-minw-48" :aria-label="`${name} target`">
             <option value="" disabled>Choose…</option>
             <option v-for="n in targets" :key="n.number" :value="n.number">{{ n.label }}</option>
         </select>

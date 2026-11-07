@@ -1,19 +1,14 @@
 <script setup lang="ts">
 import { usePage } from '@inertiajs/vue3';
-import AppLogoIcon from '@/components/AppLogoIcon.vue';
+import { Waypoints } from '@lucide/vue';
 
-const name = usePage().props.name;
+withDefaults(defineProps<{ showName?: boolean }>(), { showName: true });
+const name = usePage().props.name as string;
 </script>
 
 <template>
-    <div
-        class="flex aspect-square size-8 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground"
-    >
-        <AppLogoIcon class="size-5 fill-current text-white dark:text-black" />
-    </div>
-    <div class="ml-1 grid flex-1 text-left text-sm">
-        <span class="mb-0.5 truncate leading-tight font-semibold">{{
-            name
-        }}</span>
-    </div>
+    <span class="d-inline-flex align-items-center gap-2">
+        <span class="avatar avatar-sm bg-primary text-white"><Waypoints class="icon" /></span>
+        <span v-if="showName" class="fw-bold">{{ name }}</span>
+    </span>
 </template>

@@ -71,64 +71,64 @@ function hangup(uuid: string) {
 <template>
     <Head title="Live calls" />
 
-    <div class="space-y-6 p-4">
-        <div class="flex flex-wrap items-end justify-between gap-4">
+    <div class="ss-stack-4">
+        <div class="d-flex flex-wrap align-items-end justify-content-between gap-3">
             <Heading title="Live calls" description="Calls in progress through the switch" />
-            <p class="text-xs text-muted-foreground">
+            <p class="small text-secondary">
                 <span v-if="snapshot.at">Updated {{ age }}s ago</span>
                 <span v-else>Waiting for the first snapshot…</span>
             </p>
         </div>
 
-        <div class="grid gap-4 sm:grid-cols-3">
-            <div class="rounded-lg border p-3"><p class="text-xs text-muted-foreground">In progress</p><p class="text-2xl font-semibold tabular-nums">{{ counts.total }}</p></div>
-            <div class="rounded-lg border p-3"><p class="text-xs text-muted-foreground">Answered</p><p class="text-2xl font-semibold tabular-nums">{{ counts.answered }}</p></div>
-            <div class="rounded-lg border p-3"><p class="text-xs text-muted-foreground">Routing / ringing</p><p class="text-2xl font-semibold tabular-nums">{{ counts.ringing }}</p></div>
+        <div class="ss-grid gap-3 ss-cols-sm-3">
+            <div class="card card-body p-2"><p class="small text-secondary">In progress</p><p class="fs-1 fw-semibold tabular-nums">{{ counts.total }}</p></div>
+            <div class="card card-body p-2"><p class="small text-secondary">Answered</p><p class="fs-1 fw-semibold tabular-nums">{{ counts.answered }}</p></div>
+            <div class="card card-body p-2"><p class="small text-secondary">Routing / ringing</p><p class="fs-1 fw-semibold tabular-nums">{{ counts.ringing }}</p></div>
         </div>
 
-        <div class="overflow-x-auto rounded-lg border">
-            <table class="w-full text-sm">
-                <thead class="bg-muted/50 text-left text-muted-foreground">
+        <div class="card table-responsive">
+            <table class="table table-vcenter card-table table-tight">
+                <thead>
                     <tr>
-                        <th class="px-3 py-2 font-medium">Customer</th>
-                        <th class="px-3 py-2 font-medium">From → To</th>
-                        <th class="px-3 py-2 font-medium">State</th>
-                        <th class="px-3 py-2 font-medium">Vendor</th>
-                        <th class="px-3 py-2 text-right font-medium">Talking</th>
-                        <th class="px-3 py-2 text-right font-medium">Cut-off in</th>
-                        <th class="px-3 py-2"></th>
+                        <th>Customer</th>
+                        <th>From → To</th>
+                        <th>State</th>
+                        <th>Vendor</th>
+                        <th class="text-end">Talking</th>
+                        <th class="text-end">Cut-off in</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="c in snapshot.calls" :key="c.uuid" class="border-t">
-                        <td class="px-3 py-1.5">
-                            <Link v-if="c.customer" :href="showAccount(c.customer.id)" class="hover:underline">{{ c.customer.code }}</Link>
-                            <span v-else class="text-muted-foreground">unidentified</span>
+                    <tr v-for="c in snapshot.calls" :key="c.uuid">
+                        <td class="px-2 py-1">
+                            <Link v-if="c.customer" :href="showAccount(c.customer.id)">{{ c.customer.code }}</Link>
+                            <span v-else class="text-secondary">unidentified</span>
                         </td>
-                        <td class="px-3 py-1.5 font-mono text-xs">{{ c.caller ?? '?' }} → {{ c.dialled }}</td>
-                        <td class="px-3 py-1.5 whitespace-nowrap">
+                        <td class="px-2 py-1 font-monospace small">{{ c.caller ?? '?' }} → {{ c.dialled }}</td>
+                        <td class="px-2 py-1 text-nowrap">
                             <Badge :variant="c.state === 'answered' ? 'default' : 'secondary'">{{ c.state }}</Badge>
-                            <span v-if="c.state !== 'answered'" class="ml-1 text-xs text-muted-foreground tabular-nums">{{ fmt(elapsed(c.started_at)) }}</span>
+                            <span v-if="c.state !== 'answered'" class="ms-1 small text-secondary tabular-nums">{{ fmt(elapsed(c.started_at)) }}</span>
                         </td>
-                        <td class="px-3 py-1.5 text-xs">
+                        <td class="px-2 py-1 small">
                             <template v-if="c.trunk">
-                                {{ c.vendor }} / <Link :href="showTrunk(c.trunk.id)" class="hover:underline">{{ c.trunk.name }}</Link>
-                                <span class="font-mono text-muted-foreground"> {{ c.gateway }}</span>
+                                {{ c.vendor }} / <Link :href="showTrunk(c.trunk.id)">{{ c.trunk.name }}</Link>
+                                <span class="font-monospace text-secondary"> {{ c.gateway }}</span>
                             </template>
-                            <span v-else class="text-muted-foreground">—</span>
+                            <span v-else class="text-secondary">—</span>
                         </td>
-                        <td class="px-3 py-1.5 text-right tabular-nums">{{ fmt(since(c.talking_seconds)) }}</td>
-                        <td class="px-3 py-1.5 text-right tabular-nums text-muted-foreground">
+                        <td class="px-2 py-1 text-end tabular-nums">{{ fmt(since(c.talking_seconds)) }}</td>
+                        <td class="px-2 py-1 text-end tabular-nums text-secondary">
                             {{ c.remaining_seconds !== null ? fmt(Math.max(0, c.remaining_seconds - (age ?? 0))) : '—' }}
                         </td>
-                        <td class="px-3 py-1.5 text-right">
+                        <td class="px-2 py-1 text-end">
                             <Button size="sm" :variant="armed === c.uuid ? 'destructive' : 'ghost'" @click="hangup(c.uuid)" :aria-label="`Hang up call from ${c.caller}`">
-                                <PhoneOff class="size-4" /><span v-if="armed === c.uuid">Confirm</span>
+                                <PhoneOff class="icon" /><span v-if="armed === c.uuid">Confirm</span>
                             </Button>
                         </td>
                     </tr>
                     <tr v-if="snapshot.calls.length === 0">
-                        <td colspan="7" class="px-3 py-10 text-center text-muted-foreground">No calls in progress.</td>
+                        <td colspan="7" class="px-2 py-5 text-center text-secondary">No calls in progress.</td>
                     </tr>
                 </tbody>
             </table>

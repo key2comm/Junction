@@ -32,62 +32,31 @@ const handleDelete = () => {
 </script>
 
 <template>
-    <div class="flex items-center justify-between border-b p-4 last:border-b-0">
-        <div class="flex items-center gap-4">
-            <div
-                class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted"
-            >
-                <KeyRound class="h-5 w-5 text-muted-foreground" />
-            </div>
-            <div class="space-y-1">
-                <div class="flex items-center gap-2.5">
-                    <p class="font-medium tracking-tight">{{ passkey.name }}</p>
-                    <span
-                        v-if="passkey.authenticator"
-                        class="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-[11px] font-medium tracking-wide text-muted-foreground uppercase ring-1 ring-border ring-inset"
-                    >
-                        {{ passkey.authenticator }}
-                    </span>
+    <div class="list-group-item d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-3">
+            <span class="avatar"><KeyRound class="icon" /></span>
+            <div>
+                <div class="d-flex align-items-center gap-2">
+                    <strong>{{ passkey.name }}</strong>
+                    <span v-if="passkey.authenticator" class="badge bg-secondary-lt text-uppercase">{{ passkey.authenticator }}</span>
                 </div>
-                <p class="text-sm text-muted-foreground">
+                <div class="text-secondary small">
                     Added {{ passkey.created_at_diff }}
-                    <template v-if="passkey.last_used_at_diff">
-                        <span class="mx-1 text-muted-foreground/50">/</span>
-                        Last used {{ passkey.last_used_at_diff }}
-                    </template>
-                </p>
+                    <template v-if="passkey.last_used_at_diff"> · Last used {{ passkey.last_used_at_diff }}</template>
+                </div>
             </div>
         </div>
 
         <Dialog>
             <DialogTrigger as-child>
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    class="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                >
-                    <Trash2 class="h-4 w-4" />
-                    <span class="sr-only">Remove</span>
-                </Button>
+                <Button variant="ghost" size="sm" class="text-danger" aria-label="Remove"><Trash2 class="icon" /></Button>
             </DialogTrigger>
-
             <DialogContent>
                 <DialogTitle>Remove passkey</DialogTitle>
-                <DialogDescription>
-                    Are you sure you want to remove the "{{ passkey.name }}"
-                    passkey? You will no longer be able to use it to sign in.
-                </DialogDescription>
-                <DialogFooter class="gap-2">
-                    <DialogClose as-child>
-                        <Button variant="secondary">Cancel</Button>
-                    </DialogClose>
-                    <Button
-                        variant="destructive"
-                        :disabled="isDeleting"
-                        @click="handleDelete"
-                    >
-                        {{ isDeleting ? 'Removing...' : 'Remove passkey' }}
-                    </Button>
+                <DialogDescription>Remove the "{{ passkey.name }}" passkey? You won't be able to sign in with it any more.</DialogDescription>
+                <DialogFooter>
+                    <DialogClose as-child><Button variant="outline">Cancel</Button></DialogClose>
+                    <Button variant="destructive" :disabled="isDeleting" @click="handleDelete">{{ isDeleting ? 'Removing...' : 'Remove passkey' }}</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

@@ -68,11 +68,11 @@ const cell = (asr: number | null, attempts: number) =>
 <template>
     <Head title="Vendor quality" />
 
-    <div class="space-y-6 p-4">
+    <div class="ss-stack-4">
         <Heading title="Vendor quality" :description="`Per vendor attempt over the last ${rangeHours} hours. Updated every 5 minutes.`" />
 
-        <div class="flex flex-wrap items-end gap-3 rounded-lg border p-4">
-            <div class="grid gap-1">
+        <div class="card card-body d-flex flex-wrap align-items-end gap-2">
+            <div class="ss-grid gap-1">
                 <Label for="group">Group by</Label>
                 <select id="group" v-model="f.group" :class="selectClass" class="w-auto" @change="apply()">
                     <option value="vendor">Vendor</option>
@@ -80,18 +80,18 @@ const cell = (asr: number | null, attempts: number) =>
                     <option value="prefix">Trunk and destination</option>
                 </select>
             </div>
-            <div class="grid gap-1">
+            <div class="ss-grid gap-1">
                 <Label for="vendor">Vendor</Label>
                 <select id="vendor" v-model="f.vendor" :class="selectClass" class="w-auto" @change="apply()">
                     <option value="">All</option>
                     <option v-for="v in vendors" :key="v.id" :value="String(v.id)">{{ v.code }} — {{ v.name }}</option>
                 </select>
             </div>
-            <div class="grid gap-1">
+            <div class="ss-grid gap-1">
                 <Label for="min">Min. attempts</Label>
-                <Input id="min" v-model="f.min" type="number" min="1" class="w-24" @change="apply()" />
+                <Input id="min" v-model="f.min" type="number" min="1" class="ss-w-24" @change="apply()" />
             </div>
-            <div class="flex gap-1">
+            <div class="d-flex gap-1">
                 <Button variant="ghost" @click="apply(1)">1h</Button>
                 <Button variant="ghost" @click="apply(24)">24h</Button>
                 <Button variant="ghost" @click="apply(24 * 7)">7 days</Button>
@@ -99,43 +99,43 @@ const cell = (asr: number | null, attempts: number) =>
             </div>
         </div>
 
-        <div class="overflow-x-auto rounded-lg border">
-            <table class="w-full text-sm">
-                <thead class="bg-muted/50 text-left text-muted-foreground">
+        <div class="card table-responsive">
+            <table class="table table-vcenter card-table table-tight">
+                <thead>
                     <tr>
-                        <th class="px-3 py-2 font-medium">Vendor</th>
-                        <th v-if="filters.group !== 'vendor'" class="px-3 py-2 font-medium">Trunk</th>
-                        <th v-if="filters.group === 'prefix'" class="px-3 py-2 font-medium">Prefix</th>
-                        <th class="px-3 py-2 text-right font-medium">Attempts</th>
-                        <th class="px-3 py-2 text-right font-medium">ASR</th>
-                        <th class="px-3 py-2 text-right font-medium">ACD</th>
-                        <th class="px-3 py-2 text-right font-medium">PDD</th>
-                        <th class="px-3 py-2 text-right font-medium">Minutes</th>
-                        <th class="px-3 py-2 text-right font-medium" title="Busy / no answer / congestion (5xx, timeouts) / rejected (4xx, 6xx)">Busy · NoAns · Cong · Rej</th>
-                        <th v-if="filters.group === 'trunk'" class="px-3 py-2 font-medium">ASR by hour</th>
+                        <th>Vendor</th>
+                        <th v-if="filters.group !== 'vendor'">Trunk</th>
+                        <th v-if="filters.group === 'prefix'">Prefix</th>
+                        <th class="text-end">Attempts</th>
+                        <th class="text-end">ASR</th>
+                        <th class="text-end">ACD</th>
+                        <th class="text-end">PDD</th>
+                        <th class="text-end">Minutes</th>
+                        <th class="text-end" title="Busy / no answer / congestion (5xx, timeouts) / rejected (4xx, 6xx)">Busy · NoAns · Cong · Rej</th>
+                        <th v-if="filters.group === 'trunk'">ASR by hour</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="r in rows" :key="`${r.vendor_id}-${r.trunk_id}-${r.prefix}`" class="border-t">
-                        <td class="px-3 py-1.5"><Link :href="showAccount(r.vendor_id)" class="hover:underline">{{ r.vendor_code }}</Link></td>
-                        <td v-if="filters.group !== 'vendor'" class="px-3 py-1.5">
-                            <Link v-if="r.trunk_id" :href="showTrunk(r.trunk_id)" class="hover:underline">{{ r.trunk_name }}</Link>
+                    <tr v-for="r in rows" :key="`${r.vendor_id}-${r.trunk_id}-${r.prefix}`">
+                        <td class="px-2 py-1"><Link :href="showAccount(r.vendor_id)">{{ r.vendor_code }}</Link></td>
+                        <td v-if="filters.group !== 'vendor'" class="px-2 py-1">
+                            <Link v-if="r.trunk_id" :href="showTrunk(r.trunk_id)">{{ r.trunk_name }}</Link>
                         </td>
-                        <td v-if="filters.group === 'prefix'" class="px-3 py-1.5 font-mono">{{ r.prefix || '—' }}</td>
-                        <td class="px-3 py-1.5 text-right tabular-nums">{{ r.attempts.toLocaleString() }}</td>
-                        <td class="px-3 py-1.5 text-right tabular-nums" :class="asrClass(r.asr)">{{ pct(r.asr) }}</td>
-                        <td class="px-3 py-1.5 text-right tabular-nums">{{ secs(r.acd) }}</td>
-                        <td class="px-3 py-1.5 text-right tabular-nums" :class="pddClass(r.pdd_ms)">{{ pdd(r.pdd_ms) }}</td>
-                        <td class="px-3 py-1.5 text-right tabular-nums">{{ r.minutes.toLocaleString() }}</td>
-                        <td class="px-3 py-1.5 text-right text-xs whitespace-nowrap text-muted-foreground tabular-nums">
+                        <td v-if="filters.group === 'prefix'" class="px-2 py-1 font-monospace">{{ r.prefix || '—' }}</td>
+                        <td class="px-2 py-1 text-end tabular-nums">{{ r.attempts.toLocaleString() }}</td>
+                        <td class="px-2 py-1 text-end tabular-nums" :class="asrClass(r.asr)">{{ pct(r.asr) }}</td>
+                        <td class="px-2 py-1 text-end tabular-nums">{{ secs(r.acd) }}</td>
+                        <td class="px-2 py-1 text-end tabular-nums" :class="pddClass(r.pdd_ms)">{{ pdd(r.pdd_ms) }}</td>
+                        <td class="px-2 py-1 text-end tabular-nums">{{ r.minutes.toLocaleString() }}</td>
+                        <td class="px-2 py-1 text-end small text-nowrap text-secondary tabular-nums">
                             {{ pct(r.busy_pct) }} · {{ pct(r.no_answer_pct) }} · {{ pct(r.congestion_pct) }} · {{ pct(r.rejected_pct) }}
                         </td>
-                        <td v-if="filters.group === 'trunk'" class="px-3 py-1.5">
-                            <div class="flex h-4 items-end gap-px">
+                        <td v-if="filters.group === 'trunk'" class="px-2 py-1">
+                            <div class="d-flex align-items-end ss-gap-px">
                                 <span
                                     v-for="h in (r.trunk_id && series[r.trunk_id]) || []"
                                     :key="h.hour"
-                                    class="inline-block h-4 w-1.5 rounded-sm"
+                                    class="d-inline-block ss-w-1-5 rounded-1"
                                     :class="cell(h.asr, h.attempts)"
                                     :title="`${new Date(h.hour).toLocaleString()}: ${h.attempts} attempts, ASR ${h.asr ?? '—'}%`"
                                 />
@@ -143,12 +143,12 @@ const cell = (asr: number | null, attempts: number) =>
                         </td>
                     </tr>
                     <tr v-if="rows.length === 0">
-                        <td colspan="10" class="px-3 py-10 text-center text-muted-foreground">No vendor attempts in this range.</td>
+                        <td colspan="10" class="px-2 py-5 text-center text-secondary">No vendor attempts in this range.</td>
                     </tr>
                 </tbody>
             </table>
         </div>
-        <p class="text-xs text-muted-foreground">
+        <p class="small text-secondary">
             ASR here is per vendor attempt (a call that fails over counts against each vendor tried). PDD is the time from our INVITE to the vendor's first ringing or answer.
         </p>
     </div>

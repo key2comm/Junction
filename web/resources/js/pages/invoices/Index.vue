@@ -43,13 +43,13 @@ function apply() {
 <template>
     <Head title="Invoices" />
 
-    <div class="space-y-6 p-4">
+    <div class="ss-stack-4">
         <Heading
             title="Invoices"
             description="Monthly customer statements, issued automatically two hours after each customer's month ends (in their time zone)"
         />
 
-        <div class="flex flex-wrap gap-3">
+        <div class="d-flex flex-wrap gap-2">
             <select v-model="f.account" :class="selectClass" class="w-auto" aria-label="Customer" @change="apply">
                 <option value="">All customers</option>
                 <option v-for="c in customers" :key="c.id" :value="String(c.id)">{{ c.code }} — {{ c.name }}</option>
@@ -61,32 +61,32 @@ function apply() {
             </select>
         </div>
 
-        <div class="overflow-x-auto rounded-lg border">
-            <table class="w-full text-sm">
-                <thead class="bg-muted/50 text-left text-muted-foreground">
+        <div class="card table-responsive">
+            <table class="table table-vcenter card-table table-tight">
+                <thead>
                     <tr>
-                        <th class="px-4 py-2 font-medium">Invoice</th>
-                        <th class="px-4 py-2 font-medium">Customer</th>
-                        <th class="px-4 py-2 font-medium">Period</th>
-                        <th class="px-4 py-2 text-right font-medium">Usage</th>
-                        <th class="px-4 py-2 text-right font-medium">Amount due</th>
-                        <th class="px-4 py-2 font-medium">Due</th>
+                        <th class="px-3 py-2 fw-medium">Invoice</th>
+                        <th class="px-3 py-2 fw-medium">Customer</th>
+                        <th class="px-3 py-2 fw-medium">Period</th>
+                        <th class="px-3 py-2 text-end fw-medium">Usage</th>
+                        <th class="px-3 py-2 text-end fw-medium">Amount due</th>
+                        <th class="px-3 py-2 fw-medium">Due</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="i in invoices.data" :key="i.id" class="border-t hover:bg-muted/30" :class="{ 'opacity-60': i.status === 'void' }">
-                        <td class="px-4 py-2">
-                            <Link :href="show(i.id)" class="font-mono font-medium hover:underline">{{ i.number }}</Link>
-                            <Badge v-if="i.status === 'void'" variant="secondary" class="ml-2">void</Badge>
+                    <tr v-for="i in invoices.data" :key="i.id" :class="{ 'opacity-50': i.status === 'void' }">
+                        <td class="px-3 py-2">
+                            <Link :href="show(i.id)" class="font-monospace fw-medium">{{ i.number }}</Link>
+                            <Badge v-if="i.status === 'void'" variant="secondary" class="ms-2">void</Badge>
                         </td>
-                        <td class="px-4 py-2">{{ i.account_name }} <span class="text-muted-foreground">{{ i.account_code }}</span></td>
-                        <td class="px-4 py-2">{{ billingMonth(i.period_start, i.timezone) }}</td>
-                        <td class="px-4 py-2 text-right tabular-nums">{{ money(i.usage_total, i.currency) }}</td>
-                        <td class="px-4 py-2 text-right font-medium tabular-nums">{{ Number(i.amount_due) ? money(i.amount_due, i.currency) : '—' }}</td>
-                        <td class="px-4 py-2">{{ date(i.due_at) }}</td>
+                        <td class="px-3 py-2">{{ i.account_name }} <span class="text-secondary">{{ i.account_code }}</span></td>
+                        <td class="px-3 py-2">{{ billingMonth(i.period_start, i.timezone) }}</td>
+                        <td class="px-3 py-2 text-end tabular-nums">{{ money(i.usage_total, i.currency) }}</td>
+                        <td class="px-3 py-2 text-end fw-medium tabular-nums">{{ Number(i.amount_due) ? money(i.amount_due, i.currency) : '—' }}</td>
+                        <td class="px-3 py-2">{{ date(i.due_at) }}</td>
                     </tr>
                     <tr v-if="invoices.data.length === 0">
-                        <td colspan="6" class="px-4 py-10 text-center text-muted-foreground">No invoices yet. The first ones are issued after the current month ends.</td>
+                        <td colspan="6" class="px-3 py-5 text-center text-secondary">No invoices yet. The first ones are issued after the current month ends.</td>
                     </tr>
                 </tbody>
             </table>

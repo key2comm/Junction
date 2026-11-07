@@ -10,20 +10,13 @@ defineProps<{
 </script>
 
 <template>
-    <div v-if="total > 0" class="flex flex-wrap items-center justify-between gap-2 text-sm">
-        <p class="text-muted-foreground">{{ from }}–{{ to }} of {{ total }}</p>
-        <nav v-if="links.length > 3" class="flex flex-wrap gap-1" aria-label="Pagination">
-            <template v-for="(link, i) in links" :key="i">
-                <Link
-                    v-if="link.url"
-                    :href="link.url"
-                    preserve-scroll
-                    class="rounded-md border px-3 py-1"
-                    :class="link.active ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'"
-                    ><span v-html="link.label"
-                /></Link>
-                <span v-else class="rounded-md px-3 py-1 text-muted-foreground" v-html="link.label" />
-            </template>
-        </nav>
+    <div v-if="total > 0" class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <p class="m-0 text-secondary">{{ from }}–{{ to }} of {{ total }}</p>
+        <ul v-if="links.length > 3" class="pagination m-0" aria-label="Pagination">
+            <li v-for="(link, i) in links" :key="i" class="page-item" :class="{ active: link.active, disabled: !link.url }">
+                <Link v-if="link.url" :href="link.url" preserve-scroll class="page-link"><span v-html="link.label" /></Link>
+                <span v-else class="page-link" v-html="link.label" />
+            </li>
+        </ul>
     </div>
 </template>

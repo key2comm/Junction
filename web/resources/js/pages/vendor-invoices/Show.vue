@@ -71,86 +71,86 @@ const flagged = (r: Row) => Math.abs(Number(r.difference)) > Math.max(0.01, Math
 <template>
     <Head :title="`Vendor invoice ${props.invoice.reference}`" />
 
-    <div class="max-w-5xl space-y-8 p-4">
-        <div class="flex flex-wrap items-start justify-between gap-4">
-            <div class="space-y-2">
+    <div class="ss-maxw-5xl ss-stack-4">
+        <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
+            <div class="ss-stack-2">
                 <Heading :title="`${inv.vendor.name}: invoice ${inv.reference}`" :description="`${date(inv.period_start, inv.timezone)} – ${date(lastDay, inv.timezone)} (${inv.timezone})`" />
                 <Badge :variant="inv.status === 'accepted' ? 'default' : inv.status === 'disputed' ? 'destructive' : 'secondary'">{{ inv.status }}</Badge>
             </div>
-            <div class="flex gap-2">
+            <div class="d-flex gap-2">
                 <Button variant="outline" as-child><Link :href="evidence">Our call records</Link></Button>
                 <Form v-if="inv.status !== 'accepted'" v-bind="VendorBillingController.refresh.form(inv.id)" v-slot="{ processing }">
-                    <Button variant="outline" :disabled="processing" title="Re-read our call records (e.g. after late CDRs)"><RefreshCw class="size-4" /> Refresh ours</Button>
+                    <Button variant="outline" :disabled="processing" title="Re-read our call records (e.g. after late CDRs)"><RefreshCw class="icon" /> Refresh ours</Button>
                 </Form>
             </div>
         </div>
 
-        <div class="grid gap-4 sm:grid-cols-3">
-            <div class="rounded-lg border p-4">
-                <p class="text-xs text-muted-foreground">They bill</p>
-                <p class="text-2xl font-semibold tabular-nums">{{ m(inv.amount) }}</p>
-                <p class="text-xs text-muted-foreground">
+        <div class="ss-grid gap-3 ss-cols-sm-3">
+            <div class="card card-body">
+                <p class="small text-secondary">They bill</p>
+                <p class="fs-1 fw-semibold tabular-nums">{{ m(inv.amount) }}</p>
+                <p class="small text-secondary">
                     {{ inv.calls !== null ? `${inv.calls.toLocaleString()} calls` : '' }} {{ inv.minutes !== null ? `· ${Number(inv.minutes).toLocaleString()} min` : '' }}
                 </p>
             </div>
-            <div class="rounded-lg border p-4">
-                <p class="text-xs text-muted-foreground">Our records say</p>
-                <p class="text-2xl font-semibold tabular-nums">{{ m(inv.our_amount) }}</p>
-                <p class="text-xs text-muted-foreground">{{ inv.our_calls.toLocaleString() }} calls · {{ Number(inv.our_minutes).toLocaleString() }} min</p>
+            <div class="card card-body">
+                <p class="small text-secondary">Our records say</p>
+                <p class="fs-1 fw-semibold tabular-nums">{{ m(inv.our_amount) }}</p>
+                <p class="small text-secondary">{{ inv.our_calls.toLocaleString() }} calls · {{ Number(inv.our_minutes).toLocaleString() }} min</p>
             </div>
-            <div class="rounded-lg border p-4" :class="{ 'border-destructive': Number(inv.difference) > 0 }">
-                <p class="text-xs text-muted-foreground">Difference (theirs − ours)</p>
-                <p class="text-2xl font-semibold tabular-nums" :class="{ 'text-destructive': Number(inv.difference) > 0 }">{{ m(inv.difference) }}</p>
-                <p class="text-xs text-muted-foreground">{{ pct !== null ? `${pct}% of our figure` : '' }}</p>
+            <div class="card card-body" :class="{ 'border-danger': Number(inv.difference) > 0 }">
+                <p class="small text-secondary">Difference (theirs − ours)</p>
+                <p class="fs-1 fw-semibold tabular-nums" :class="{ 'text-danger': Number(inv.difference) > 0 }">{{ m(inv.difference) }}</p>
+                <p class="small text-secondary">{{ pct !== null ? `${pct}% of our figure` : '' }}</p>
             </div>
         </div>
 
-        <section class="space-y-3">
+        <section class="ss-stack-2">
             <Heading
                 variant="small"
                 title="By destination"
                 :description="has_breakdown ? 'Their breakdown against our records, biggest differences first. Rows over 1% (or 0.01) are highlighted.' : 'Our records by destination. Upload their breakdown CSV when entering an invoice to compare line by line.'"
             />
-            <div class="overflow-x-auto rounded-lg border">
-                <table class="w-full text-sm">
-                    <thead class="bg-muted/50 text-left text-muted-foreground">
+            <div class="card table-responsive">
+                <table class="table table-vcenter card-table table-tight">
+                    <thead>
                         <tr>
-                            <th class="px-3 py-2 font-medium">Prefix</th>
-                            <th class="px-3 py-2 font-medium">Destination</th>
-                            <th v-if="has_breakdown" class="px-3 py-2 text-right font-medium">Their min</th>
-                            <th class="px-3 py-2 text-right font-medium">Our min</th>
-                            <th v-if="has_breakdown" class="px-3 py-2 text-right font-medium">Theirs</th>
-                            <th class="px-3 py-2 text-right font-medium">Ours</th>
-                            <th v-if="has_breakdown" class="px-3 py-2 text-right font-medium">Difference</th>
+                            <th>Prefix</th>
+                            <th>Destination</th>
+                            <th v-if="has_breakdown" class="text-end">Their min</th>
+                            <th class="text-end">Our min</th>
+                            <th v-if="has_breakdown" class="text-end">Theirs</th>
+                            <th class="text-end">Ours</th>
+                            <th v-if="has_breakdown" class="text-end">Difference</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="r in comparison" :key="r.prefix ?? 'none'" class="border-t" :class="{ 'bg-destructive/10': has_breakdown && flagged(r) }">
-                            <td class="px-3 py-1.5 font-mono">{{ r.prefix ?? '—' }}</td>
-                            <td class="px-3 py-1.5">{{ r.destination ?? '' }}</td>
-                            <td v-if="has_breakdown" class="px-3 py-1.5 text-right tabular-nums">{{ r.their_minutes ?? '—' }}</td>
-                            <td class="px-3 py-1.5 text-right tabular-nums">{{ r.our_minutes }}</td>
-                            <td v-if="has_breakdown" class="px-3 py-1.5 text-right tabular-nums">{{ m(r.their_amount) }}</td>
-                            <td class="px-3 py-1.5 text-right tabular-nums">{{ m(r.our_amount) }}</td>
-                            <td v-if="has_breakdown" class="px-3 py-1.5 text-right tabular-nums">{{ m(r.difference) }}</td>
+                        <tr v-for="r in comparison" :key="r.prefix ?? 'none'" :class="{ 'bg-danger-lt': has_breakdown && flagged(r) }">
+                            <td class="px-2 py-1 font-monospace">{{ r.prefix ?? '—' }}</td>
+                            <td class="px-2 py-1">{{ r.destination ?? '' }}</td>
+                            <td v-if="has_breakdown" class="px-2 py-1 text-end tabular-nums">{{ r.their_minutes ?? '—' }}</td>
+                            <td class="px-2 py-1 text-end tabular-nums">{{ r.our_minutes }}</td>
+                            <td v-if="has_breakdown" class="px-2 py-1 text-end tabular-nums">{{ m(r.their_amount) }}</td>
+                            <td class="px-2 py-1 text-end tabular-nums">{{ m(r.our_amount) }}</td>
+                            <td v-if="has_breakdown" class="px-2 py-1 text-end tabular-nums">{{ m(r.difference) }}</td>
                         </tr>
                         <tr v-if="comparison.length === 0">
-                            <td colspan="7" class="px-3 py-6 text-center text-muted-foreground">No calls to this vendor in the period.</td>
+                            <td colspan="7" class="py-3 text-center text-secondary">No calls to this vendor in the period.</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
         </section>
 
-        <section v-if="inv.notes" class="space-y-1 text-sm">
-            <h3 class="font-medium">Notes</h3>
-            <p class="whitespace-pre-line text-muted-foreground">{{ inv.notes }}</p>
+        <section v-if="inv.notes" class="ss-stack-1">
+            <h3 class="fw-medium">Notes</h3>
+            <p class="ss-pre-line text-secondary">{{ inv.notes }}</p>
         </section>
 
-        <section v-if="inv.status !== 'accepted'" class="grid gap-4 sm:grid-cols-2">
-            <div class="space-y-2 rounded-lg border p-4 text-sm">
-                <h3 class="font-medium">Accept</h3>
-                <p class="text-muted-foreground">
+        <section v-if="inv.status !== 'accepted'" class="ss-grid gap-3 ss-cols-sm-2">
+            <div class="card card-body ss-stack-2">
+                <h3 class="fw-medium">Accept</h3>
+                <p class="text-secondary">
                     Agree to pay their figure. {{ Number(inv.difference) ? `The difference (${m(inv.difference)}) is booked as an adjustment to what you owe.` : 'It matches our records exactly.' }}
                 </p>
                 <Form v-bind="VendorBillingController.accept.form(inv.id)" v-slot="{ errors, processing }">
@@ -158,11 +158,11 @@ const flagged = (r: Row) => Math.abs(Number(r.difference)) > Math.max(0.01, Math
                     <InputError :message="errors.status" />
                 </Form>
             </div>
-            <div class="space-y-2 rounded-lg border p-4 text-sm">
-                <h3 class="font-medium">Dispute</h3>
-                <p class="text-muted-foreground">Keep it open as disputed with a note. Export our call records above as evidence.</p>
-                <Form v-bind="VendorBillingController.dispute.form(inv.id)" reset-on-success class="flex flex-wrap items-start gap-2" v-slot="{ errors, processing }">
-                    <div class="grid flex-1 gap-1">
+            <div class="card card-body ss-stack-2">
+                <h3 class="fw-medium">Dispute</h3>
+                <p class="text-secondary">Keep it open as disputed with a note. Export our call records above as evidence.</p>
+                <Form v-bind="VendorBillingController.dispute.form(inv.id)" reset-on-success class="d-flex flex-wrap align-items-start gap-2" v-slot="{ errors, processing }">
+                    <div class="ss-grid flex-fill gap-1">
                         <Input name="note" placeholder="What's wrong" required />
                         <InputError :message="errors.note" />
                     </div>
@@ -170,6 +170,6 @@ const flagged = (r: Row) => Math.abs(Number(r.difference)) > Math.max(0.01, Math
                 </Form>
             </div>
         </section>
-        <p v-else class="text-sm text-muted-foreground">Accepted {{ date(inv.resolved_at) }}. You now owe {{ m(inv.vendor.vendor_balance) }} in total.</p>
+        <p v-else class="text-secondary">Accepted {{ date(inv.resolved_at) }}. You now owe {{ m(inv.vendor.vendor_balance) }} in total.</p>
     </div>
 </template>

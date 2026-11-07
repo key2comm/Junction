@@ -72,95 +72,95 @@ const outcome = c.answered_at ? 'Answered' : c.attempts === 0 ? 'Rejected before
 <template>
     <Head :title="`Call #${cdr.id}`" />
 
-    <div class="max-w-4xl space-y-8 p-4">
-        <div class="space-y-2">
+    <div class="ss-maxw-4xl ss-stack-4">
+        <div class="ss-stack-2">
             <Heading :title="`${cdr.caller ?? 'Unknown'} → ${cdr.destination ?? cdr.callee}`" :description="dateTime(cdr.started_at)" />
-            <div class="flex flex-wrap items-center gap-2 text-sm">
+            <div class="d-flex flex-wrap align-items-center gap-2">
                 <Badge :variant="cdr.answered_at ? 'default' : cdr.attempts === 0 ? 'destructive' : 'secondary'">{{ outcome }}</Badge>
                 <Badge v-if="cdr.direction !== 'carrier'" variant="outline">{{ { pbx_out: 'PBX outbound', pbx_in: 'PBX inbound (DID)', pbx_local: 'PBX internal' }[cdr.direction] ?? cdr.direction }}</Badge>
-                <span v-if="cdr.sip_code" class="font-mono">SIP {{ cdr.sip_code }}</span>
-                <span class="text-muted-foreground">{{ cdr.hangup_cause }}</span>
+                <span v-if="cdr.sip_code" class="font-monospace">SIP {{ cdr.sip_code }}</span>
+                <span class="text-secondary">{{ cdr.hangup_cause }}</span>
             </div>
-            <p v-if="cdr.reason" class="text-sm text-destructive">{{ cdr.reason }}</p>
+            <p v-if="cdr.reason" class="text-danger">{{ cdr.reason }}</p>
         </div>
 
-        <div class="grid gap-6 sm:grid-cols-2">
-            <dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
-                <dt class="text-muted-foreground">Customer</dt>
+        <div class="ss-grid gap-4 ss-cols-sm-2">
+            <dl class="ss-grid ss-gtc-auto-1fr column-gap-3 row-gap-1">
+                <dt class="text-secondary">Customer</dt>
                 <dd>
-                    <Link v-if="cdr.customer" :href="showAccount(cdr.customer.id)" class="hover:underline">{{ cdr.customer.name }} ({{ cdr.customer.code }})</Link>
+                    <Link v-if="cdr.customer" :href="showAccount(cdr.customer.id)">{{ cdr.customer.name }} ({{ cdr.customer.code }})</Link>
                     <span v-else>Unidentified</span>
                 </dd>
-                <dt class="text-muted-foreground">Source IP</dt>
-                <dd class="font-mono">{{ cdr.source_ip ?? '—' }}</dd>
-                <dt class="text-muted-foreground">Dialled</dt>
-                <dd class="font-mono">{{ cdr.callee }}</dd>
-                <dt class="text-muted-foreground">Answered</dt>
+                <dt class="text-secondary">Source IP</dt>
+                <dd class="font-monospace">{{ cdr.source_ip ?? '—' }}</dd>
+                <dt class="text-secondary">Dialled</dt>
+                <dd class="font-monospace">{{ cdr.callee }}</dd>
+                <dt class="text-secondary">Answered</dt>
                 <dd>{{ dateTime(cdr.answered_at) }}</dd>
-                <dt class="text-muted-foreground">Ended</dt>
+                <dt class="text-secondary">Ended</dt>
                 <dd>{{ dateTime(cdr.ended_at) }}</dd>
-                <dt class="text-muted-foreground">Billed time</dt>
+                <dt class="text-secondary">Billed time</dt>
                 <dd>{{ cdr.billsec }}s</dd>
             </dl>
 
-            <dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
-                <dt class="text-muted-foreground">Sell</dt>
+            <dl class="ss-grid ss-gtc-auto-1fr column-gap-3 row-gap-1">
+                <dt class="text-secondary">Sell</dt>
                 <dd>{{ cdr.sell_rate ? `${money(cdr.sell_rate, cdr.currency)}/min (prefix ${cdr.sell_prefix})` : '—' }}</dd>
-                <dt class="text-muted-foreground">Charged</dt>
+                <dt class="text-secondary">Charged</dt>
                 <dd class="tabular-nums">{{ cdr.sell_cost !== null ? money(cdr.sell_cost, cdr.currency) : '—' }}</dd>
-                <dt class="text-muted-foreground">Vendor</dt>
+                <dt class="text-secondary">Vendor</dt>
                 <dd>
-                    <Link v-if="cdr.vendor" :href="showAccount(cdr.vendor.id)" class="hover:underline">{{ cdr.vendor.code }}</Link>
-                    <span v-if="cdr.trunk"> / <Link :href="showTrunk(cdr.trunk.id)" class="hover:underline">{{ cdr.trunk.name }}</Link></span>
-                    <span v-if="cdr.gateway" class="font-mono text-xs text-muted-foreground"> ({{ cdr.gateway }})</span>
+                    <Link v-if="cdr.vendor" :href="showAccount(cdr.vendor.id)">{{ cdr.vendor.code }}</Link>
+                    <span v-if="cdr.trunk"> / <Link :href="showTrunk(cdr.trunk.id)">{{ cdr.trunk.name }}</Link></span>
+                    <span v-if="cdr.gateway" class="font-monospace small text-secondary"> ({{ cdr.gateway }})</span>
                     <span v-if="!cdr.vendor">—</span>
                 </dd>
-                <dt class="text-muted-foreground">Buy</dt>
+                <dt class="text-secondary">Buy</dt>
                 <dd>{{ cdr.buy_rate ? `${money(cdr.buy_rate, cdr.currency)}/min (prefix ${cdr.buy_prefix})` : '—' }}</dd>
-                <dt class="text-muted-foreground">Cost</dt>
+                <dt class="text-secondary">Cost</dt>
                 <dd class="tabular-nums">{{ cdr.buy_cost !== null ? money(cdr.buy_cost, cdr.currency) : '—' }}</dd>
-                <dt class="text-muted-foreground">Margin</dt>
-                <dd class="font-semibold tabular-nums" :class="{ 'text-destructive': Number(cdr.margin) < 0 }">{{ cdr.margin !== null ? money(cdr.margin, cdr.currency) : '—' }}</dd>
-                <dt class="text-muted-foreground">Billing</dt>
+                <dt class="text-secondary">Margin</dt>
+                <dd class="fw-semibold tabular-nums" :class="{ 'text-danger': Number(cdr.margin) < 0 }">{{ cdr.margin !== null ? money(cdr.margin, cdr.currency) : '—' }}</dd>
+                <dt class="text-secondary">Billing</dt>
                 <dd>{{ cdr.posted_at ? `posted to ledger ${dateTime(cdr.posted_at)}` : cdr.rated_at ? 'rated, posts within the hour' : 'not rated' }}</dd>
             </dl>
         </div>
 
-        <section class="space-y-3">
+        <section class="ss-stack-2">
             <Heading variant="small" title="Vendor attempts" description="Every vendor tried for this call, in order." />
-            <div class="overflow-x-auto rounded-lg border">
-                <table class="w-full text-sm">
-                    <thead class="bg-muted/50 text-left text-muted-foreground">
+            <div class="card table-responsive">
+                <table class="table table-vcenter card-table table-tight">
+                    <thead>
                         <tr>
-                            <th class="px-3 py-2 font-medium">#</th>
-                            <th class="px-3 py-2 font-medium">Trunk</th>
-                            <th class="px-3 py-2 font-medium">Gateway</th>
-                            <th class="px-3 py-2 text-right font-medium">Buy rate</th>
-                            <th class="px-3 py-2 font-medium">Result</th>
+                            <th>#</th>
+                            <th>Trunk</th>
+                            <th>Gateway</th>
+                            <th class="text-end">Buy rate</th>
+                            <th>Result</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="a in attempts" :key="a.attempt" class="border-t">
-                            <td class="px-3 py-1.5">{{ a.attempt }}</td>
-                            <td class="px-3 py-1.5">
-                                <Link v-if="a.trunk_id && a.trunk" :href="showTrunk(a.trunk_id)" class="hover:underline">{{ a.trunk }}</Link>
-                                <span v-else class="text-muted-foreground">(deleted)</span>
+                        <tr v-for="a in attempts" :key="a.attempt">
+                            <td class="px-2 py-1">{{ a.attempt }}</td>
+                            <td class="px-2 py-1">
+                                <Link v-if="a.trunk_id && a.trunk" :href="showTrunk(a.trunk_id)">{{ a.trunk }}</Link>
+                                <span v-else class="text-secondary">(deleted)</span>
                             </td>
-                            <td class="px-3 py-1.5 font-mono text-xs">{{ a.gateway ?? '—' }}</td>
-                            <td class="px-3 py-1.5 text-right tabular-nums">{{ a.buy_rate ? money(a.buy_rate, cdr.currency) : '—' }}</td>
-                            <td class="px-3 py-1.5">
+                            <td class="px-2 py-1 font-monospace small">{{ a.gateway ?? '—' }}</td>
+                            <td class="px-2 py-1 text-end tabular-nums">{{ a.buy_rate ? money(a.buy_rate, cdr.currency) : '—' }}</td>
+                            <td class="px-2 py-1">
                                 <Badge :variant="a.answered ? 'default' : 'secondary'">{{ a.answered ? 'answered' : a.sip_code ?? 'failed' }}</Badge>
-                                <span v-if="!a.answered" class="ml-1 text-xs text-muted-foreground">{{ a.hangup_cause }}</span>
+                                <span v-if="!a.answered" class="ms-1 small text-secondary">{{ a.hangup_cause }}</span>
                             </td>
                         </tr>
                         <tr v-if="attempts.length === 0">
-                            <td colspan="5" class="px-3 py-6 text-center text-muted-foreground">No vendor was tried: the call was refused before routing.</td>
+                            <td colspan="5" class="py-3 text-center text-secondary">No vendor was tried: the call was refused before routing.</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
         </section>
 
-        <p class="font-mono text-xs text-muted-foreground">UUID {{ cdr.uuid }}</p>
+        <p class="font-monospace small text-secondary">UUID {{ cdr.uuid }}</p>
     </div>
 </template>

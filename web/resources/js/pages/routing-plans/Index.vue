@@ -18,36 +18,36 @@ const modeLabel: Record<string, string> = { lcr: 'Least cost', priority: 'Priori
 <template>
     <Head title="Routing plans" />
 
-    <div class="space-y-6 p-4">
-        <div class="flex flex-wrap items-start justify-between gap-4">
+    <div class="ss-stack-4">
+        <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
             <Heading title="Routing plans" description="Which vendor trunks may carry which destinations, assigned to customers" />
-            <Button as-child><Link :href="create()"><Plus class="size-4" /> New routing plan</Link></Button>
+            <Button as-child><Link :href="create()"><Plus class="icon" /> New routing plan</Link></Button>
         </div>
 
-        <div class="overflow-x-auto rounded-lg border">
-            <table class="w-full text-sm">
-                <thead class="bg-muted/50 text-left text-muted-foreground">
+        <div class="card table-responsive">
+            <table class="table table-vcenter card-table table-tight">
+                <thead>
                     <tr>
-                        <th class="px-4 py-2 font-medium">Plan</th>
-                        <th class="px-4 py-2 font-medium">Mode</th>
-                        <th class="px-4 py-2 text-right font-medium">Max attempts</th>
-                        <th class="px-4 py-2 text-right font-medium">Routes</th>
-                        <th class="px-4 py-2 text-right font-medium">Customers</th>
+                        <th class="px-3 py-2 fw-medium">Plan</th>
+                        <th class="px-3 py-2 fw-medium">Mode</th>
+                        <th class="px-3 py-2 text-end fw-medium">Max attempts</th>
+                        <th class="px-3 py-2 text-end fw-medium">Routes</th>
+                        <th class="px-3 py-2 text-end fw-medium">Customers</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="p in plans" :key="p.id" class="border-t hover:bg-muted/30">
-                        <td class="px-4 py-2">
-                            <Link :href="show(p.id)" class="font-medium hover:underline">{{ p.name }}</Link>
-                            <div v-if="p.description" class="text-xs text-muted-foreground">{{ p.description }}</div>
+                    <tr v-for="p in plans" :key="p.id">
+                        <td class="px-3 py-2">
+                            <Link :href="show(p.id)" class="fw-medium">{{ p.name }}</Link>
+                            <div v-if="p.description" class="small text-secondary">{{ p.description }}</div>
                         </td>
-                        <td class="px-4 py-2"><Badge variant="outline">{{ modeLabel[p.mode] ?? p.mode }}</Badge></td>
-                        <td class="px-4 py-2 text-right tabular-nums">{{ p.max_attempts }}</td>
-                        <td class="px-4 py-2 text-right tabular-nums">{{ p.routes_count }}</td>
-                        <td class="px-4 py-2 text-right tabular-nums">{{ p.accounts_count }}</td>
+                        <td class="px-3 py-2"><Badge variant="outline">{{ modeLabel[p.mode] ?? p.mode }}</Badge></td>
+                        <td class="px-3 py-2 text-end tabular-nums">{{ p.max_attempts }}</td>
+                        <td class="px-3 py-2 text-end tabular-nums">{{ p.routes_count }}</td>
+                        <td class="px-3 py-2 text-end tabular-nums">{{ p.accounts_count }}</td>
                     </tr>
                     <tr v-if="plans.length === 0">
-                        <td colspan="5" class="px-4 py-10 text-center text-muted-foreground">No routing plans yet.</td>
+                        <td colspan="5" class="px-3 py-5 text-center text-secondary">No routing plans yet.</td>
                     </tr>
                 </tbody>
             </table>

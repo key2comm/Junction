@@ -60,43 +60,20 @@ const handleCancel = () => {
 </script>
 
 <template>
-    <div v-if="!isSupported" class="text-sm text-muted-foreground">
-        Passkeys are not supported in this browser.
-    </div>
+    <div v-if="!isSupported" class="text-secondary">Passkeys are not supported in this browser.</div>
 
-    <Button v-else-if="!showForm" variant="outline" @click="showForm = true">
-        Add passkey
-    </Button>
+    <div v-else-if="!showForm"><Button variant="outline" @click="showForm = true">Add passkey</Button></div>
 
-    <form
-        v-else
-        @submit="handleSubmit"
-        class="space-y-4 rounded-lg border border-border bg-muted/50 p-4"
-    >
-        <div class="grid gap-2">
+    <form v-else class="card card-body bg-body-tertiary" @submit="handleSubmit">
+        <div class="mb-3">
             <Label for="passkey-name">Passkey name</Label>
-            <Input
-                id="passkey-name"
-                type="text"
-                v-model="name"
-                placeholder="e.g., MacBook Pro, iPhone"
-                class="mt-1 block w-full border-foreground/20"
-                v-focus
-            />
-            <p class="text-xs text-muted-foreground">
-                A name helps you identify this passkey later.
-            </p>
+            <Input id="passkey-name" type="text" v-model="name" placeholder="e.g. MacBook Pro, iPhone" v-focus />
+            <div class="form-hint">A name helps you identify this passkey later.</div>
         </div>
-
         <InputError v-if="error" :message="error" />
-
-        <div class="flex gap-2">
-            <Button type="submit" :disabled="isLoading || !name.trim()">
-                {{ isLoading ? 'Registering...' : 'Register passkey' }}
-            </Button>
-            <Button type="button" variant="ghost" @click="handleCancel">
-                Cancel
-            </Button>
+        <div class="d-flex gap-2">
+            <Button type="submit" :disabled="isLoading || !name.trim()">{{ isLoading ? 'Registering...' : 'Register passkey' }}</Button>
+            <Button type="button" variant="ghost" @click="handleCancel">Cancel</Button>
         </div>
     </form>
 </template>

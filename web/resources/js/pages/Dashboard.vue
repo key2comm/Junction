@@ -31,100 +31,100 @@ const overdue = (iso: string | null) => iso !== null && new Date(iso) < new Date
 <template>
     <Head title="Dashboard" />
 
-    <div class="space-y-8 p-4">
-        <p v-if="!mailConfigured" class="rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
+    <div class="ss-stack-4">
+        <p v-if="!mailConfigured" class="rounded border ss-border-dashed p-2 text-secondary">
             Email isn't set up, so invoices and low-balance alerts can't be sent.
-            <Link :href="editEmail()" class="font-medium text-foreground hover:underline">Set up email</Link>
+            <Link :href="editEmail()" class="fw-medium text-body">Set up email</Link>
         </p>
 
-        <section v-if="alerts.length" class="space-y-2">
-            <div class="flex items-baseline justify-between">
+        <section v-if="alerts.length" class="ss-stack-2">
+            <div class="d-flex align-items-baseline justify-content-between">
                 <Heading variant="small" title="Alerts" />
-                <Link :href="alertsIndex()" class="text-sm hover:underline">All alerts →</Link>
+                <Link :href="alertsIndex()">All alerts →</Link>
             </div>
-            <ul class="divide-y rounded-lg border text-sm" :class="{ 'border-destructive': alerts.some((a) => a.status === 'open' && a.severity === 'critical') }">
-                <li v-for="a in alerts" :key="a.id" class="flex flex-wrap items-center gap-2 px-3 py-2">
+            <ul class="list-group" :class="{ 'border-danger': alerts.some((a) => a.status === 'open' && a.severity === 'critical') }">
+                <li v-for="a in alerts" :key="a.id" class="d-flex flex-wrap align-items-center gap-2 px-2 py-2">
                     <Badge :variant="a.severity === 'critical' ? 'destructive' : 'secondary'">{{ a.status }}</Badge>
                     <span>{{ a.title }}</span>
-                    <span v-if="a.action_taken" class="text-destructive">· {{ a.action_taken }}</span>
+                    <span v-if="a.action_taken" class="text-danger">· {{ a.action_taken }}</span>
                 </li>
             </ul>
         </section>
 
-        <section class="space-y-3">
-            <div class="flex items-baseline justify-between">
+        <section class="ss-stack-2">
+            <div class="d-flex align-items-baseline justify-content-between">
                 <Heading variant="small" title="Last 24 hours" />
-                <Link :href="cdrIndex()" class="text-sm hover:underline">Call records →</Link>
+                <Link :href="cdrIndex()">Call records →</Link>
             </div>
-            <div class="grid gap-4 sm:grid-cols-3 lg:grid-cols-6">
-                <div class="rounded-lg border p-3">
-                    <p class="text-xs text-muted-foreground">Calls in progress</p>
-                    <p class="text-xl font-semibold tabular-nums">{{ activeCalls }}</p>
+            <div class="ss-grid gap-3 ss-cols-sm-3 ss-cols-lg-6">
+                <div class="card card-body p-2">
+                    <p class="small text-secondary">Calls in progress</p>
+                    <p class="fs-2 fw-semibold tabular-nums">{{ activeCalls }}</p>
                 </div>
-                <div class="rounded-lg border p-3">
-                    <p class="text-xs text-muted-foreground">Calls</p>
-                    <p class="text-xl font-semibold tabular-nums">{{ last24h.calls.toLocaleString() }}</p>
-                    <p class="text-xs text-muted-foreground">{{ last24h.rejected.toLocaleString() }} rejected</p>
+                <div class="card card-body p-2">
+                    <p class="small text-secondary">Calls</p>
+                    <p class="fs-2 fw-semibold tabular-nums">{{ last24h.calls.toLocaleString() }}</p>
+                    <p class="small text-secondary">{{ last24h.rejected.toLocaleString() }} rejected</p>
                 </div>
-                <div class="rounded-lg border p-3">
-                    <p class="text-xs text-muted-foreground">ASR</p>
-                    <p class="text-xl font-semibold tabular-nums">{{ last24h.asr === null ? '—' : `${last24h.asr}%` }}</p>
+                <div class="card card-body p-2">
+                    <p class="small text-secondary">ASR</p>
+                    <p class="fs-2 fw-semibold tabular-nums">{{ last24h.asr === null ? '—' : `${last24h.asr}%` }}</p>
                 </div>
-                <div class="rounded-lg border p-3">
-                    <p class="text-xs text-muted-foreground">ACD</p>
-                    <p class="text-xl font-semibold tabular-nums">{{ duration(last24h.acd) }}</p>
+                <div class="card card-body p-2">
+                    <p class="small text-secondary">ACD</p>
+                    <p class="fs-2 fw-semibold tabular-nums">{{ duration(last24h.acd) }}</p>
                 </div>
-                <div class="rounded-lg border p-3">
-                    <p class="text-xs text-muted-foreground">Minutes</p>
-                    <p class="text-xl font-semibold tabular-nums">{{ last24h.minutes.toLocaleString() }}</p>
+                <div class="card card-body p-2">
+                    <p class="small text-secondary">Minutes</p>
+                    <p class="fs-2 fw-semibold tabular-nums">{{ last24h.minutes.toLocaleString() }}</p>
                 </div>
-                <div class="rounded-lg border p-3">
-                    <p class="text-xs text-muted-foreground">Margin</p>
-                    <p class="text-xl font-semibold tabular-nums" :class="{ 'text-destructive': Number(last24h.margin) < 0 }">{{ money(last24h.margin, currency) }}</p>
-                    <p class="text-xs text-muted-foreground">on {{ money(last24h.sell, currency) }} sold</p>
+                <div class="card card-body p-2">
+                    <p class="small text-secondary">Margin</p>
+                    <p class="fs-2 fw-semibold tabular-nums" :class="{ 'text-danger': Number(last24h.margin) < 0 }">{{ money(last24h.margin, currency) }}</p>
+                    <p class="small text-secondary">on {{ money(last24h.sell, currency) }} sold</p>
                 </div>
             </div>
         </section>
 
-        <div class="grid gap-8 lg:grid-cols-3">
-            <section class="space-y-3">
+        <div class="ss-grid gap-4 ss-cols-lg-3">
+            <section class="ss-stack-2">
                 <Heading variant="small" title="Low balance" description="Customers below their alert level right now" />
-                <ul class="divide-y rounded-lg border text-sm">
-                    <li v-for="a in lowBalance" :key="a.id" class="flex justify-between gap-2 px-3 py-2">
-                        <Link :href="showAccount(a.id)" class="hover:underline">{{ a.name }} <span class="text-muted-foreground">{{ a.code }}</span></Link>
-                        <span class="tabular-nums" :class="{ 'text-destructive': Number(a.available) <= 0 }">{{ money(a.available, a.currency) }}</span>
+                <ul class="list-group">
+                    <li v-for="a in lowBalance" :key="a.id" class="d-flex justify-content-between gap-2 px-2 py-2">
+                        <Link :href="showAccount(a.id)">{{ a.name }} <span class="text-secondary">{{ a.code }}</span></Link>
+                        <span class="tabular-nums" :class="{ 'text-danger': Number(a.available) <= 0 }">{{ money(a.available, a.currency) }}</span>
                     </li>
-                    <li v-if="lowBalance.length === 0" class="px-3 py-6 text-center text-muted-foreground">Nobody is low.</li>
+                    <li v-if="lowBalance.length === 0" class="px-2 py-4 text-center text-secondary">Nobody is low.</li>
                 </ul>
             </section>
 
-            <section class="space-y-3">
+            <section class="ss-stack-2">
                 <Heading variant="small" title="Unpaid invoices" description="Postpaid amounts due" />
-                <ul class="divide-y rounded-lg border text-sm">
-                    <li v-for="i in unpaid" :key="i.id" class="flex flex-wrap justify-between gap-2 px-3 py-2">
+                <ul class="list-group">
+                    <li v-for="i in unpaid" :key="i.id" class="d-flex flex-wrap justify-content-between gap-2 px-2 py-2">
                         <span>
-                            <Link :href="showInvoice(i.id)" class="font-mono hover:underline">{{ i.number }}</Link>
-                            <span class="ml-1 text-muted-foreground">{{ i.account_code }}</span>
-                            <Badge v-if="overdue(i.due_at)" variant="destructive" class="ml-1">overdue</Badge>
+                            <Link :href="showInvoice(i.id)" class="font-monospace">{{ i.number }}</Link>
+                            <span class="ms-1 text-secondary">{{ i.account_code }}</span>
+                            <Badge v-if="overdue(i.due_at)" variant="destructive" class="ms-1">overdue</Badge>
                         </span>
-                        <span class="tabular-nums">{{ money(i.amount_due, i.currency) }} <span class="text-xs text-muted-foreground">due {{ date(i.due_at) }}</span></span>
+                        <span class="tabular-nums">{{ money(i.amount_due, i.currency) }} <span class="small text-secondary">due {{ date(i.due_at) }}</span></span>
                     </li>
-                    <li v-if="unpaid.length === 0" class="px-3 py-6 text-center text-muted-foreground">No amounts due.</li>
+                    <li v-if="unpaid.length === 0" class="px-2 py-4 text-center text-secondary">No amounts due.</li>
                 </ul>
             </section>
 
-            <section class="space-y-3">
+            <section class="ss-stack-2">
                 <Heading variant="small" title="Open vendor invoices" description="Waiting to be accepted or in dispute" />
-                <ul class="divide-y rounded-lg border text-sm">
-                    <li v-for="d in disputes" :key="d.id" class="flex justify-between gap-2 px-3 py-2">
+                <ul class="list-group">
+                    <li v-for="d in disputes" :key="d.id" class="d-flex justify-content-between gap-2 px-2 py-2">
                         <span>
-                            <Link :href="showVendorInvoice(d.id)" class="font-mono hover:underline">{{ d.reference }}</Link>
-                            <span class="ml-1 text-muted-foreground">{{ d.vendor }}</span>
-                            <Badge :variant="d.status === 'disputed' ? 'destructive' : 'secondary'" class="ml-1">{{ d.status }}</Badge>
+                            <Link :href="showVendorInvoice(d.id)" class="font-monospace">{{ d.reference }}</Link>
+                            <span class="ms-1 text-secondary">{{ d.vendor }}</span>
+                            <Badge :variant="d.status === 'disputed' ? 'destructive' : 'secondary'" class="ms-1">{{ d.status }}</Badge>
                         </span>
-                        <span class="tabular-nums" :class="{ 'text-destructive': Number(d.difference) > 0 }">{{ money(d.difference, d.currency) }}</span>
+                        <span class="tabular-nums" :class="{ 'text-danger': Number(d.difference) > 0 }">{{ money(d.difference, d.currency) }}</span>
                     </li>
-                    <li v-if="disputes.length === 0" class="px-3 py-6 text-center text-muted-foreground">Nothing open.</li>
+                    <li v-if="disputes.length === 0" class="px-2 py-4 text-center text-secondary">Nothing open.</li>
                 </ul>
             </section>
         </div>

@@ -62,52 +62,52 @@ const duration = (s: number | null) => (s === null ? '—' : s >= 3600 ? `${Math
 </script>
 
 <template>
-    <section class="space-y-4">
+    <section class="ss-stack-3">
         <Heading variant="small" title="Test a number" description="What a call from this customer to a number would do right now — the same decision FreeSWITCH makes." />
 
-        <form class="flex gap-2" @submit.prevent="test">
-            <Input v-model="number" placeholder="e.g. +44 20 7946 0000" class="max-w-xs font-mono" aria-label="Number to test" />
+        <form class="d-flex gap-2" @submit.prevent="test">
+            <Input v-model="number" placeholder="e.g. +44 20 7946 0000" class="ss-maxw-xs font-monospace" aria-label="Number to test" />
             <Button :disabled="loading || !number.trim()"><Spinner v-if="loading" /> Test</Button>
         </form>
-        <p v-if="error" class="text-sm text-destructive">{{ error }}</p>
+        <p v-if="error" class="text-danger">{{ error }}</p>
 
-        <div v-if="result" class="space-y-3 rounded-lg border p-4 text-sm">
-            <div class="flex flex-wrap items-center gap-2">
+        <div v-if="result" class="ss-stack-2 rounded border p-3">
+            <div class="d-flex flex-wrap align-items-center gap-2">
                 <Badge :variant="result.status === 'ok' ? 'default' : 'destructive'">{{ result.status === 'ok' ? 'Routable' : 'Rejected' }}</Badge>
-                <span v-if="result.destination" class="font-mono">{{ result.destination }}</span>
-                <span v-if="result.message" class="text-destructive">{{ result.message }}</span>
+                <span v-if="result.destination" class="font-monospace">{{ result.destination }}</span>
+                <span v-if="result.message" class="text-danger">{{ result.message }}</span>
             </div>
-            <p v-if="result.sell_rate" class="text-muted-foreground">
+            <p v-if="result.sell_rate" class="text-secondary">
                 Sell {{ money(result.sell_rate, currency) }}/min (prefix {{ result.sell_prefix }})
                 <span v-if="result.max_duration !== null"> · affordable call length {{ duration(result.max_duration) }}</span>
             </p>
 
-            <table v-if="result.attempts.length" class="w-full">
-                <thead class="text-left text-muted-foreground">
+            <table v-if="result.attempts.length" class="w-100">
+                <thead>
                     <tr>
-                        <th class="py-1 font-medium">#</th>
-                        <th class="py-1 font-medium">Trunk</th>
-                        <th class="py-1 font-medium">Gateways (in order)</th>
-                        <th class="py-1 font-medium">Sent as</th>
-                        <th class="py-1 text-right font-medium">Buy</th>
-                        <th class="py-1 text-right font-medium">Margin</th>
+                        <th class="py-1 fw-medium">#</th>
+                        <th class="py-1 fw-medium">Trunk</th>
+                        <th class="py-1 fw-medium">Gateways (in order)</th>
+                        <th class="py-1 fw-medium">Sent as</th>
+                        <th class="py-1 text-end fw-medium">Buy</th>
+                        <th class="py-1 text-end fw-medium">Margin</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="a in result.attempts" :key="a.attempt" class="border-t">
+                    <tr v-for="a in result.attempts" :key="a.attempt">
                         <td class="py-1">{{ a.attempt }}</td>
                         <td class="py-1">
                             {{ a.trunk }}
-                            <Badge v-if="a.quality_demoted" variant="secondary" class="ml-1" title="Performing below the plan's quality bar over the last hour, so tried after the others">demoted</Badge>
+                            <Badge v-if="a.quality_demoted" variant="secondary" class="ms-1" title="Performing below the plan's quality bar over the last hour, so tried after the others">demoted</Badge>
                         </td>
-                        <td class="py-1 font-mono text-xs">{{ a.gateways.map((g) => g.name).join(' → ') }}</td>
-                        <td class="py-1 font-mono">{{ a.dial_number }}</td>
-                        <td class="py-1 text-right tabular-nums">{{ money(a.buy_rate, currency) }}</td>
-                        <td class="py-1 text-right tabular-nums">{{ a.margin !== null ? money(a.margin, currency) : '—' }}</td>
+                        <td class="py-1 font-monospace small">{{ a.gateways.map((g) => g.name).join(' → ') }}</td>
+                        <td class="py-1 font-monospace">{{ a.dial_number }}</td>
+                        <td class="py-1 text-end tabular-nums">{{ money(a.buy_rate, currency) }}</td>
+                        <td class="py-1 text-end tabular-nums">{{ a.margin !== null ? money(a.margin, currency) : '—' }}</td>
                     </tr>
                 </tbody>
             </table>
-            <p v-if="result.attempts.length > 1" class="text-xs text-muted-foreground">With weighted load balancing, the order changes from call to call.</p>
+            <p v-if="result.attempts.length > 1" class="small text-secondary">With weighted load balancing, the order changes from call to call.</p>
         </div>
     </section>
 </template>

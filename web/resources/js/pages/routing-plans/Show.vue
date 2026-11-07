@@ -68,11 +68,11 @@ function toggle(route: Route) {
 <template>
     <Head :title="props.plan.name" />
 
-    <div class="space-y-8 p-4">
-        <div class="flex flex-wrap items-start justify-between gap-4">
-            <div class="space-y-2">
+    <div class="ss-stack-4">
+        <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
+            <div class="ss-stack-2">
                 <Heading :title="plan.name" :description="plan.description ?? undefined" />
-                <div class="flex gap-1">
+                <div class="d-flex gap-1">
                     <Badge variant="outline">{{ modeLabel[plan.mode] ?? plan.mode }}</Badge>
                     <Badge variant="outline">up to {{ plan.max_attempts }} attempts</Badge>
                     <Badge v-if="plan.quality_routing" variant="secondary" :title="`After ${plan.quality_min_attempts} attempts in the last hour`">
@@ -80,10 +80,10 @@ function toggle(route: Route) {
                     </Badge>
                 </div>
             </div>
-            <Button variant="outline" as-child><Link :href="edit(plan.id)"><Pencil class="size-4" /> Edit</Link></Button>
+            <Button variant="outline" as-child><Link :href="edit(plan.id)"><Pencil class="icon" /> Edit</Link></Button>
         </div>
 
-        <section class="space-y-4">
+        <section class="ss-stack-3">
             <Heading
                 variant="small"
                 title="Routes"
@@ -93,62 +93,62 @@ function toggle(route: Route) {
             <Form
                 v-bind="RoutingPlanController.storeRoute.form(plan.id)"
                 :options="{ preserveScroll: true }"
-                class="grid gap-3 rounded-lg border p-4 sm:grid-cols-[1fr_2fr_auto_auto_auto] sm:items-start"
+                class="ss-grid gap-2 rounded border p-3 ss-gtc-sm-1fr-2fr-auto-auto-auto align-items-sm-start"
                 v-slot="{ errors, processing }"
             >
-                <div class="grid gap-1">
-                    <Input name="prefix" placeholder="Prefix (blank = all)" class="font-mono" aria-label="Prefix" />
+                <div class="ss-grid gap-1">
+                    <Input name="prefix" placeholder="Prefix (blank = all)" class="font-monospace" aria-label="Prefix" />
                     <InputError :message="errors.prefix" />
                 </div>
-                <div class="grid gap-1">
+                <div class="ss-grid gap-1">
                     <select name="trunk_id" :class="selectClass" required aria-label="Trunk">
                         <option value="" disabled selected>Choose a trunk</option>
                         <option v-for="t in trunks" :key="t.id" :value="t.id">{{ t.label }}</option>
                     </select>
                     <InputError :message="errors.trunk_id" />
                 </div>
-                <div class="grid gap-1">
-                    <Input name="priority" type="number" min="1" max="100" default-value="1" class="w-24" aria-label="Priority" title="Priority (lower first)" />
+                <div class="ss-grid gap-1">
+                    <Input name="priority" type="number" min="1" max="100" default-value="1" class="ss-w-24" aria-label="Priority" title="Priority (lower first)" />
                     <InputError :message="errors.priority" />
                 </div>
-                <div class="grid gap-1">
-                    <Input name="weight" type="number" min="1" max="1000" default-value="100" class="w-24" aria-label="Weight" title="Weight (load balance share)" />
+                <div class="ss-grid gap-1">
+                    <Input name="weight" type="number" min="1" max="1000" default-value="100" class="ss-w-24" aria-label="Weight" title="Weight (load balance share)" />
                     <InputError :message="errors.weight" />
                 </div>
                 <Button :disabled="processing || trunks.length === 0">Add route</Button>
             </Form>
 
-            <Input v-model="q" placeholder="Filter by prefix" class="max-w-xs font-mono" @input="search" />
+            <Input v-model="q" placeholder="Filter by prefix" class="ss-maxw-xs font-monospace" @input="search" />
 
-            <div class="overflow-x-auto rounded-lg border">
-                <table class="w-full text-sm">
-                    <thead class="bg-muted/50 text-left text-muted-foreground">
+            <div class="card table-responsive">
+                <table class="table table-vcenter card-table table-tight">
+                    <thead>
                         <tr>
-                            <th class="px-3 py-2 font-medium">Prefix</th>
-                            <th class="px-3 py-2 font-medium">Trunk</th>
-                            <th class="px-3 py-2 text-right font-medium">Priority</th>
-                            <th class="px-3 py-2 text-right font-medium">Weight</th>
-                            <th class="px-3 py-2"></th>
+                            <th>Prefix</th>
+                            <th>Trunk</th>
+                            <th class="text-end">Priority</th>
+                            <th class="text-end">Weight</th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="r in routes.data" :key="r.id" class="border-t" :class="{ 'opacity-50': !r.enabled || !r.trunk.enabled }">
-                            <td class="px-3 py-1.5 font-mono">{{ r.prefix || '(all)' }}</td>
-                            <td class="px-3 py-1.5">
-                                <Link :href="showTrunk(r.trunk.id)" class="hover:underline">{{ r.trunk.vendor }} / {{ r.trunk.name }}</Link>
-                                <Badge v-if="!r.trunk.enabled" variant="secondary" class="ml-2">trunk disabled</Badge>
+                        <tr v-for="r in routes.data" :key="r.id" :class="{ 'opacity-50': !r.enabled || !r.trunk.enabled }">
+                            <td class="px-2 py-1 font-monospace">{{ r.prefix || '(all)' }}</td>
+                            <td class="px-2 py-1">
+                                <Link :href="showTrunk(r.trunk.id)">{{ r.trunk.vendor }} / {{ r.trunk.name }}</Link>
+                                <Badge v-if="!r.trunk.enabled" variant="secondary" class="ms-2">trunk disabled</Badge>
                             </td>
-                            <td class="px-3 py-1.5 text-right tabular-nums">{{ r.priority }}</td>
-                            <td class="px-3 py-1.5 text-right tabular-nums">{{ r.weight }}</td>
-                            <td class="px-3 py-1.5 text-right whitespace-nowrap">
+                            <td class="px-2 py-1 text-end tabular-nums">{{ r.priority }}</td>
+                            <td class="px-2 py-1 text-end tabular-nums">{{ r.weight }}</td>
+                            <td class="px-2 py-1 text-end text-nowrap">
                                 <Button size="sm" variant="ghost" @click="toggle(r)">{{ r.enabled ? 'Disable' : 'Enable' }}</Button>
-                                <Form v-bind="RoutingPlanController.destroyRoute.form([plan.id, r.id])" :options="{ preserveScroll: true }" class="inline" v-slot="{ processing }">
-                                    <Button size="sm" variant="ghost" :disabled="processing" aria-label="Remove route"><Trash2 class="size-4" /></Button>
+                                <Form v-bind="RoutingPlanController.destroyRoute.form([plan.id, r.id])" :options="{ preserveScroll: true }" class="d-inline" v-slot="{ processing }">
+                                    <Button size="sm" variant="ghost" :disabled="processing" aria-label="Remove route"><Trash2 class="icon" /></Button>
                                 </Form>
                             </td>
                         </tr>
                         <tr v-if="routes.data.length === 0">
-                            <td colspan="5" class="px-3 py-8 text-center text-muted-foreground">
+                            <td colspan="5" class="px-2 py-4 text-center text-secondary">
                                 {{ trunks.length === 0 ? 'Create a vendor trunk first, then route prefixes to it.' : 'No routes yet.' }}
                             </td>
                         </tr>
@@ -158,11 +158,11 @@ function toggle(route: Route) {
             <Pagination :links="routes.links" :from="routes.from" :to="routes.to" :total="routes.total" />
         </section>
 
-        <section class="space-y-2 text-sm">
+        <section class="ss-stack-2">
             <Heading variant="small" title="Customers on this plan" />
             <ul>
-                <li v-for="c in customers" :key="c.id"><Link :href="showAccount(c.id)" class="hover:underline">{{ c.name }}</Link> <span class="text-muted-foreground">{{ c.code }}</span></li>
-                <li v-if="customers.length === 0" class="text-muted-foreground">None. Assign this plan on a customer account.</li>
+                <li v-for="c in customers" :key="c.id"><Link :href="showAccount(c.id)">{{ c.name }}</Link> <span class="text-secondary">{{ c.code }}</span></li>
+                <li v-if="customers.length === 0" class="text-secondary">None. Assign this plan on a customer account.</li>
             </ul>
         </section>
     </div>

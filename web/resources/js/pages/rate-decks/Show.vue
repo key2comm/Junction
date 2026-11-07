@@ -78,15 +78,15 @@ const increments = (r: Rate) => `${r.initial_increment}/${r.increment}`;
 <template>
     <Head :title="deck.name" />
 
-    <div class="space-y-8 p-4">
-        <div class="flex flex-wrap items-start justify-between gap-4">
+    <div class="ss-stack-4">
+        <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
             <Heading :title="deck.name" :description="deck.description ?? `Rates in ${deck.currency} per minute`" />
-            <Button variant="outline" as-child><Link :href="edit(deck.id)"><Pencil class="size-4" /> Edit</Link></Button>
+            <Button variant="outline" as-child><Link :href="edit(deck.id)"><Pencil class="icon" /> Edit</Link></Button>
         </div>
 
-        <div class="grid gap-8 lg:grid-cols-[2fr_1fr]">
+        <div class="ss-grid gap-4 ss-gtc-lg-2fr-1fr">
             <!-- Import -->
-            <section class="space-y-4">
+            <section class="ss-stack-3">
                 <Heading
                     variant="small"
                     title="Import rates"
@@ -95,16 +95,16 @@ const increments = (r: Rate) => `${r.initial_increment}/${r.increment}`;
                 <Form
                     v-bind="RateImportController.store.form(deck.id)"
                     reset-on-success
-                    class="grid gap-4 sm:grid-cols-2"
+                    class="ss-grid gap-3 ss-cols-sm-2"
                     v-slot="{ errors, processing, progress }"
                 >
-                    <div class="grid gap-2 sm:col-span-2">
+                    <div class="ss-grid gap-2 ss-span-sm-2">
                         <Label for="file">File</Label>
                         <Input id="file" name="file" type="file" accept=".csv,text/csv,text/plain" required />
-                        <progress v-if="progress" :value="progress.percentage" max="100" class="w-full" />
+                        <progress v-if="progress" :value="progress.percentage" max="100" class="w-100" />
                         <InputError :message="errors.file" />
                     </div>
-                    <div class="grid gap-2">
+                    <div class="ss-grid gap-2">
                         <Label for="mode">Mode</Label>
                         <select id="mode" name="mode" :class="selectClass">
                             <option value="update">Update: change only the prefixes in the file</option>
@@ -112,10 +112,10 @@ const increments = (r: Rate) => `${r.initial_increment}/${r.increment}`;
                         </select>
                         <InputError :message="errors.mode" />
                     </div>
-                    <div class="grid gap-2">
+                    <div class="ss-grid gap-2">
                         <Label for="effective_from">Effective from (UTC)</Label>
                         <Input id="effective_from" name="effective_from" type="datetime-local" />
-                        <p class="text-xs text-muted-foreground">Blank = immediately. Rows with their own effective_from override this.</p>
+                        <p class="small text-secondary">Blank = immediately. Rows with their own effective_from override this.</p>
                         <InputError :message="errors.effective_from" />
                     </div>
                     <div>
@@ -123,21 +123,21 @@ const increments = (r: Rate) => `${r.initial_increment}/${r.increment}`;
                     </div>
                 </Form>
 
-                <ul v-if="imports.length" class="divide-y rounded-lg border text-sm">
-                    <li v-for="i in imports" :key="i.id" class="space-y-1 px-3 py-2">
-                        <div class="flex flex-wrap items-center gap-2">
+                <ul v-if="imports.length" class="list-group">
+                    <li v-for="i in imports" :key="i.id" class="ss-stack-1 px-2 py-2">
+                        <div class="d-flex flex-wrap align-items-center gap-2">
                             <Spinner v-if="i.status === 'queued' || i.status === 'running'" />
                             <Badge :variant="i.status === 'failed' ? 'destructive' : i.status === 'done' ? 'default' : 'secondary'">{{ i.status }}</Badge>
-                            <span class="font-medium">{{ i.filename }}</span>
-                            <span class="text-muted-foreground">{{ i.mode }}, effective {{ dateTime(i.effective_from) }}, by {{ i.user ?? 'unknown' }}</span>
+                            <span class="fw-medium">{{ i.filename }}</span>
+                            <span class="text-secondary">{{ i.mode }}, effective {{ dateTime(i.effective_from) }}, by {{ i.user ?? 'unknown' }}</span>
                         </div>
-                        <p v-if="i.status === 'done' && i.stats" class="text-muted-foreground">
+                        <p v-if="i.status === 'done' && i.stats" class="text-secondary">
                             {{ i.stats.added }} added · {{ i.stats.changed }} changed · {{ i.stats.unchanged }} unchanged<span v-if="i.mode === 'replace'"> · {{ i.stats.ended }} ended</span>
-                            <span v-if="i.stats.increases_within_notice" class="text-destructive">
+                            <span v-if="i.stats.increases_within_notice" class="text-danger">
                                 · {{ i.stats.increases_within_notice }} increase(s) take effect in under 7 days
                             </span>
                         </p>
-                        <ul v-if="i.status === 'failed' && i.errors" class="list-inside list-disc text-destructive">
+                        <ul v-if="i.status === 'failed' && i.errors" class="text-danger">
                             <li v-for="(e, n) in i.errors" :key="n">{{ e }}</li>
                         </ul>
                     </li>
@@ -145,29 +145,29 @@ const increments = (r: Rate) => `${r.initial_increment}/${r.increment}`;
             </section>
 
             <!-- Usage -->
-            <section class="space-y-4 text-sm">
+            <section class="ss-stack-3">
                 <Heading variant="small" title="Used by" />
                 <div>
-                    <p class="text-muted-foreground">Customers (sell)</p>
+                    <p class="text-secondary">Customers (sell)</p>
                     <ul>
-                        <li v-for="c in usage.customers" :key="c.id"><Link :href="showAccount(c.id)" class="hover:underline">{{ c.name }}</Link></li>
-                        <li v-if="!usage.customers.length" class="text-muted-foreground">—</li>
+                        <li v-for="c in usage.customers" :key="c.id"><Link :href="showAccount(c.id)">{{ c.name }}</Link></li>
+                        <li v-if="!usage.customers.length" class="text-secondary">—</li>
                     </ul>
                 </div>
                 <div>
-                    <p class="text-muted-foreground">Vendor trunks (buy)</p>
+                    <p class="text-secondary">Vendor trunks (buy)</p>
                     <ul>
-                        <li v-for="t in usage.trunks" :key="t.id"><Link :href="showTrunk(t.id)" class="hover:underline">{{ t.account.code }} / {{ t.name }}</Link></li>
-                        <li v-if="!usage.trunks.length" class="text-muted-foreground">—</li>
+                        <li v-for="t in usage.trunks" :key="t.id"><Link :href="showTrunk(t.id)">{{ t.account.code }} / {{ t.name }}</Link></li>
+                        <li v-if="!usage.trunks.length" class="text-secondary">—</li>
                     </ul>
                 </div>
             </section>
         </div>
 
         <!-- Rates -->
-        <section class="space-y-4">
-            <div class="flex flex-wrap gap-3">
-                <Input v-model="filters.q" placeholder="Search prefix or destination" class="max-w-xs" @input="apply(300)" />
+        <section class="ss-stack-3">
+            <div class="d-flex flex-wrap gap-2">
+                <Input v-model="filters.q" placeholder="Search prefix or destination" class="ss-maxw-xs" @input="apply(300)" />
                 <select v-model="filters.when" :class="selectClass" class="w-auto" aria-label="Show" @change="apply()">
                     <option value="current">In effect now</option>
                     <option value="future">Scheduled</option>
@@ -176,31 +176,31 @@ const increments = (r: Rate) => `${r.initial_increment}/${r.increment}`;
                 </select>
             </div>
 
-            <div class="overflow-x-auto rounded-lg border">
-                <table class="w-full text-sm">
-                    <thead class="bg-muted/50 text-left text-muted-foreground">
+            <div class="card table-responsive">
+                <table class="table table-vcenter card-table table-tight">
+                    <thead>
                         <tr>
-                            <th class="px-3 py-2 font-medium">Prefix</th>
-                            <th class="px-3 py-2 font-medium">Destination</th>
-                            <th class="px-3 py-2 text-right font-medium">Rate / min</th>
-                            <th class="px-3 py-2 text-right font-medium">Connect</th>
-                            <th class="px-3 py-2 font-medium">Billing</th>
-                            <th class="px-3 py-2 font-medium">Effective</th>
+                            <th>Prefix</th>
+                            <th>Destination</th>
+                            <th class="text-end">Rate / min</th>
+                            <th class="text-end">Connect</th>
+                            <th>Billing</th>
+                            <th>Effective</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="r in rates.data" :key="r.id" class="border-t">
-                            <td class="px-3 py-1.5 font-mono">{{ r.prefix }}</td>
-                            <td class="px-3 py-1.5">{{ r.destination }}</td>
-                            <td class="px-3 py-1.5 text-right tabular-nums">{{ money(r.rate, deck.currency) }}</td>
-                            <td class="px-3 py-1.5 text-right tabular-nums">{{ Number(r.connect_fee) ? money(r.connect_fee, deck.currency) : '—' }}</td>
-                            <td class="px-3 py-1.5 font-mono">{{ increments(r) }}</td>
-                            <td class="px-3 py-1.5 whitespace-nowrap text-muted-foreground">
+                        <tr v-for="r in rates.data" :key="r.id">
+                            <td class="px-2 py-1 font-monospace">{{ r.prefix }}</td>
+                            <td class="px-2 py-1">{{ r.destination }}</td>
+                            <td class="px-2 py-1 text-end tabular-nums">{{ money(r.rate, deck.currency) }}</td>
+                            <td class="px-2 py-1 text-end tabular-nums">{{ Number(r.connect_fee) ? money(r.connect_fee, deck.currency) : '—' }}</td>
+                            <td class="px-2 py-1 font-monospace">{{ increments(r) }}</td>
+                            <td class="px-2 py-1 text-nowrap text-secondary">
                                 {{ dateTime(r.effective_from) }}<span v-if="r.effective_to"> → {{ dateTime(r.effective_to) }}</span>
                             </td>
                         </tr>
                         <tr v-if="rates.data.length === 0">
-                            <td colspan="6" class="px-3 py-10 text-center text-muted-foreground">No rates{{ filters.q ? ' match' : '' }}.</td>
+                            <td colspan="6" class="px-2 py-5 text-center text-secondary">No rates{{ filters.q ? ' match' : '' }}.</td>
                         </tr>
                     </tbody>
                 </table>

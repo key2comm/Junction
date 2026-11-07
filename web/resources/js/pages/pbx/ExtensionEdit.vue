@@ -39,54 +39,54 @@ defineOptions({
 <template>
     <Head :title="`Extension ${props.extension.extension}`" />
 
-    <div class="max-w-3xl space-y-6 p-4">
+    <div class="ss-maxw-3xl ss-stack-4">
         <Heading :title="`Extension ${extension.extension}`" :description="account.name" />
 
-        <Form v-bind="PbxController.updateExtension.form([account.id, extension.id])" class="space-y-6" v-slot="{ errors, processing }">
-            <div class="grid gap-4 sm:grid-cols-6">
-                <div class="grid gap-1 sm:col-span-2">
+        <Form v-bind="PbxController.updateExtension.form([account.id, extension.id])" class="ss-stack-4" v-slot="{ errors, processing }">
+            <div class="ss-grid gap-3 ss-cols-sm-6">
+                <div class="ss-grid gap-1 ss-span-sm-2">
                     <Label for="extension">Extension</Label>
-                    <Input id="extension" name="extension" :default-value="extension.extension" required inputmode="numeric" class="font-mono" />
+                    <Input id="extension" name="extension" :default-value="extension.extension" required inputmode="numeric" class="font-monospace" />
                     <InputError :message="errors.extension" />
                 </div>
-                <div class="grid gap-1 sm:col-span-4">
+                <div class="ss-grid gap-1 ss-span-sm-4">
                     <Label for="name">Name</Label>
                     <Input id="name" name="name" :default-value="extension.name ?? ''" />
                     <InputError :message="errors.name" />
                 </div>
-                <div class="grid gap-1 sm:col-span-3">
+                <div class="ss-grid gap-1 ss-span-sm-3">
                     <Label for="sip_username">SIP username</Label>
-                    <Input id="sip_username" name="sip_username" :default-value="extension.sip_username" autocomplete="off" class="font-mono lowercase" />
+                    <Input id="sip_username" name="sip_username" :default-value="extension.sip_username" autocomplete="off" class="font-monospace text-lowercase" />
                     <InputError :message="errors.sip_username" />
                 </div>
-                <div class="grid gap-1 sm:col-span-3">
+                <div class="ss-grid gap-1 ss-span-sm-3">
                     <Label for="sip_password">New SIP password</Label>
                     <Input id="sip_password" name="sip_password" type="password" autocomplete="new-password" placeholder="unchanged" />
                     <InputError :message="errors.sip_password" />
-                    <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="regenerate_password" value="1" class="size-4" /> Generate a new random password</label>
+                    <label class="d-flex align-items-center gap-2"><input type="checkbox" name="regenerate_password" value="1" class="form-check-input m-0" /> Generate a new random password</label>
                 </div>
-                <div class="grid gap-1 sm:col-span-3">
+                <div class="ss-grid gap-1 ss-span-sm-3">
                     <Label for="caller_id_number">Caller ID for outside calls</Label>
-                    <Input id="caller_id_number" name="caller_id_number" :default-value="extension.caller_id_number ?? ''" inputmode="numeric" class="font-mono" />
+                    <Input id="caller_id_number" name="caller_id_number" :default-value="extension.caller_id_number ?? ''" inputmode="numeric" class="font-monospace" />
                     <InputError :message="errors.caller_id_number" />
                 </div>
-                <div class="grid gap-1 sm:col-span-2">
+                <div class="ss-grid gap-1 ss-span-sm-2">
                     <Label for="voicemail_pin">Voicemail PIN</Label>
-                    <Input id="voicemail_pin" name="voicemail_pin" :default-value="extension.voicemail_pin ?? ''" inputmode="numeric" autocomplete="off" class="font-mono" />
+                    <Input id="voicemail_pin" name="voicemail_pin" :default-value="extension.voicemail_pin ?? ''" inputmode="numeric" autocomplete="off" class="font-monospace" />
                     <InputError :message="errors.voicemail_pin" />
                 </div>
-                <div class="grid gap-1">
+                <div class="ss-grid gap-1">
                     <Label for="ring_seconds">Ring (s)</Label>
                     <Input id="ring_seconds" name="ring_seconds" type="number" min="5" max="120" :default-value="extension.ring_seconds" required />
                     <InputError :message="errors.ring_seconds" />
                 </div>
             </div>
-            <div class="flex flex-wrap gap-4 text-sm">
-                <label class="flex items-center gap-2"><input type="checkbox" name="outbound_enabled" value="1" :checked="extension.outbound_enabled" class="size-4" /> Outside calls</label>
-                <label class="flex items-center gap-2"><input type="checkbox" name="voicemail_enabled" value="1" :checked="extension.voicemail_enabled" class="size-4" /> Voicemail</label>
-                <label class="flex items-center gap-2"><input type="checkbox" name="enabled" value="1" :checked="extension.enabled" class="size-4" /> Enabled</label>
+            <div class="d-flex flex-wrap gap-3">
+                <label class="d-flex align-items-center gap-2"><input type="checkbox" name="outbound_enabled" value="1" :checked="extension.outbound_enabled" class="form-check-input m-0" /> Outside calls</label>
+                <label class="d-flex align-items-center gap-2"><input type="checkbox" name="voicemail_enabled" value="1" :checked="extension.voicemail_enabled" class="form-check-input m-0" /> Voicemail</label>
+                <label class="d-flex align-items-center gap-2"><input type="checkbox" name="enabled" value="1" :checked="extension.enabled" class="form-check-input m-0" /> Enabled</label>
             </div>
-            <p class="text-sm text-muted-foreground">A new password signs the phone out at once; enter the new one on the phone.</p>
+            <p class="text-secondary">A new password signs the phone out at once; enter the new one on the phone.</p>
             <Button :disabled="processing">Save</Button>
         </Form>
     </div>

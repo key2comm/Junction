@@ -19,9 +19,9 @@ defineOptions({
 <template>
     <Head title="Appearance settings" />
 
-    <h1 class="sr-only">Appearance settings</h1>
+    <h1 class="visually-hidden">Appearance settings</h1>
 
-    <div class="space-y-6">
+    <div class="ss-stack-4">
         <Heading
             variant="small"
             title="Appearance settings"

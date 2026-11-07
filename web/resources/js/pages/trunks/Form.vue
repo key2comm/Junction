@@ -45,15 +45,15 @@ const vendorId = t?.account_id ?? props.defaults.account_id ?? null;
 <template>
     <Head :title="t ? `Edit ${t.name}` : 'New trunk'" />
 
-    <div class="max-w-2xl space-y-6 p-4">
+    <div class="ss-maxw-2xl ss-stack-4">
         <Heading :title="t ? `Edit ${t.name}` : 'New trunk'" description="A vendor product: what we pay (buy rate deck) and where we send calls (gateways)" />
 
-        <p v-if="vendors.length === 0" class="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+        <p v-if="vendors.length === 0" class="rounded border ss-border-dashed p-3 text-secondary">
             There are no vendor accounts yet. Create an account and tick "Vendor" first.
         </p>
 
-        <Form v-else v-bind="action" class="grid gap-6 sm:grid-cols-2" v-slot="{ errors, processing }">
-            <div class="grid gap-2">
+        <Form v-else v-bind="action" class="ss-grid gap-4 ss-cols-sm-2" v-slot="{ errors, processing }">
+            <div class="ss-grid gap-2">
                 <Label for="account_id">Vendor</Label>
                 <select id="account_id" name="account_id" :class="selectClass" required>
                     <option value="" disabled :selected="!vendorId">Choose a vendor</option>
@@ -61,45 +61,45 @@ const vendorId = t?.account_id ?? props.defaults.account_id ?? null;
                 </select>
                 <InputError :message="errors.account_id" />
             </div>
-            <div class="grid gap-2">
+            <div class="ss-grid gap-2">
                 <Label for="name">Trunk name</Label>
                 <Input id="name" name="name" :default-value="t?.name" required placeholder="Premium CLI" />
                 <InputError :message="errors.name" />
             </div>
-            <div class="grid gap-2 sm:col-span-2">
+            <div class="ss-grid gap-2 ss-span-sm-2">
                 <Label for="rate_deck_id">Buy rate deck</Label>
                 <select id="rate_deck_id" name="rate_deck_id" :class="selectClass">
                     <option value="">— None —</option>
                     <option v-for="d in rateDecks" :key="d.id" :value="d.id" :selected="d.id === t?.rate_deck_id">{{ d.name }} ({{ d.currency }})</option>
                 </select>
-                <p class="text-xs text-muted-foreground">What this vendor charges us. Least-cost routing skips trunks without a rate for the destination.</p>
+                <p class="small text-secondary">What this vendor charges us. Least-cost routing skips trunks without a rate for the destination.</p>
                 <InputError :message="errors.rate_deck_id" />
             </div>
-            <div class="grid gap-2">
+            <div class="ss-grid gap-2">
                 <Label for="max_channels">Max concurrent calls</Label>
                 <Input id="max_channels" name="max_channels" type="number" min="1" :default-value="t?.max_channels ?? ''" placeholder="Unlimited" />
                 <InputError :message="errors.max_channels" />
             </div>
-            <div class="grid gap-2">
+            <div class="ss-grid gap-2">
                 <Label for="max_cps">Max calls per second</Label>
                 <Input id="max_cps" name="max_cps" type="number" step="0.1" min="0.1" :default-value="t?.max_cps ?? ''" placeholder="Unlimited" />
                 <InputError :message="errors.max_cps" />
             </div>
-            <div class="grid gap-2">
+            <div class="ss-grid gap-2">
                 <Label for="strip_digits">Strip leading digits</Label>
                 <Input id="strip_digits" name="strip_digits" type="number" min="0" max="15" :default-value="t?.strip_digits ?? 0" />
                 <InputError :message="errors.strip_digits" />
             </div>
-            <div class="grid gap-2">
+            <div class="ss-grid gap-2">
                 <Label for="tech_prefix">Tech prefix to add</Label>
-                <Input id="tech_prefix" name="tech_prefix" :default-value="t?.tech_prefix ?? ''" placeholder="e.g. 1234#" class="font-mono" />
-                <p class="text-xs text-muted-foreground">Sent in front of the number, after stripping.</p>
+                <Input id="tech_prefix" name="tech_prefix" :default-value="t?.tech_prefix ?? ''" placeholder="e.g. 1234#" class="font-monospace" />
+                <p class="small text-secondary">Sent in front of the number, after stripping.</p>
                 <InputError :message="errors.tech_prefix" />
             </div>
-            <label class="flex items-center gap-2 text-sm sm:col-span-2">
-                <input type="checkbox" name="enabled" value="1" :checked="t?.enabled ?? true" class="size-4" /> Enabled
+            <label class="d-flex align-items-center gap-2 ss-span-sm-2">
+                <input type="checkbox" name="enabled" value="1" :checked="t?.enabled ?? true" class="form-check-input m-0" /> Enabled
             </label>
-            <div class="flex gap-3 sm:col-span-2">
+            <div class="d-flex gap-2 ss-span-sm-2">
                 <Button :disabled="processing">{{ t ? 'Save changes' : 'Create trunk' }}</Button>
                 <Button variant="ghost" as-child><Link :href="t ? show(t.id) : index()">Cancel</Link></Button>
             </div>

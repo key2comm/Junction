@@ -25,7 +25,7 @@ defineOptions({
 <template>
     <Head :title="`Edit ${props.account.code}`" />
 
-    <div class="max-w-3xl space-y-6 p-4">
+    <div class="ss-maxw-3xl ss-stack-4">
         <Heading :title="`Edit ${props.account.name}`" />
         <AccountForm
             :action="AccountController.update.form(props.account.id)"

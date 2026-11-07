@@ -30,36 +30,18 @@ const handleRegisterSuccess = () => {
 </script>
 
 <template>
-    <div v-if="canManagePasskeys" class="space-y-6">
-        <Heading
-            variant="small"
-            title="Passkeys"
-            description="Manage your passkeys for passwordless sign-in"
-        />
-
-        <div class="overflow-hidden rounded-lg border border-border">
+    <div v-if="canManagePasskeys">
+        <Heading variant="small" title="Passkeys" description="Sign in without a password" />
+        <div class="list-group mb-3">
             <template v-if="passkeys.length">
-                <PasskeyItem
-                    v-for="passkey in passkeys"
-                    :key="passkey.id"
-                    :passkey="passkey"
-                    @remove="handleDelete"
-                />
+                <PasskeyItem v-for="passkey in passkeys" :key="passkey.id" :passkey="passkey" @remove="handleDelete" />
             </template>
-
-            <div v-else class="p-8 text-center">
-                <div
-                    class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-muted"
-                >
-                    <KeyRound class="h-7 w-7 text-muted-foreground" />
-                </div>
-                <p class="font-medium">No passkeys yet</p>
-                <p class="mt-1 text-sm text-muted-foreground">
-                    Add a passkey to sign in without a password
-                </p>
+            <div v-else class="list-group-item text-center py-4">
+                <span class="avatar avatar-lg mb-2"><KeyRound class="icon" /></span>
+                <div class="fw-medium">No passkeys yet</div>
+                <div class="text-secondary">Add a passkey to sign in without a password</div>
             </div>
         </div>
-
         <PasskeyRegister @success="handleRegisterSuccess" />
     </div>
 </template>

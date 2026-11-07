@@ -23,31 +23,31 @@ defineOptions({ layout: { breadcrumbs: [{ title: 'Rate decks', href: index() }] 
 <template>
     <Head title="Rate decks" />
 
-    <div class="space-y-6 p-4">
-        <div class="flex flex-wrap items-start justify-between gap-4">
+    <div class="ss-stack-4">
+        <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
             <Heading title="Rate decks" description="Price lists by destination prefix: sell decks for customers, buy decks for vendor trunks" />
-            <Button as-child><Link :href="create()"><Plus class="size-4" /> New rate deck</Link></Button>
+            <Button as-child><Link :href="create()"><Plus class="icon" /> New rate deck</Link></Button>
         </div>
 
-        <div class="overflow-x-auto rounded-lg border">
-            <table class="w-full text-sm">
-                <thead class="bg-muted/50 text-left text-muted-foreground">
+        <div class="card table-responsive">
+            <table class="table table-vcenter card-table table-tight">
+                <thead>
                     <tr>
-                        <th class="px-4 py-2 font-medium">Deck</th>
-                        <th class="px-4 py-2 font-medium">Currency</th>
-                        <th class="px-4 py-2 text-right font-medium">Current rates</th>
-                        <th class="px-4 py-2 font-medium">Used by</th>
+                        <th class="px-3 py-2 fw-medium">Deck</th>
+                        <th class="px-3 py-2 fw-medium">Currency</th>
+                        <th class="px-3 py-2 text-end fw-medium">Current rates</th>
+                        <th class="px-3 py-2 fw-medium">Used by</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="d in decks" :key="d.id" class="border-t hover:bg-muted/30">
-                        <td class="px-4 py-2">
-                            <Link :href="show(d.id)" class="font-medium hover:underline">{{ d.name }}</Link>
-                            <div v-if="d.description" class="text-xs text-muted-foreground">{{ d.description }}</div>
+                    <tr v-for="d in decks" :key="d.id">
+                        <td class="px-3 py-2">
+                            <Link :href="show(d.id)" class="fw-medium">{{ d.name }}</Link>
+                            <div v-if="d.description" class="small text-secondary">{{ d.description }}</div>
                         </td>
-                        <td class="px-4 py-2">{{ d.currency }}</td>
-                        <td class="px-4 py-2 text-right tabular-nums">{{ d.current_rates_count.toLocaleString() }}</td>
-                        <td class="px-4 py-2 text-muted-foreground">
+                        <td class="px-3 py-2">{{ d.currency }}</td>
+                        <td class="px-3 py-2 text-end tabular-nums">{{ d.current_rates_count.toLocaleString() }}</td>
+                        <td class="px-3 py-2 text-secondary">
                             <span v-if="d.customers_count">{{ d.customers_count }} customer(s)</span>
                             <span v-if="d.customers_count && d.trunks_count">, </span>
                             <span v-if="d.trunks_count">{{ d.trunks_count }} trunk(s)</span>
@@ -55,7 +55,7 @@ defineOptions({ layout: { breadcrumbs: [{ title: 'Rate decks', href: index() }] 
                         </td>
                     </tr>
                     <tr v-if="decks.length === 0">
-                        <td colspan="4" class="px-4 py-10 text-center text-muted-foreground">No rate decks yet.</td>
+                        <td colspan="4" class="px-3 py-5 text-center text-secondary">No rate decks yet.</td>
                     </tr>
                 </tbody>
             </table>

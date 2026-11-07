@@ -71,25 +71,24 @@ const page = usePage();
 // One-time password for a new portal login (only when email isn't set up).
 const portalPassword = computed(() => (page.flash as Record<string, unknown> | undefined)?.portalPassword as { email: string; password: string } | undefined);
 
-const select =
-    'h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 dark:bg-input/30';
+const select = 'form-select';
 </script>
 
 <template>
     <Head :title="props.account.code" />
 
-    <div class="space-y-8 p-4">
-        <div class="flex flex-wrap items-start justify-between gap-4">
-            <div class="space-y-2">
+    <div class="ss-stack-4">
+        <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
+            <div class="ss-stack-2">
                 <Heading :title="account.name" :description="account.code" />
-                <div class="flex flex-wrap gap-1">
+                <div class="d-flex flex-wrap gap-1">
                     <Badge :variant="account.status === 'active' ? 'default' : 'destructive'">{{ titleCase(account.status) }}</Badge>
                     <Badge v-if="account.is_customer" variant="outline">Customer</Badge>
                     <Badge v-if="account.is_vendor" variant="outline">Vendor</Badge>
                     <Badge variant="secondary">{{ titleCase(account.billing_type) }}</Badge>
                 </div>
             </div>
-            <div class="flex flex-wrap gap-2">
+            <div class="d-flex flex-wrap gap-2">
                 <Button v-if="account.is_customer" variant="outline" as-child>
                     <Link :href="cdrIndex({ query: { customer: account.id } })">Calls sent</Link>
                 </Button>
@@ -100,78 +99,78 @@ const select =
                     <Link :href="cdrIndex({ query: { vendor: account.id } })">Calls carried</Link>
                 </Button>
                 <Button variant="outline" as-child>
-                    <Link :href="edit(account.id)"><Pencil class="size-4" /> Edit</Link>
+                    <Link :href="edit(account.id)"><Pencil class="icon" /> Edit</Link>
                 </Button>
             </div>
         </div>
 
         <!-- Money -->
-        <div class="grid gap-4 sm:grid-cols-3">
-            <div class="rounded-lg border p-4">
-                <p class="text-xs text-muted-foreground">Balance</p>
-                <p class="text-2xl font-semibold tabular-nums" :class="{ 'text-destructive': Number(account.balance) < 0 }">
+        <div class="ss-grid gap-3 ss-cols-sm-3">
+            <div class="card card-body">
+                <p class="small text-secondary">Balance</p>
+                <p class="fs-1 fw-semibold tabular-nums" :class="{ 'text-danger': Number(account.balance) < 0 }">
                     {{ money(account.balance, account.currency) }}
                 </p>
             </div>
-            <div class="rounded-lg border p-4">
-                <p class="text-xs text-muted-foreground">Credit limit</p>
-                <p class="text-2xl font-semibold tabular-nums">{{ money(account.credit_limit, account.currency) }}</p>
+            <div class="card card-body">
+                <p class="small text-secondary">Credit limit</p>
+                <p class="fs-1 fw-semibold tabular-nums">{{ money(account.credit_limit, account.currency) }}</p>
             </div>
-            <div class="rounded-lg border p-4" :class="{ 'border-destructive': account.low_balance_alerted_at }">
-                <p class="text-xs text-muted-foreground">Available for calls now</p>
-                <p class="text-2xl font-semibold tabular-nums">{{ money(account.available_now, account.currency) }}</p>
-                <p class="text-xs text-muted-foreground">
-                    <span v-if="account.low_balance_alerted_at" class="text-destructive">Below the alert level of {{ money(account.low_balance_threshold, account.currency) }}</span>
+            <div class="card card-body" :class="{ 'border-danger': account.low_balance_alerted_at }">
+                <p class="small text-secondary">Available for calls now</p>
+                <p class="fs-1 fw-semibold tabular-nums">{{ money(account.available_now, account.currency) }}</p>
+                <p class="small text-secondary">
+                    <span v-if="account.low_balance_alerted_at" class="text-danger">Below the alert level of {{ money(account.low_balance_threshold, account.currency) }}</span>
                     <span v-else-if="account.low_balance_threshold">Alert below {{ money(account.low_balance_threshold, account.currency) }}</span>
                     <span v-else>Includes calls in progress and usage not yet posted</span>
                 </p>
             </div>
         </div>
 
-        <div class="grid gap-8 lg:grid-cols-2">
+        <div class="ss-grid gap-4 ss-cols-lg-2">
             <!-- Customer ingress -->
-            <section v-if="account.is_customer" class="space-y-4">
+            <section v-if="account.is_customer" class="ss-stack-3">
                 <Heading
                     variant="small"
                     title="Customer IPs"
                     description="Traffic from these addresses is identified as this customer. They are also allowed through the firewall."
                 />
-                <dl class="grid grid-cols-2 gap-2 text-sm">
-                    <dt class="text-muted-foreground">Sell rate deck</dt>
+                <dl class="ss-grid ss-cols-2 gap-2">
+                    <dt class="text-secondary">Sell rate deck</dt>
                     <dd>{{ account.sell_rate_deck?.name ?? '— not set —' }}</dd>
-                    <dt class="text-muted-foreground">Routing plan</dt>
+                    <dt class="text-secondary">Routing plan</dt>
                     <dd>{{ account.routing_plan?.name ?? '— not set —' }}</dd>
-                    <dt class="text-muted-foreground">Limits</dt>
+                    <dt class="text-secondary">Limits</dt>
                     <dd>{{ account.max_channels ?? '∞' }} channels, {{ account.max_cps ?? '∞' }} CPS</dd>
                 </dl>
 
-                <div class="overflow-x-auto rounded-lg border">
-                    <table class="w-full text-sm">
-                        <thead class="bg-muted/50 text-left text-muted-foreground">
+                <div class="card table-responsive">
+                    <table class="table table-vcenter card-table table-tight">
+                        <thead>
                             <tr>
-                                <th class="px-3 py-2 font-medium">IP / range</th>
-                                <th class="px-3 py-2 font-medium">Tech prefix</th>
-                                <th class="px-3 py-2 font-medium">Description</th>
-                                <th class="px-3 py-2"></th>
+                                <th>IP / range</th>
+                                <th>Tech prefix</th>
+                                <th>Description</th>
+                                <th></th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="ip in ips" :key="ip.id" class="border-t" :class="{ 'opacity-50': !ip.enabled }">
-                                <td class="px-3 py-2 font-mono">{{ ip.ip }}</td>
-                                <td class="px-3 py-2 font-mono">{{ ip.tech_prefix || '—' }}</td>
-                                <td class="px-3 py-2">{{ ip.description }}</td>
-                                <td class="px-3 py-2 text-right whitespace-nowrap">
-                                    <Form v-bind="AccountIpController.update.form([account.id, ip.id])" class="inline" v-slot="{ processing }">
+                            <tr v-for="ip in ips" :key="ip.id" :class="{ 'opacity-50': !ip.enabled }">
+                                <td class="font-monospace">{{ ip.ip }}</td>
+                                <td class="font-monospace">{{ ip.tech_prefix || '—' }}</td>
+                                <td>{{ ip.description }}</td>
+                                <td class="text-end text-nowrap">
+                                    <Form v-bind="AccountIpController.update.form([account.id, ip.id])" class="d-inline" v-slot="{ processing }">
                                         <input type="hidden" name="enabled" :value="ip.enabled ? 0 : 1" />
                                         <Button size="sm" variant="ghost" :disabled="processing">{{ ip.enabled ? 'Disable' : 'Enable' }}</Button>
                                     </Form>
-                                    <Form v-bind="AccountIpController.destroy.form([account.id, ip.id])" class="inline" v-slot="{ processing }">
-                                        <Button size="sm" variant="ghost" :disabled="processing" :aria-label="`Remove ${ip.ip}`"><Trash2 class="size-4" /></Button>
+                                    <Form v-bind="AccountIpController.destroy.form([account.id, ip.id])" class="d-inline" v-slot="{ processing }">
+                                        <Button size="sm" variant="ghost" :disabled="processing" :aria-label="`Remove ${ip.ip}`"><Trash2 class="icon" /></Button>
                                     </Form>
                                 </td>
                             </tr>
                             <tr v-if="ips.length === 0">
-                                <td colspan="4" class="px-3 py-6 text-center text-muted-foreground">No IPs yet. This customer can't send traffic until one is added.</td>
+                                <td colspan="4" class="py-3 text-center text-secondary">No IPs yet. This customer can't send traffic until one is added.</td>
                             </tr>
                         </tbody>
                     </table>
@@ -180,21 +179,21 @@ const select =
                 <Form
                     v-bind="AccountIpController.store.form(account.id)"
                     reset-on-success
-                    class="grid gap-3 sm:grid-cols-[2fr_1fr_2fr_auto] sm:items-start"
+                    class="ss-grid gap-2 ss-gtc-sm-2fr-1fr-2fr-auto align-items-sm-start"
                     v-slot="{ errors, processing }"
                 >
-                    <div class="grid gap-1">
-                        <Label for="ip" class="sr-only">IP or range</Label>
-                        <Input id="ip" name="ip" placeholder="198.51.100.7 or /24" required class="font-mono" />
+                    <div class="ss-grid gap-1">
+                        <Label for="ip" class="visually-hidden">IP or range</Label>
+                        <Input id="ip" name="ip" placeholder="198.51.100.7 or /24" required class="font-monospace" />
                         <InputError :message="errors.ip" />
                     </div>
-                    <div class="grid gap-1">
-                        <Label for="tech_prefix" class="sr-only">Tech prefix</Label>
-                        <Input id="tech_prefix" name="tech_prefix" placeholder="Tech prefix" class="font-mono" />
+                    <div class="ss-grid gap-1">
+                        <Label for="tech_prefix" class="visually-hidden">Tech prefix</Label>
+                        <Input id="tech_prefix" name="tech_prefix" placeholder="Tech prefix" class="font-monospace" />
                         <InputError :message="errors.tech_prefix" />
                     </div>
-                    <div class="grid gap-1">
-                        <Label for="ip_description" class="sr-only">Description</Label>
+                    <div class="ss-grid gap-1">
+                        <Label for="ip_description" class="visually-hidden">Description</Label>
                         <Input id="ip_description" name="description" placeholder="Description" />
                     </div>
                     <Button :disabled="processing">Add IP</Button>
@@ -204,54 +203,54 @@ const select =
             <RouteTester v-if="account.is_customer" :account-id="account.id" :currency="account.currency" />
 
             <!-- Money movements -->
-            <section class="space-y-4">
+            <section class="ss-stack-3">
                 <Heading variant="small" title="Payments and adjustments" description="Every change to the balance is recorded here and can't be edited." />
 
                 <Form
                     v-bind="LedgerEntryController.store.form(account.id)"
                     reset-on-success
-                    class="grid gap-3 sm:grid-cols-[auto_1fr_2fr_auto] sm:items-start"
+                    class="ss-grid gap-2 ss-gtc-sm-auto-1fr-2fr-auto align-items-sm-start"
                     v-slot="{ errors, processing }"
                 >
                     <select name="type" :class="select" aria-label="Type">
                         <option value="payment">Payment</option>
                         <option value="adjustment">Adjustment</option>
                     </select>
-                    <div class="grid gap-1">
+                    <div class="ss-grid gap-1">
                         <Input name="amount" type="number" step="0.000001" placeholder="Amount" required aria-label="Amount" />
                         <InputError :message="errors.amount" />
                     </div>
-                    <div class="grid gap-1">
+                    <div class="ss-grid gap-1">
                         <Input name="description" placeholder="Reference / reason" required aria-label="Description" />
                         <InputError :message="errors.description" />
                     </div>
                     <Button :disabled="processing">Record</Button>
                 </Form>
-                <p class="text-xs text-muted-foreground">Adjustments can be negative to take money off the account.</p>
+                <p class="small text-secondary">Adjustments can be negative to take money off the account.</p>
 
-                <div class="overflow-x-auto rounded-lg border">
-                    <table class="w-full text-sm">
-                        <thead class="bg-muted/50 text-left text-muted-foreground">
+                <div class="card table-responsive">
+                    <table class="table table-vcenter card-table table-tight">
+                        <thead>
                             <tr>
-                                <th class="px-3 py-2 font-medium">When</th>
-                                <th class="px-3 py-2 font-medium">Description</th>
-                                <th class="px-3 py-2 text-right font-medium">Amount</th>
-                                <th class="px-3 py-2 text-right font-medium">Balance</th>
+                                <th>When</th>
+                                <th>Description</th>
+                                <th class="text-end">Amount</th>
+                                <th class="text-end">Balance</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="e in ledger" :key="e.id" class="border-t">
-                                <td class="px-3 py-2 whitespace-nowrap text-muted-foreground">{{ dateTime(e.created_at) }}</td>
-                                <td class="px-3 py-2">
-                                    <Badge variant="outline" class="mr-1">{{ titleCase(e.type) }}</Badge>{{ e.description }}
+                            <tr v-for="e in ledger" :key="e.id">
+                                <td class="text-nowrap text-secondary">{{ dateTime(e.created_at) }}</td>
+                                <td>
+                                    <Badge variant="outline" class="me-1">{{ titleCase(e.type) }}</Badge>{{ e.description }}
                                 </td>
-                                <td class="px-3 py-2 text-right tabular-nums" :class="Number(e.amount) < 0 ? 'text-destructive' : 'text-green-600 dark:text-green-400'">
+                                <td class="text-end tabular-nums" :class="Number(e.amount) < 0 ? 'text-danger' : 'text-success'">
                                     {{ money(e.amount, account.currency) }}
                                 </td>
-                                <td class="px-3 py-2 text-right tabular-nums">{{ money(e.balance_after, account.currency) }}</td>
+                                <td class="text-end tabular-nums">{{ money(e.balance_after, account.currency) }}</td>
                             </tr>
                             <tr v-if="ledger.length === 0">
-                                <td colspan="4" class="px-3 py-6 text-center text-muted-foreground">No entries yet.</td>
+                                <td colspan="4" class="py-3 text-center text-secondary">No entries yet.</td>
                             </tr>
                         </tbody>
                     </table>
@@ -259,28 +258,28 @@ const select =
             </section>
 
             <!-- Customer portal logins -->
-            <section v-if="account.is_customer" class="space-y-4">
+            <section v-if="account.is_customer" class="ss-stack-3">
                 <Heading variant="small" title="Portal logins" description="People at this customer who can sign in to see their balance, calls, invoices and rates (never your vendors or costs)." />
-                <div v-if="portalPassword" class="rounded-lg border border-primary p-3 text-sm">
-                    <p class="font-medium">Login created for {{ portalPassword.email }}</p>
-                    <p class="text-muted-foreground">Email isn't set up, so pass on this password securely; it won't be shown again. They can change it under Settings.</p>
-                    <code class="mt-1 inline-block rounded bg-muted px-2 py-1 font-mono">{{ portalPassword.password }}</code>
+                <div v-if="portalPassword" class="rounded border border-primary p-2">
+                    <p class="fw-medium">Login created for {{ portalPassword.email }}</p>
+                    <p class="text-secondary">Email isn't set up, so pass on this password securely; it won't be shown again. They can change it under Settings.</p>
+                    <code class="mt-1 d-inline-block rounded bg-body-tertiary px-2 py-1 font-monospace">{{ portalPassword.password }}</code>
                 </div>
-                <ul class="divide-y rounded-lg border text-sm">
-                    <li v-for="u in portalUsers" :key="u.id" class="flex items-center justify-between gap-2 px-3 py-2">
-                        <span>{{ u.name }} <span class="text-muted-foreground">{{ u.email }}</span></span>
+                <ul class="list-group">
+                    <li v-for="u in portalUsers" :key="u.id" class="d-flex align-items-center justify-content-between gap-2 px-2 py-2">
+                        <span>{{ u.name }} <span class="text-secondary">{{ u.email }}</span></span>
                         <Form v-bind="PortalUserController.destroy.form([account.id, u.id])" v-slot="{ processing }">
-                            <Button size="sm" variant="ghost" :disabled="processing" :aria-label="`Remove ${u.email}`"><Trash2 class="size-4" /></Button>
+                            <Button size="sm" variant="ghost" :disabled="processing" :aria-label="`Remove ${u.email}`"><Trash2 class="icon" /></Button>
                         </Form>
                     </li>
-                    <li v-if="portalUsers.length === 0" class="px-3 py-6 text-center text-muted-foreground">No portal logins.</li>
+                    <li v-if="portalUsers.length === 0" class="px-2 py-4 text-center text-secondary">No portal logins.</li>
                 </ul>
-                <Form v-bind="PortalUserController.store.form(account.id)" reset-on-success class="grid gap-2 sm:grid-cols-[1fr_1fr_auto] sm:items-start" v-slot="{ errors, processing }">
-                    <div class="grid gap-1">
+                <Form v-bind="PortalUserController.store.form(account.id)" reset-on-success class="ss-grid gap-2 ss-gtc-sm-1fr-1fr-auto align-items-sm-start" v-slot="{ errors, processing }">
+                    <div class="ss-grid gap-1">
                         <Input name="name" placeholder="Name" required aria-label="Name" />
                         <InputError :message="errors.name" />
                     </div>
-                    <div class="grid gap-1">
+                    <div class="ss-grid gap-1">
                         <Input name="email" type="email" placeholder="Email" required aria-label="Email" />
                         <InputError :message="errors.email" />
                     </div>
@@ -289,22 +288,22 @@ const select =
             </section>
 
             <!-- Invoices -->
-            <section v-if="account.is_customer" class="space-y-4">
+            <section v-if="account.is_customer" class="ss-stack-3">
                 <Heading variant="small" title="Invoices" description="Issued automatically after each month ends. Issue one by hand for any finished month (e.g. after voiding)." />
-                <ul class="divide-y rounded-lg border text-sm">
-                    <li v-for="i in invoices" :key="i.id" class="flex flex-wrap items-center justify-between gap-2 px-3 py-2" :class="{ 'opacity-60': i.status === 'void' }">
+                <ul class="list-group">
+                    <li v-for="i in invoices" :key="i.id" class="d-flex flex-wrap align-items-center justify-content-between gap-2 px-2 py-2" :class="{ 'opacity-50': i.status === 'void' }">
                         <span>
-                            <Link :href="showInvoice(i.id)" class="font-mono hover:underline">{{ i.number }}</Link>
-                            <span class="ml-2 text-muted-foreground">{{ billingMonth(i.period_start, i.timezone) }}</span>
-                            <Badge v-if="i.status === 'void'" variant="secondary" class="ml-2">void</Badge>
+                            <Link :href="showInvoice(i.id)" class="font-monospace">{{ i.number }}</Link>
+                            <span class="ms-2 text-secondary">{{ billingMonth(i.period_start, i.timezone) }}</span>
+                            <Badge v-if="i.status === 'void'" variant="secondary" class="ms-2">void</Badge>
                         </span>
                         <span class="tabular-nums">{{ Number(i.amount_due) ? `${money(i.amount_due, i.currency)} due` : money(i.usage_total, i.currency) }}</span>
                     </li>
-                    <li v-if="invoices.length === 0" class="px-3 py-6 text-center text-muted-foreground">No invoices yet.</li>
+                    <li v-if="invoices.length === 0" class="px-2 py-4 text-center text-secondary">No invoices yet.</li>
                 </ul>
-                <Form v-bind="InvoiceController.store.form(account.id)" class="flex flex-wrap items-start gap-2" v-slot="{ errors, processing }">
-                    <div class="grid gap-1">
-                        <Input name="month" type="month" required aria-label="Billing month" class="w-44" />
+                <Form v-bind="InvoiceController.store.form(account.id)" class="d-flex flex-wrap align-items-start gap-2" v-slot="{ errors, processing }">
+                    <div class="ss-grid gap-1">
+                        <Input name="month" type="month" required aria-label="Billing month" class="ss-w-44" />
                         <InputError :message="errors.month" />
                     </div>
                     <Button variant="outline" :disabled="processing">Issue invoice</Button>
@@ -312,14 +311,14 @@ const select =
             </section>
 
             <!-- Vendor egress -->
-            <section v-if="account.is_vendor" class="space-y-4">
+            <section v-if="account.is_vendor" class="ss-stack-3">
                 <Heading variant="small" title="Vendor trunks" description="Where we send traffic to this vendor. Managed from the Trunks page." />
-                <ul class="divide-y rounded-lg border text-sm">
-                    <li v-for="t in trunks" :key="t.id" class="flex justify-between px-3 py-2">
+                <ul class="list-group">
+                    <li v-for="t in trunks" :key="t.id" class="d-flex justify-content-between px-2 py-2">
                         <span :class="{ 'opacity-50': !t.enabled }">{{ t.name }}</span>
-                        <span class="text-muted-foreground">{{ t.gateways_count }} gateway(s)</span>
+                        <span class="text-secondary">{{ t.gateways_count }} gateway(s)</span>
                     </li>
-                    <li v-if="trunks.length === 0" class="px-3 py-6 text-center text-muted-foreground">No trunks yet.</li>
+                    <li v-if="trunks.length === 0" class="px-2 py-4 text-center text-secondary">No trunks yet.</li>
                 </ul>
             </section>
 
@@ -333,17 +332,17 @@ const select =
                 :invoices="vendorInvoices"
             />
 
-            <section class="space-y-2 text-sm">
+            <section class="ss-stack-2">
                 <Heading variant="small" title="Details" />
-                <dl class="grid grid-cols-2 gap-2">
-                    <dt class="text-muted-foreground">Billing email</dt>
+                <dl class="ss-grid ss-cols-2 gap-2">
+                    <dt class="text-secondary">Billing email</dt>
                     <dd>{{ account.billing_email ?? '—' }}</dd>
-                    <dt class="text-muted-foreground">NOC email</dt>
+                    <dt class="text-secondary">NOC email</dt>
                     <dd>{{ account.noc_email ?? '—' }}</dd>
-                    <dt class="text-muted-foreground">Time zone</dt>
+                    <dt class="text-secondary">Time zone</dt>
                     <dd>{{ account.timezone }}</dd>
                 </dl>
-                <p v-if="account.notes" class="whitespace-pre-line text-muted-foreground">{{ account.notes }}</p>
+                <p v-if="account.notes" class="ss-pre-line text-secondary">{{ account.notes }}</p>
             </section>
         </div>
     </div>

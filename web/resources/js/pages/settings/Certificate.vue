@@ -59,26 +59,26 @@ const actionLabel: Record<Task['action'], string> = {
 <template>
     <Head title="SSL certificate" />
 
-    <h1 class="sr-only">SSL certificate</h1>
+    <h1 class="visually-hidden">SSL certificate</h1>
 
-    <div class="space-y-6">
+    <div class="ss-stack-4">
         <Heading
             variant="small"
             title="SSL certificate"
             description="The HTTPS certificate for this server's admin UI and API"
         />
 
-        <div class="space-y-2 rounded-lg border p-4 text-sm">
-            <div v-if="status" class="flex flex-wrap items-center gap-2">
+        <div class="card card-body ss-stack-2">
+            <div v-if="status" class="d-flex flex-wrap align-items-center gap-2">
                 <Badge v-if="status.mode === 'letsencrypt'">Let's Encrypt</Badge>
                 <Badge v-else variant="secondary">Self-signed</Badge>
-                <span class="font-medium">{{ status.domain || status.subject }}</span>
+                <span class="fw-medium">{{ status.domain || status.subject }}</span>
             </div>
-            <div v-else class="flex items-center gap-2 text-muted-foreground">
+            <div v-else class="d-flex align-items-center gap-2 text-secondary">
                 <Spinner /> Checking current certificate…
             </div>
-            <p v-if="expires" class="text-muted-foreground">Expires {{ expires }}<span v-if="status?.mode === 'letsencrypt'"> (renews automatically)</span></p>
-            <p v-if="status?.mode === 'selfsigned'" class="text-muted-foreground">
+            <p v-if="expires" class="text-secondary">Expires {{ expires }}<span v-if="status?.mode === 'letsencrypt'"> (renews automatically)</span></p>
+            <p v-if="status?.mode === 'selfsigned'" class="text-secondary">
                 Browsers show a security warning for self-signed certificates.
             </p>
         </div>
@@ -94,7 +94,7 @@ const actionLabel: Record<Task['action'], string> = {
         </Alert>
     </div>
 
-    <div class="space-y-6">
+    <div class="ss-stack-4">
         <Heading
             variant="small"
             title="Use Let's Encrypt"
@@ -103,10 +103,10 @@ const actionLabel: Record<Task['action'], string> = {
 
         <Form
             v-bind="CertificateController.store.form()"
-            class="space-y-6"
+            class="ss-stack-4"
             v-slot="{ errors, processing }"
         >
-            <div class="grid gap-2">
+            <div class="ss-grid gap-2">
                 <Label for="domain">Domain</Label>
                 <Input
                     id="domain"
@@ -117,13 +117,13 @@ const actionLabel: Record<Task['action'], string> = {
                     autocapitalize="none"
                     spellcheck="false"
                 />
-                <p v-if="publicIp" class="text-xs text-muted-foreground">
+                <p v-if="publicIp" class="small text-secondary">
                     Needs an A record pointing to {{ publicIp }}
                 </p>
                 <InputError :message="errors.domain" />
             </div>
 
-            <div class="grid gap-2">
+            <div class="ss-grid gap-2">
                 <Label for="email">Email for expiry notices</Label>
                 <Input
                     id="email"
@@ -141,7 +141,7 @@ const actionLabel: Record<Task['action'], string> = {
         </Form>
     </div>
 
-    <div v-if="status?.mode === 'letsencrypt'" class="space-y-4">
+    <div v-if="status?.mode === 'letsencrypt'" class="ss-stack-3">
         <Heading
             variant="small"
             title="Use self-signed certificate"

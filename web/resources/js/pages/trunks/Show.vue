@@ -54,81 +54,81 @@ defineOptions({
 <template>
     <Head :title="props.trunk.name" />
 
-    <div class="space-y-8 p-4">
-        <div class="flex flex-wrap items-start justify-between gap-4">
-            <div class="space-y-2">
+    <div class="ss-stack-4">
+        <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
+            <div class="ss-stack-2">
                 <Heading :title="trunk.name" />
-                <p class="text-sm">
-                    Vendor <Link :href="showAccount(trunk.vendor.id)" class="font-medium hover:underline">{{ trunk.vendor.name }}</Link>
+                <p>
+                    Vendor <Link :href="showAccount(trunk.vendor.id)" class="fw-medium">{{ trunk.vendor.name }}</Link>
                     · Buy rates
-                    <Link v-if="trunk.rate_deck" :href="showDeck(trunk.rate_deck.id)" class="font-medium hover:underline">{{ trunk.rate_deck.name }}</Link>
-                    <span v-else class="text-destructive">not set</span>
+                    <Link v-if="trunk.rate_deck" :href="showDeck(trunk.rate_deck.id)" class="fw-medium">{{ trunk.rate_deck.name }}</Link>
+                    <span v-else class="text-danger">not set</span>
                 </p>
-                <div class="flex flex-wrap gap-1">
+                <div class="d-flex flex-wrap gap-1">
                     <Badge v-if="!trunk.enabled" variant="secondary">Disabled</Badge>
                     <Badge variant="outline">{{ trunk.max_channels ?? '∞' }} channels</Badge>
                     <Badge variant="outline">{{ trunk.max_cps ?? '∞' }} CPS</Badge>
                     <Badge v-if="trunk.strip_digits" variant="outline">strip {{ trunk.strip_digits }}</Badge>
-                    <Badge v-if="trunk.tech_prefix" variant="outline" class="font-mono">+{{ trunk.tech_prefix }}</Badge>
+                    <Badge v-if="trunk.tech_prefix" variant="outline" class="font-monospace">+{{ trunk.tech_prefix }}</Badge>
                 </div>
             </div>
-            <Button variant="outline" as-child><Link :href="edit(trunk.id)"><Pencil class="size-4" /> Edit</Link></Button>
+            <Button variant="outline" as-child><Link :href="edit(trunk.id)"><Pencil class="icon" /> Edit</Link></Button>
         </div>
 
-        <section class="space-y-4">
+        <section class="ss-stack-3">
             <Heading variant="small" title="Gateways" description="SIP endpoints for this trunk. Calls try lower priority numbers first; equal priorities share traffic by weight." />
 
-            <div class="overflow-x-auto rounded-lg border">
-                <table class="w-full text-sm">
-                    <thead class="bg-muted/50 text-left text-muted-foreground">
+            <div class="card table-responsive">
+                <table class="table table-vcenter card-table table-tight">
+                    <thead>
                         <tr>
-                            <th class="px-3 py-2 font-medium">Name</th>
-                            <th class="px-3 py-2 font-medium">Endpoint</th>
-                            <th class="px-3 py-2 font-medium">Auth</th>
-                            <th class="px-3 py-2 text-right font-medium">Priority / weight</th>
-                            <th class="px-3 py-2"></th>
+                            <th>Name</th>
+                            <th>Endpoint</th>
+                            <th>Auth</th>
+                            <th class="text-end">Priority / weight</th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="g in gateways" :key="g.id" class="border-t" :class="{ 'opacity-50': !g.enabled }">
-                            <td class="px-3 py-2 font-mono">{{ g.name }}</td>
-                            <td class="px-3 py-2 font-mono">{{ g.transport }}:{{ g.host }}:{{ g.port }}</td>
-                            <td class="px-3 py-2">
+                        <tr v-for="g in gateways" :key="g.id" :class="{ 'opacity-50': !g.enabled }">
+                            <td class="font-monospace">{{ g.name }}</td>
+                            <td class="font-monospace">{{ g.transport }}:{{ g.host }}:{{ g.port }}</td>
+                            <td>
                                 <span v-if="g.username">{{ g.username }}<span v-if="g.register"> (registers)</span></span>
-                                <span v-else class="text-muted-foreground">IP</span>
+                                <span v-else class="text-secondary">IP</span>
                             </td>
-                            <td class="px-3 py-2 text-right tabular-nums">{{ g.priority }} / {{ g.weight }}</td>
-                            <td class="px-3 py-2 text-right whitespace-nowrap">
-                                <Button size="sm" variant="ghost" as-child><Link :href="editGateway([trunk.id, g.id])" :aria-label="`Edit ${g.name}`"><Pencil class="size-4" /></Link></Button>
-                                <Form v-bind="GatewayController.destroy.form([trunk.id, g.id])" class="inline" v-slot="{ processing }">
-                                    <Button size="sm" variant="ghost" :disabled="processing" :aria-label="`Remove ${g.name}`"><Trash2 class="size-4" /></Button>
+                            <td class="text-end tabular-nums">{{ g.priority }} / {{ g.weight }}</td>
+                            <td class="text-end text-nowrap">
+                                <Button size="sm" variant="ghost" as-child><Link :href="editGateway([trunk.id, g.id])" :aria-label="`Edit ${g.name}`"><Pencil class="icon" /></Link></Button>
+                                <Form v-bind="GatewayController.destroy.form([trunk.id, g.id])" class="d-inline" v-slot="{ processing }">
+                                    <Button size="sm" variant="ghost" :disabled="processing" :aria-label="`Remove ${g.name}`"><Trash2 class="icon" /></Button>
                                 </Form>
                             </td>
                         </tr>
                         <tr v-if="gateways.length === 0">
-                            <td colspan="5" class="px-3 py-6 text-center text-muted-foreground">No gateways yet. Calls can't use this trunk until one is added.</td>
+                            <td colspan="5" class="py-3 text-center text-secondary">No gateways yet. Calls can't use this trunk until one is added.</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
 
-            <details class="rounded-lg border p-4" :open="gateways.length === 0">
-                <summary class="cursor-pointer text-sm font-medium">Add gateway</summary>
-                <Form v-bind="GatewayController.store.form(trunk.id)" reset-on-success class="mt-4 space-y-4" v-slot="{ errors, processing }">
+            <details class="card card-body" :open="gateways.length === 0">
+                <summary class="fw-medium">Add gateway</summary>
+                <Form v-bind="GatewayController.store.form(trunk.id)" reset-on-success class="mt-3 ss-stack-3" v-slot="{ errors, processing }">
                     <GatewayFields :transports="transports" :errors="errors" />
                     <Button :disabled="processing">Add gateway</Button>
                 </Form>
             </details>
         </section>
 
-        <section class="space-y-4">
+        <section class="ss-stack-3">
             <Heading variant="small" title="Used in routing plans" />
-            <ul class="divide-y rounded-lg border text-sm">
-                <li v-for="r in routes" :key="r.id" class="flex justify-between px-3 py-2" :class="{ 'opacity-50': !r.enabled }">
-                    <Link :href="showPlan(r.plan.id)" class="hover:underline">{{ r.plan.name }}</Link>
-                    <span class="font-mono text-muted-foreground">{{ r.prefix || '(all destinations)' }}</span>
+            <ul class="list-group">
+                <li v-for="r in routes" :key="r.id" class="d-flex justify-content-between px-2 py-2" :class="{ 'opacity-50': !r.enabled }">
+                    <Link :href="showPlan(r.plan.id)">{{ r.plan.name }}</Link>
+                    <span class="font-monospace text-secondary">{{ r.prefix || '(all destinations)' }}</span>
                 </li>
-                <li v-if="routes.length === 0" class="px-3 py-6 text-center text-muted-foreground">Not in any routing plan yet.</li>
+                <li v-if="routes.length === 0" class="px-2 py-4 text-center text-secondary">Not in any routing plan yet.</li>
             </ul>
         </section>
     </div>

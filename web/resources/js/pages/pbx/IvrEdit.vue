@@ -51,57 +51,57 @@ const greetingUrl = greeting.url([props.account.id, props.ivr.id]);
 <template>
     <Head :title="props.ivr.name" />
 
-    <div class="max-w-3xl space-y-6 p-4">
+    <div class="ss-maxw-3xl ss-stack-4">
         <Heading :title="ivr.name" :description="`IVR ${ivr.extension} · ${account.name}`" />
 
-        <Form v-bind="PbxController.updateIvr.form([account.id, ivr.id])" class="space-y-6" v-slot="{ errors, processing, progress }">
-            <div class="grid gap-4 sm:grid-cols-6">
-                <div class="grid gap-1 sm:col-span-2">
+        <Form v-bind="PbxController.updateIvr.form([account.id, ivr.id])" class="ss-stack-4" v-slot="{ errors, processing, progress }">
+            <div class="ss-grid gap-3 ss-cols-sm-6">
+                <div class="ss-grid gap-1 ss-span-sm-2">
                     <Label for="extension">Number</Label>
-                    <Input id="extension" name="extension" :default-value="ivr.extension" required inputmode="numeric" class="font-mono" />
+                    <Input id="extension" name="extension" :default-value="ivr.extension" required inputmode="numeric" class="font-monospace" />
                     <InputError :message="errors.extension" />
                 </div>
-                <div class="grid gap-1 sm:col-span-3">
+                <div class="ss-grid gap-1 ss-span-sm-3">
                     <Label for="name">Name</Label>
                     <Input id="name" name="name" :default-value="ivr.name" required />
                     <InputError :message="errors.name" />
                 </div>
-                <div class="grid gap-1">
+                <div class="ss-grid gap-1">
                     <Label for="timeout_seconds">Wait (s)</Label>
                     <Input id="timeout_seconds" name="timeout_seconds" type="number" min="2" max="30" :default-value="ivr.timeout_seconds" required />
                     <InputError :message="errors.timeout_seconds" />
                 </div>
             </div>
 
-            <section class="space-y-2">
+            <section class="ss-stack-2">
                 <Label for="greeting">Greeting</Label>
-                <audio v-if="ivr.has_greeting" :src="greetingUrl" controls preload="none" class="w-full max-w-md"></audio>
-                <p v-else class="text-sm text-muted-foreground">No greeting yet: callers hear silence while the IVR waits for a key.</p>
-                <input id="greeting" type="file" name="greeting" accept=".wav,audio/wav,audio/x-wav" class="block text-sm" />
-                <p class="text-xs text-muted-foreground">WAV (PCM, 8-48 kHz, mono is best), up to 10 MB. Say the options, e.g. "For sales press 1…".</p>
+                <audio v-if="ivr.has_greeting" :src="greetingUrl" controls preload="none" class="w-100 ss-maxw-md"></audio>
+                <p v-else class="text-secondary">No greeting yet: callers hear silence while the IVR waits for a key.</p>
+                <input id="greeting" type="file" name="greeting" accept=".wav,audio/wav,audio/x-wav" class="form-control" />
+                <p class="small text-secondary">WAV (PCM, 8-48 kHz, mono is best), up to 10 MB. Say the options, e.g. "For sales press 1…".</p>
                 <InputError :message="errors.greeting" />
-                <progress v-if="progress" :value="progress.percentage" max="100" class="w-full max-w-md">{{ progress.percentage }}%</progress>
-                <label v-if="ivr.has_greeting" class="flex items-center gap-2 text-sm"><input type="checkbox" name="remove_greeting" value="1" class="size-4" /> Remove the greeting</label>
+                <progress v-if="progress" :value="progress.percentage" max="100" class="w-100 ss-maxw-md">{{ progress.percentage }}%</progress>
+                <label v-if="ivr.has_greeting" class="d-flex align-items-center gap-2"><input type="checkbox" name="remove_greeting" value="1" class="form-check-input m-0" /> Remove the greeting</label>
             </section>
 
-            <section class="space-y-3">
+            <section class="ss-stack-2">
                 <Heading variant="small" title="Options" description="One key each. Callers who press nothing get the action below." />
-                <div v-for="(row, i) in rows" :key="row.id" class="flex flex-wrap items-start gap-2">
-                    <div class="grid gap-1">
-                        <Input :name="`options[${i}][key]`" v-model="row.key" maxlength="1" placeholder="Key" :aria-label="`Option ${i + 1} key`" class="w-16 text-center font-mono" />
+                <div v-for="(row, i) in rows" :key="row.id" class="d-flex flex-wrap align-items-start gap-2">
+                    <div class="ss-grid gap-1">
+                        <Input :name="`options[${i}][key]`" v-model="row.key" maxlength="1" placeholder="Key" :aria-label="`Option ${i + 1} key`" class="ss-w-16 text-center font-monospace" />
                         <InputError :message="errors[`options.${i}.key`]" />
                     </div>
-                    <div class="grid gap-1">
+                    <div class="ss-grid gap-1">
                         <DestinationPicker :name="`options[${i}]`" :numbers="numbers" :value="row.destination" />
                         <InputError :message="errors[`options.${i}.type`]" />
                     </div>
-                    <Button type="button" size="sm" variant="ghost" :aria-label="`Remove option ${i + 1}`" @click="removeRow(row.id)"><Trash2 class="size-4" /></Button>
+                    <Button type="button" size="sm" variant="ghost" :aria-label="`Remove option ${i + 1}`" @click="removeRow(row.id)"><Trash2 class="icon" /></Button>
                 </div>
                 <InputError :message="errors.options" />
-                <Button type="button" size="sm" variant="outline" @click="addRow"><Plus class="size-4" /> Add option</Button>
+                <Button type="button" size="sm" variant="outline" @click="addRow"><Plus class="icon" /> Add option</Button>
             </section>
 
-            <section class="space-y-2">
+            <section class="ss-stack-2">
                 <Label for="default_destination">No key pressed</Label>
                 <DestinationPicker id="default_destination" name="default_destination" :numbers="numbers" :value="ivr.default_destination" optional />
                 <InputError :message="errors['default_destination.type']" />

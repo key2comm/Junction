@@ -63,16 +63,16 @@ const duration = (s: number) => (s >= 60 ? `${Math.floor(s / 60)}m ${s % 60}s` :
 <template>
     <Head title="Calls" />
 
-    <div class="space-y-6 p-4">
-        <div class="flex flex-wrap items-start justify-between gap-4">
+    <div class="ss-stack-4">
+        <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
             <Heading title="Calls" description="Calls you sent us, with what each one cost" />
-            <Button variant="outline" as-child><a :href="download.url({ query })"><Download class="size-4" /> Export CSV</a></Button>
+            <Button variant="outline" as-child><a :href="download.url({ query })"><Download class="icon" /> Export CSV</a></Button>
         </div>
 
-        <form class="grid gap-3 rounded-lg border p-4 sm:grid-cols-2 lg:grid-cols-5" @submit.prevent="apply">
-            <div class="grid gap-1"><Label for="from">From</Label><Input id="from" v-model="f.from" type="datetime-local" /></div>
-            <div class="grid gap-1"><Label for="to">To</Label><Input id="to" v-model="f.to" type="datetime-local" /></div>
-            <div class="grid gap-1">
+        <form class="ss-grid gap-2 rounded border p-3 ss-cols-sm-2 ss-cols-lg-5" @submit.prevent="apply">
+            <div class="ss-grid gap-1"><Label for="from">From</Label><Input id="from" v-model="f.from" type="datetime-local" /></div>
+            <div class="ss-grid gap-1"><Label for="to">To</Label><Input id="to" v-model="f.to" type="datetime-local" /></div>
+            <div class="ss-grid gap-1">
                 <Label for="status">Outcome</Label>
                 <select id="status" v-model="f.status" :class="selectClass">
                     <option value="">Any</option>
@@ -81,55 +81,55 @@ const duration = (s: number) => (s >= 60 ? `${Math.floor(s / 60)}m ${s % 60}s` :
                     <option value="rejected">Refused</option>
                 </select>
             </div>
-            <div class="grid gap-1"><Label for="number">Number / prefix</Label><Input id="number" v-model="f.number" class="font-mono" /></div>
-            <div class="flex items-end"><Button>Apply</Button></div>
+            <div class="ss-grid gap-1"><Label for="number">Number / prefix</Label><Input id="number" v-model="f.number" class="font-monospace" /></div>
+            <div class="d-flex align-items-end"><Button>Apply</Button></div>
         </form>
 
-        <div class="grid gap-4 sm:grid-cols-5">
-            <div class="rounded-lg border p-3"><p class="text-xs text-muted-foreground">Calls</p><p class="text-xl font-semibold tabular-nums">{{ summary.calls.toLocaleString() }}</p></div>
-            <div class="rounded-lg border p-3"><p class="text-xs text-muted-foreground">Answered</p><p class="text-xl font-semibold tabular-nums">{{ summary.answered.toLocaleString() }}</p></div>
-            <div class="rounded-lg border p-3"><p class="text-xs text-muted-foreground">ASR</p><p class="text-xl font-semibold tabular-nums">{{ summary.asr === null ? '—' : `${summary.asr}%` }}</p></div>
-            <div class="rounded-lg border p-3"><p class="text-xs text-muted-foreground">Minutes</p><p class="text-xl font-semibold tabular-nums">{{ summary.minutes.toLocaleString() }}</p></div>
-            <div class="rounded-lg border p-3"><p class="text-xs text-muted-foreground">Cost</p><p class="text-xl font-semibold tabular-nums">{{ m(summary.sell) }}</p></div>
+        <div class="ss-grid gap-3 ss-cols-sm-5">
+            <div class="card card-body p-2"><p class="small text-secondary">Calls</p><p class="fs-2 fw-semibold tabular-nums">{{ summary.calls.toLocaleString() }}</p></div>
+            <div class="card card-body p-2"><p class="small text-secondary">Answered</p><p class="fs-2 fw-semibold tabular-nums">{{ summary.answered.toLocaleString() }}</p></div>
+            <div class="card card-body p-2"><p class="small text-secondary">ASR</p><p class="fs-2 fw-semibold tabular-nums">{{ summary.asr === null ? '—' : `${summary.asr}%` }}</p></div>
+            <div class="card card-body p-2"><p class="small text-secondary">Minutes</p><p class="fs-2 fw-semibold tabular-nums">{{ summary.minutes.toLocaleString() }}</p></div>
+            <div class="card card-body p-2"><p class="small text-secondary">Cost</p><p class="fs-2 fw-semibold tabular-nums">{{ m(summary.sell) }}</p></div>
         </div>
 
-        <div class="overflow-x-auto rounded-lg border">
-            <table class="w-full text-sm">
-                <thead class="bg-muted/50 text-left text-muted-foreground">
+        <div class="card table-responsive">
+            <table class="table table-vcenter card-table table-tight">
+                <thead>
                     <tr>
-                        <th class="px-3 py-2 font-medium">Started</th>
-                        <th class="px-3 py-2 font-medium">From → To</th>
-                        <th class="px-3 py-2 font-medium">Destination</th>
-                        <th class="px-3 py-2 font-medium">Result</th>
-                        <th class="px-3 py-2 text-right font-medium">Duration</th>
-                        <th class="px-3 py-2 text-right font-medium">Rate/min</th>
-                        <th class="px-3 py-2 text-right font-medium">Cost</th>
+                        <th>Started</th>
+                        <th>From → To</th>
+                        <th>Destination</th>
+                        <th>Result</th>
+                        <th class="text-end">Duration</th>
+                        <th class="text-end">Rate/min</th>
+                        <th class="text-end">Cost</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="r in calls.data" :key="r.id" class="border-t">
-                        <td class="px-3 py-1.5 whitespace-nowrap">{{ dateTime(r.started_at) }}</td>
-                        <td class="px-3 py-1.5 font-mono text-xs">{{ r.caller ?? '?' }} → {{ r.destination ?? r.callee }}</td>
-                        <td class="px-3 py-1.5">{{ r.sell_destination ?? '' }}</td>
-                        <td class="px-3 py-1.5 whitespace-nowrap">
+                    <tr v-for="r in calls.data" :key="r.id">
+                        <td class="px-2 py-1 text-nowrap">{{ dateTime(r.started_at) }}</td>
+                        <td class="px-2 py-1 font-monospace small">{{ r.caller ?? '?' }} → {{ r.destination ?? r.callee }}</td>
+                        <td class="px-2 py-1">{{ r.sell_destination ?? '' }}</td>
+                        <td class="px-2 py-1 text-nowrap">
                             <Badge :variant="r.answered ? 'default' : r.rejected ? 'destructive' : 'secondary'">{{ r.answered ? 'answered' : r.rejected ? 'refused' : 'not completed' }}</Badge>
-                            <span v-if="!r.answered" class="ml-1 text-xs text-muted-foreground">{{ r.sip_code }} {{ r.reason }}</span>
+                            <span v-if="!r.answered" class="ms-1 small text-secondary">{{ r.sip_code }} {{ r.reason }}</span>
                         </td>
-                        <td class="px-3 py-1.5 text-right tabular-nums">{{ r.answered ? duration(r.billsec) : '—' }}</td>
-                        <td class="px-3 py-1.5 text-right tabular-nums">{{ r.answered ? m(r.sell_rate) : '—' }}</td>
-                        <td class="px-3 py-1.5 text-right tabular-nums">{{ r.answered ? m(r.sell_cost) : '—' }}</td>
+                        <td class="px-2 py-1 text-end tabular-nums">{{ r.answered ? duration(r.billsec) : '—' }}</td>
+                        <td class="px-2 py-1 text-end tabular-nums">{{ r.answered ? m(r.sell_rate) : '—' }}</td>
+                        <td class="px-2 py-1 text-end tabular-nums">{{ r.answered ? m(r.sell_cost) : '—' }}</td>
                     </tr>
                     <tr v-if="calls.data.length === 0">
-                        <td colspan="7" class="px-3 py-10 text-center text-muted-foreground">No calls in this range.</td>
+                        <td colspan="7" class="px-2 py-5 text-center text-secondary">No calls in this range.</td>
                     </tr>
                 </tbody>
             </table>
         </div>
 
-        <div v-if="calls.prev_page_url || calls.next_page_url" class="flex justify-between text-sm">
-            <Link v-if="calls.prev_page_url" :href="calls.prev_page_url" preserve-scroll class="rounded-md border px-3 py-1 hover:bg-muted">← Newer</Link>
+        <div v-if="calls.prev_page_url || calls.next_page_url" class="d-flex justify-content-between">
+            <Link v-if="calls.prev_page_url" :href="calls.prev_page_url" preserve-scroll class="rounded border px-2 py-1">← Newer</Link>
             <span v-else />
-            <Link v-if="calls.next_page_url" :href="calls.next_page_url" preserve-scroll class="rounded-md border px-3 py-1 hover:bg-muted">Older →</Link>
+            <Link v-if="calls.next_page_url" :href="calls.next_page_url" preserve-scroll class="rounded border px-2 py-1">Older →</Link>
         </div>
     </div>
 </template>

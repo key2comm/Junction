@@ -26,26 +26,26 @@ const action = props.deck ? RateDeckController.update.form(props.deck.id) : Rate
 <template>
     <Head :title="deck ? `Edit ${deck.name}` : 'New rate deck'" />
 
-    <div class="max-w-xl space-y-6 p-4">
+    <div class="ss-maxw-xl ss-stack-4">
         <Heading :title="deck ? `Edit ${deck.name}` : 'New rate deck'" />
 
-        <Form v-bind="action" class="space-y-6" v-slot="{ errors, processing }">
-            <div class="grid gap-2">
+        <Form v-bind="action" class="ss-stack-4" v-slot="{ errors, processing }">
+            <div class="ss-grid gap-2">
                 <Label for="name">Name</Label>
                 <Input id="name" name="name" :default-value="deck?.name" required placeholder="Wholesale A-Z 2026" />
                 <InputError :message="errors.name" />
             </div>
-            <div class="grid gap-2">
+            <div class="ss-grid gap-2">
                 <Label for="currency">Currency</Label>
-                <Input id="currency" name="currency" :default-value="deck?.currency ?? 'USD'" maxlength="3" required class="w-24 uppercase" />
+                <Input id="currency" name="currency" :default-value="deck?.currency ?? 'USD'" maxlength="3" required class="ss-w-24 text-uppercase" />
                 <InputError :message="errors.currency" />
             </div>
-            <div class="grid gap-2">
+            <div class="ss-grid gap-2">
                 <Label for="description">Description</Label>
                 <textarea id="description" name="description" rows="3" :class="textareaClass">{{ deck?.description ?? '' }}</textarea>
                 <InputError :message="errors.description" />
             </div>
-            <div class="flex gap-3">
+            <div class="d-flex gap-2">
                 <Button :disabled="processing">{{ deck ? 'Save changes' : 'Create rate deck' }}</Button>
                 <Button variant="ghost" as-child><Link :href="deck ? show(deck.id) : index()">Cancel</Link></Button>
             </div>

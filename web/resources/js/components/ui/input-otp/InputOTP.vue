@@ -1,28 +1,26 @@
 <script setup lang="ts">
-import type { HTMLAttributes } from "vue"
-import type { OTPInputEmits, OTPInputProps } from "vue-input-otp"
-import { reactiveOmit } from "@vueuse/core"
-import { useForwardPropsEmits } from "reka-ui"
-import { OTPInput } from "vue-input-otp"
-import { cn } from "@/lib/utils"
+/**
+ * One-time code input (vue-input-otp), drawn as Tabler form-controls.
+ * Usage: <InputOTP v-model="code" :maxlength="6" />
+ */
+import { OTPInput } from 'vue-input-otp';
+import type { SlotProps } from 'vue-input-otp';
 
-const props = defineProps<OTPInputProps & { class?: HTMLAttributes["class"] }>()
-
-const emits = defineEmits<OTPInputEmits>()
-
-const delegatedProps = reactiveOmit(props, "class")
-
-const forwarded = useForwardPropsEmits(delegatedProps, emits)
+defineProps<{ maxlength: number; disabled?: boolean; id?: string; autofocus?: boolean }>();
+const code = defineModel<string>({ default: '' });
+const emit = defineEmits<{ complete: [value: string] }>();
 </script>
 
 <template>
-  <OTPInput
-    v-slot="slotProps"
-    v-bind="forwarded"
-    :container-class="cn('flex items-center gap-2 has-disabled:opacity-50', props.class)"
-    data-slot="input-otp"
-    class="disabled:cursor-not-allowed"
-  >
-    <slot v-bind="slotProps" />
-  </OTPInput>
+    <OTPInput :id="id" v-slot="{ slots }" v-model="code" :maxlength="maxlength" :disabled="disabled" :autofocus="autofocus" container-class="d-flex gap-2 justify-content-center" @complete="emit('complete', $event)">
+        <div
+            v-for="(slot, i) in slots as SlotProps[]"
+            :key="i"
+            class="form-control form-control-lg text-center font-monospace d-flex align-items-center justify-content-center p-0"
+            :class="{ 'border-primary': slot.isActive }"
+            style="width: 2.75rem; height: 3rem"
+        >
+            {{ slot.char ?? '' }}<span v-if="slot.hasFakeCaret" class="text-primary">|</span>
+        </div>
+    </OTPInput>
 </template>

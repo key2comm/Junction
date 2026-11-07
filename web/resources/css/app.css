@@ -1,172 +1,221 @@
-@import 'tailwindcss';
-
-@import 'tw-animate-css';
-
-@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
-@source '../../storage/framework/views/*.php';
-
-@custom-variant dark (&:is(.dark *));
-
-@theme inline {
-    --font-sans:
-        Instrument Sans, ui-sans-serif, system-ui, sans-serif,
-        'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
-        'Noto Color Emoji';
-
-    --radius-lg: var(--radius);
-    --radius-md: calc(var(--radius) - 2px);
-    --radius-sm: calc(var(--radius) - 4px);
-
-    --color-background: var(--background);
-    --color-foreground: var(--foreground);
-
-    --color-card: var(--card);
-    --color-card-foreground: var(--card-foreground);
-
-    --color-popover: var(--popover);
-    --color-popover-foreground: var(--popover-foreground);
-
-    --color-primary: var(--primary);
-    --color-primary-foreground: var(--primary-foreground);
-
-    --color-secondary: var(--secondary);
-    --color-secondary-foreground: var(--secondary-foreground);
-
-    --color-muted: var(--muted);
-    --color-muted-foreground: var(--muted-foreground);
-
-    --color-accent: var(--accent);
-    --color-accent-foreground: var(--accent-foreground);
-
-    --color-destructive: var(--destructive);
-    --color-destructive-foreground: var(--destructive-foreground);
-
-    --color-border: var(--border);
-    --color-input: var(--input);
-    --color-ring: var(--ring);
-
-    --color-chart-1: var(--chart-1);
-    --color-chart-2: var(--chart-2);
-    --color-chart-3: var(--chart-3);
-    --color-chart-4: var(--chart-4);
-    --color-chart-5: var(--chart-5);
-
-    --color-sidebar: var(--sidebar-background);
-    --color-sidebar-foreground: var(--sidebar-foreground);
-    --color-sidebar-primary: var(--sidebar-primary);
-    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-    --color-sidebar-accent: var(--sidebar-accent);
-    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-    --color-sidebar-border: var(--sidebar-border);
-    --color-sidebar-ring: var(--sidebar-ring);
-}
-
 /*
-  The default border color has changed to `currentColor` in Tailwind CSS v4,
-  so we've added these compatibility styles to make sure everything still
-  looks the same as it did with Tailwind CSS v3.
-
-  If we ever want to remove these styles, we need to add an explicit border
-  color utility to any element that depends on these defaults.
-*/
-@layer base {
-    *,
-    ::after,
-    ::before,
-    ::backdrop,
-    ::file-selector-button {
-        border-color: var(--color-gray-200, currentColor);
-    }
-}
-
-@layer utilities {
-    body,
-    html {
-        --font-sans:
-            'Instrument Sans', ui-sans-serif, system-ui, sans-serif,
-            'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
-            'Noto Color Emoji';
-    }
-}
+ * Softswitch admin UI: Tabler (https://tabler.io, MIT), which is Bootstrap 5.
+ * Only Tabler's CSS is used; dropdowns, modals and the mobile menu are Vue.
+ * Light/dark follows <html data-bs-theme> (see composables/useAppearance.ts).
+ */
+@import '@tabler/core/dist/css/tabler.min.css';
+@import 'vue-sonner/style.css';
 
 :root {
-    --background: hsl(0 0% 100%);
-    --foreground: hsl(0 0% 3.9%);
-    --card: hsl(0 0% 100%);
-    --card-foreground: hsl(0 0% 3.9%);
-    --popover: hsl(0 0% 100%);
-    --popover-foreground: hsl(0 0% 3.9%);
-    --primary: hsl(0 0% 9%);
-    --primary-foreground: hsl(0 0% 98%);
-    --secondary: hsl(0 0% 92.1%);
-    --secondary-foreground: hsl(0 0% 9%);
-    --muted: hsl(0 0% 96.1%);
-    --muted-foreground: hsl(0 0% 45.1%);
-    --accent: hsl(0 0% 96.1%);
-    --accent-foreground: hsl(0 0% 9%);
-    --destructive: hsl(0 84.2% 60.2%);
-    --destructive-foreground: hsl(0 0% 98%);
-    --border: hsl(0 0% 92.8%);
-    --input: hsl(0 0% 89.8%);
-    --ring: hsl(0 0% 3.9%);
-    --chart-1: hsl(12 76% 61%);
-    --chart-2: hsl(173 58% 39%);
-    --chart-3: hsl(197 37% 24%);
-    --chart-4: hsl(43 74% 66%);
-    --chart-5: hsl(27 87% 67%);
-    --radius: 0.5rem;
-    --sidebar-background: hsl(0 0% 98%);
-    --sidebar-foreground: hsl(240 5.3% 26.1%);
-    --sidebar-primary: hsl(0 0% 10%);
-    --sidebar-primary-foreground: hsl(0 0% 98%);
-    --sidebar-accent: hsl(0 0% 94%);
-    --sidebar-accent-foreground: hsl(0 0% 30%);
-    --sidebar-border: hsl(0 0% 91%);
-    --sidebar-ring: hsl(217.2 91.2% 59.8%);
-    --sidebar: hsl(0 0% 98%);
+    --tblr-font-sans-serif: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
 }
 
-.dark {
-    --background: hsl(0 0% 3.9%);
-    --foreground: hsl(0 0% 98%);
-    --card: hsl(0 0% 3.9%);
-    --card-foreground: hsl(0 0% 98%);
-    --popover: hsl(0 0% 3.9%);
-    --popover-foreground: hsl(0 0% 98%);
-    --primary: hsl(0 0% 98%);
-    --primary-foreground: hsl(0 0% 9%);
-    --secondary: hsl(0 0% 14.9%);
-    --secondary-foreground: hsl(0 0% 98%);
-    --muted: hsl(0 0% 16.08%);
-    --muted-foreground: hsl(0 0% 63.9%);
-    --accent: hsl(0 0% 14.9%);
-    --accent-foreground: hsl(0 0% 98%);
-    --destructive: hsl(0 84% 60%);
-    --destructive-foreground: hsl(0 0% 98%);
-    --border: hsl(0 0% 14.9%);
-    --input: hsl(0 0% 14.9%);
-    --ring: hsl(0 0% 83.1%);
-    --chart-1: hsl(220 70% 50%);
-    --chart-2: hsl(160 60% 45%);
-    --chart-3: hsl(30 80% 55%);
-    --chart-4: hsl(280 65% 60%);
-    --chart-5: hsl(340 75% 55%);
-    --sidebar-background: hsl(0 0% 7%);
-    --sidebar-foreground: hsl(0 0% 95.9%);
-    --sidebar-primary: hsl(360, 100%, 100%);
-    --sidebar-primary-foreground: hsl(0 0% 100%);
-    --sidebar-accent: hsl(0 0% 15.9%);
-    --sidebar-accent-foreground: hsl(240 4.8% 95.9%);
-    --sidebar-border: hsl(0 0% 15.9%);
-    --sidebar-ring: hsl(217.2 91.2% 59.8%);
-    --sidebar: hsl(240 5.9% 10%);
+/* Lucide icons sized like Tabler's own icons. */
+.icon {
+    width: 1.25rem;
+    height: 1.25rem;
+    stroke-width: 1.5;
+    vertical-align: -0.2em;
+}
+.btn .icon {
+    margin: 0 0.25rem 0 -0.25rem;
+}
+.btn-icon .icon,
+.btn .icon:only-child {
+    margin: 0;
+}
+.btn-sm .icon {
+    width: 1rem;
+    height: 1rem;
 }
 
-@layer base {
-    * {
-        @apply border-border outline-ring/50;
+/* Tables are dense: lots of numbers. */
+.table td,
+.table th {
+    vertical-align: middle;
+}
+.table-tight td,
+.table-tight th {
+    padding: 0.4rem 0.75rem;
+}
+
+.font-monospace-sm {
+    font-family: var(--tblr-font-monospace);
+    font-size: 0.8125rem;
+}
+
+.tabular-nums {
+    font-variant-numeric: tabular-nums;
+}
+
+/* <details> used as a collapsible "Add …" panel inside cards. */
+details.card > summary {
+    cursor: pointer;
+    list-style: none;
+}
+details.card > summary::-webkit-details-marker {
+    display: none;
+}
+details.card > summary::before {
+    content: '+';
+    display: inline-block;
+    width: 1rem;
+    font-weight: 600;
+}
+details.card[open] > summary::before {
+    content: '−';
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.min-w-0 {
+    min-width: 0;
+}
+
+.spin {
+    animation: spin 1s linear infinite;
+}
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
     }
-    body {
-        @apply bg-background text-foreground;
-    }
+}
+
+/* Inertia progress bar above Tabler's sticky header. */
+#nprogress .bar {
+    z-index: 1100 !important;
+}
+
+/* ---------------------------------------------------------------------
+ * Layout helpers (ss-*) for what Bootstrap has no utility for: CSS grid
+ * columns, vertical rhythm between siblings, and fixed widths.
+ * --------------------------------------------------------------------- */
+.ss-grid { display: grid; }
+.ss-pre-line { white-space: pre-line; }
+.ss-pre-wrap { white-space: pre-wrap; }
+.ss-border-dashed { border-style: dashed !important; }
+.ss-gap-px { gap: 1px; }
+.ss-w-1-5 { width: .375rem; }
+.ss-divide-y > * + * { border-top: var(--tblr-border-width) solid var(--tblr-border-color); }
+.ss-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+.ss-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.ss-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.ss-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.ss-cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.ss-cols-6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.ss-span-full { grid-column: 1 / -1; }
+.ss-stack-1 > * + * { margin-top: .25rem; }
+.ss-row-1 > * + * { margin-left: .25rem; }
+.ss-stack-2 > * + * { margin-top: .5rem; }
+.ss-row-2 > * + * { margin-left: .5rem; }
+.ss-stack-3 > * + * { margin-top: 1rem; }
+.ss-row-3 > * + * { margin-left: 1rem; }
+.ss-stack-4 > * + * { margin-top: 1.5rem; }
+.ss-row-4 > * + * { margin-left: 1.5rem; }
+.ss-stack-5 > * + * { margin-top: 3rem; }
+.ss-row-5 > * + * { margin-left: 3rem; }
+.ss-gtc-1fr-auto { grid-template-columns: 1fr auto; }
+.ss-gtc-auto-1fr { grid-template-columns: auto 1fr; }
+.ss-w-16 { width: 4rem; max-width: 100%; }
+.ss-w-24 { width: 6rem; max-width: 100%; }
+.ss-w-32 { width: 8rem; max-width: 100%; }
+.ss-w-44 { width: 11rem; max-width: 100%; }
+.ss-w-48 { width: 12rem; max-width: 100%; }
+.ss-w-52 { width: 13rem; max-width: 100%; }
+.ss-w-56 { width: 14rem; max-width: 100%; }
+.ss-w-64 { width: 16rem; max-width: 100%; }
+.ss-w-72 { width: 18rem; max-width: 100%; }
+.ss-w-80 { width: 20rem; max-width: 100%; }
+.ss-minw-36 { min-width: 9rem; }
+.ss-minw-48 { min-width: 12rem; }
+.ss-maxw-xs { max-width: 20rem; }
+.ss-maxw-sm { max-width: 24rem; }
+.ss-maxw-md { max-width: 28rem; }
+.ss-maxw-lg { max-width: 32rem; }
+.ss-maxw-xl { max-width: 36rem; }
+.ss-maxw-2xl { max-width: 42rem; }
+.ss-maxw-3xl { max-width: 48rem; }
+.ss-maxw-4xl { max-width: 56rem; }
+.ss-maxw-5xl { max-width: 64rem; }
+@media (min-width: 576px) {
+    .ss-cols-sm-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+    .ss-cols-sm-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .ss-cols-sm-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .ss-cols-sm-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .ss-cols-sm-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+    .ss-cols-sm-6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+    .ss-span-sm-1 { grid-column: span 1 / span 1; }
+    .ss-span-sm-2 { grid-column: span 2 / span 2; }
+    .ss-span-sm-3 { grid-column: span 3 / span 3; }
+    .ss-span-sm-4 { grid-column: span 4 / span 4; }
+    .ss-span-sm-5 { grid-column: span 5 / span 5; }
+    .ss-span-sm-6 { grid-column: span 6 / span 6; }
+    .ss-gtc-sm-1fr-1fr-auto { grid-template-columns: 1fr 1fr auto; }
+    .ss-gtc-sm-1fr-2fr-auto-auto-auto { grid-template-columns: 1fr 2fr auto auto auto; }
+    .ss-gtc-sm-2fr-1fr-2fr-auto { grid-template-columns: 2fr 1fr 2fr auto; }
+    .ss-gtc-sm-auto-1fr-2fr-auto { grid-template-columns: auto 1fr 2fr auto; }
+    .ss-justify-self-sm-start { justify-self: start; }
+    .ss-justify-self-sm-end { justify-self: end; }
+    .ss-w-sm-80 { width: 20rem; }
+}
+@media (min-width: 768px) {
+    .ss-cols-md-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+    .ss-cols-md-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .ss-cols-md-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .ss-cols-md-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .ss-cols-md-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+    .ss-cols-md-6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+    .ss-span-md-1 { grid-column: span 1 / span 1; }
+    .ss-span-md-2 { grid-column: span 2 / span 2; }
+    .ss-span-md-3 { grid-column: span 3 / span 3; }
+    .ss-span-md-4 { grid-column: span 4 / span 4; }
+    .ss-span-md-5 { grid-column: span 5 / span 5; }
+    .ss-span-md-6 { grid-column: span 6 / span 6; }
+    .ss-justify-self-md-start { justify-self: start; }
+    .ss-justify-self-md-end { justify-self: end; }
+    .ss-w-md-80 { width: 20rem; }
+}
+@media (min-width: 992px) {
+    .ss-cols-lg-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+    .ss-cols-lg-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .ss-cols-lg-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .ss-cols-lg-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .ss-cols-lg-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+    .ss-cols-lg-6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+    .ss-span-lg-1 { grid-column: span 1 / span 1; }
+    .ss-span-lg-2 { grid-column: span 2 / span 2; }
+    .ss-span-lg-3 { grid-column: span 3 / span 3; }
+    .ss-span-lg-4 { grid-column: span 4 / span 4; }
+    .ss-span-lg-5 { grid-column: span 5 / span 5; }
+    .ss-span-lg-6 { grid-column: span 6 / span 6; }
+    .ss-gtc-lg-2fr-1fr { grid-template-columns: 2fr 1fr; }
+    .ss-justify-self-lg-start { justify-self: start; }
+    .ss-justify-self-lg-end { justify-self: end; }
+    .ss-w-lg-80 { width: 20rem; }
+}
+@media (min-width: 1200px) {
+    .ss-cols-xl-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+    .ss-cols-xl-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .ss-cols-xl-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .ss-cols-xl-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .ss-cols-xl-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+    .ss-cols-xl-6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+    .ss-span-xl-1 { grid-column: span 1 / span 1; }
+    .ss-span-xl-2 { grid-column: span 2 / span 2; }
+    .ss-span-xl-3 { grid-column: span 3 / span 3; }
+    .ss-span-xl-4 { grid-column: span 4 / span 4; }
+    .ss-span-xl-5 { grid-column: span 5 / span 5; }
+    .ss-span-xl-6 { grid-column: span 6 / span 6; }
+    .ss-justify-self-xl-start { justify-self: start; }
+    .ss-justify-self-xl-end { justify-self: end; }
+    .ss-w-xl-80 { width: 20rem; }
+}
+@media print {
+    .ss-print-p-0 { padding: 0 !important; }
+    .ss-print-border-0 { border: 0 !important; box-shadow: none !important; }
+    .ss-print-maxw-none { max-width: none !important; }
+    .navbar-vertical, .page-header { display: none !important; }
+    .page-wrapper { margin: 0 !important; }
 }

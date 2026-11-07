@@ -49,24 +49,23 @@ function apply(delay = 0) {
     }, delay);
 }
 
-const select =
-    'h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 dark:bg-input/30';
+const select = 'form-select';
 const statusVariant = (s: string) => (s === 'active' ? 'default' : s === 'suspended' ? 'destructive' : 'secondary');
 </script>
 
 <template>
     <Head title="Accounts" />
 
-    <div class="space-y-6 p-4">
-        <div class="flex flex-wrap items-start justify-between gap-4">
+    <div class="ss-stack-4">
+        <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
             <Heading title="Accounts" description="Customers and vendors you exchange traffic with" />
             <Button as-child>
-                <Link :href="create()"><Plus class="size-4" /> New account</Link>
+                <Link :href="create()"><Plus class="icon" /> New account</Link>
             </Button>
         </div>
 
-        <div class="flex flex-wrap gap-3">
-            <Input v-model="filters.q" placeholder="Search name or code" class="max-w-xs" @input="apply(300)" />
+        <div class="d-flex flex-wrap gap-2">
+            <Input v-model="filters.q" placeholder="Search name or code" class="ss-maxw-xs" @input="apply(300)" />
             <select v-model="filters.role" :class="select" aria-label="Role" @change="apply()">
                 <option value="">All roles</option>
                 <option value="customer">Customers</option>
@@ -80,37 +79,37 @@ const statusVariant = (s: string) => (s === 'active' ? 'default' : s === 'suspen
             </select>
         </div>
 
-        <div class="overflow-x-auto rounded-lg border">
-            <table class="w-full text-sm">
-                <thead class="bg-muted/50 text-left text-muted-foreground">
+        <div class="card table-responsive">
+            <table class="table table-vcenter card-table table-tight">
+                <thead>
                     <tr>
-                        <th class="px-4 py-2 font-medium">Account</th>
-                        <th class="px-4 py-2 font-medium">Role</th>
-                        <th class="px-4 py-2 font-medium">Status</th>
-                        <th class="px-4 py-2 font-medium">Billing</th>
-                        <th class="px-4 py-2 text-right font-medium">Balance</th>
-                        <th class="px-4 py-2 text-right font-medium">Available</th>
+                        <th class="px-3 py-2 fw-medium">Account</th>
+                        <th class="px-3 py-2 fw-medium">Role</th>
+                        <th class="px-3 py-2 fw-medium">Status</th>
+                        <th class="px-3 py-2 fw-medium">Billing</th>
+                        <th class="px-3 py-2 text-end fw-medium">Balance</th>
+                        <th class="px-3 py-2 text-end fw-medium">Available</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="a in accounts.data" :key="a.id" class="border-t hover:bg-muted/30">
-                        <td class="px-4 py-2">
-                            <Link :href="show(a.id)" class="font-medium hover:underline">{{ a.name }}</Link>
-                            <div class="font-mono text-xs text-muted-foreground">{{ a.code }}</div>
+                    <tr v-for="a in accounts.data" :key="a.id">
+                        <td class="px-3 py-2">
+                            <Link :href="show(a.id)" class="fw-medium">{{ a.name }}</Link>
+                            <div class="font-monospace small text-secondary">{{ a.code }}</div>
                         </td>
-                        <td class="space-x-1 px-4 py-2">
+                        <td class="ss-row-1 px-3 py-2">
                             <Badge v-if="a.is_customer" variant="outline">Customer</Badge>
                             <Badge v-if="a.is_vendor" variant="outline">Vendor</Badge>
                         </td>
-                        <td class="px-4 py-2"><Badge :variant="statusVariant(a.status)">{{ titleCase(a.status) }}</Badge></td>
-                        <td class="px-4 py-2">{{ titleCase(a.billing_type) }}</td>
-                        <td class="px-4 py-2 text-right tabular-nums" :class="{ 'text-destructive': Number(a.balance) < 0 }">
+                        <td class="px-3 py-2"><Badge :variant="statusVariant(a.status)">{{ titleCase(a.status) }}</Badge></td>
+                        <td class="px-3 py-2">{{ titleCase(a.billing_type) }}</td>
+                        <td class="px-3 py-2 text-end tabular-nums" :class="{ 'text-danger': Number(a.balance) < 0 }">
                             {{ money(a.balance, a.currency) }}
                         </td>
-                        <td class="px-4 py-2 text-right tabular-nums">{{ money(a.available, a.currency) }}</td>
+                        <td class="px-3 py-2 text-end tabular-nums">{{ money(a.available, a.currency) }}</td>
                     </tr>
                     <tr v-if="accounts.data.length === 0">
-                        <td colspan="6" class="px-4 py-10 text-center text-muted-foreground">
+                        <td colspan="6" class="px-3 py-5 text-center text-secondary">
                             No accounts{{ filters.q || filters.role || filters.status ? ' match these filters' : ' yet' }}.
                         </td>
                     </tr>

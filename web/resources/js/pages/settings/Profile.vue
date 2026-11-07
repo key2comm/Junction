@@ -28,9 +28,9 @@ const user = computed(() => page.props.auth.user);
 <template>
     <Head title="Profile settings" />
 
-    <h1 class="sr-only">Profile settings</h1>
+    <h1 class="visually-hidden">Profile settings</h1>
 
-    <div class="flex flex-col space-y-6">
+    <div class="d-flex flex-column ss-stack-4">
         <Heading
             variant="small"
             title="Profile"
@@ -39,14 +39,14 @@ const user = computed(() => page.props.auth.user);
 
         <Form
             v-bind="ProfileController.update.form()"
-            class="space-y-6"
+            class="ss-stack-4"
             v-slot="{ errors, processing }"
         >
-            <div class="grid gap-2">
+            <div class="ss-grid gap-2">
                 <Label for="name">Name</Label>
                 <Input
                     id="name"
-                    class="mt-1 block w-full"
+                    class="mt-1 d-block w-100"
                     name="name"
                     :default-value="user.name"
                     required
@@ -56,12 +56,12 @@ const user = computed(() => page.props.auth.user);
                 <InputError class="mt-2" :message="errors.name" />
             </div>
 
-            <div class="grid gap-2">
+            <div class="ss-grid gap-2">
                 <Label for="email">Email address</Label>
                 <Input
                     id="email"
                     type="email"
-                    class="mt-1 block w-full"
+                    class="mt-1 d-block w-100"
                     name="email"
                     :default-value="user.email"
                     required
@@ -72,7 +72,7 @@ const user = computed(() => page.props.auth.user);
             </div>
 
 
-            <div class="flex items-center gap-4">
+            <div class="d-flex align-items-center gap-3">
                 <Button :disabled="processing" data-test="update-profile-button"
                     >Save</Button
                 >

@@ -93,45 +93,45 @@ const duration = (s: number) => (s >= 60 ? `${Math.floor(s / 60)}m ${s % 60}s` :
 <template>
     <Head title="Call records" />
 
-    <div class="space-y-6 p-4">
-        <div class="flex flex-wrap items-start justify-between gap-4">
+    <div class="ss-stack-4">
+        <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
             <Heading title="Call records" description="Every call, with where it went and what it earned" />
             <Button variant="outline" as-child>
-                <a :href="exportCsv.url({ query })"><Download class="size-4" /> Export CSV</a>
+                <a :href="exportCsv.url({ query })"><Download class="icon" /> Export CSV</a>
             </Button>
         </div>
 
-        <form class="grid gap-3 rounded-lg border p-4 sm:grid-cols-2 lg:grid-cols-4" @submit.prevent="apply">
-            <div class="grid gap-1">
+        <form class="ss-grid gap-2 rounded border p-3 ss-cols-sm-2 ss-cols-lg-4" @submit.prevent="apply">
+            <div class="ss-grid gap-1">
                 <Label for="from">From</Label>
                 <Input id="from" v-model="f.from" type="datetime-local" />
             </div>
-            <div class="grid gap-1">
+            <div class="ss-grid gap-1">
                 <Label for="to">To</Label>
                 <Input id="to" v-model="f.to" type="datetime-local" />
             </div>
-            <div class="grid gap-1">
+            <div class="ss-grid gap-1">
                 <Label for="customer">Customer</Label>
                 <select id="customer" v-model="f.customer" :class="selectClass">
                     <option value="">Any</option>
                     <option v-for="c in options.customers" :key="c.id" :value="String(c.id)">{{ c.code }} — {{ c.name }}</option>
                 </select>
             </div>
-            <div class="grid gap-1">
+            <div class="ss-grid gap-1">
                 <Label for="vendor">Vendor</Label>
                 <select id="vendor" v-model="f.vendor" :class="selectClass">
                     <option value="">Any</option>
                     <option v-for="v in options.vendors" :key="v.id" :value="String(v.id)">{{ v.code }} — {{ v.name }}</option>
                 </select>
             </div>
-            <div class="grid gap-1">
+            <div class="ss-grid gap-1">
                 <Label for="trunk">Trunk</Label>
                 <select id="trunk" v-model="f.trunk" :class="selectClass">
                     <option value="">Any</option>
                     <option v-for="t in options.trunks" :key="t.id" :value="String(t.id)">{{ t.label }}</option>
                 </select>
             </div>
-            <div class="grid gap-1">
+            <div class="ss-grid gap-1">
                 <Label for="status">Outcome</Label>
                 <select id="status" v-model="f.status" :class="selectClass">
                     <option value="">Any</option>
@@ -140,19 +140,19 @@ const duration = (s: number) => (s >= 60 ? `${Math.floor(s / 60)}m ${s % 60}s` :
                     <option value="rejected">Rejected (not routed)</option>
                 </select>
             </div>
-            <div class="grid gap-1">
+            <div class="ss-grid gap-1">
                 <Label for="number">Number / prefix</Label>
-                <Input id="number" v-model="f.number" placeholder="e.g. 4420" class="font-mono" />
+                <Input id="number" v-model="f.number" placeholder="e.g. 4420" class="font-monospace" />
             </div>
-            <div class="grid gap-1">
+            <div class="ss-grid gap-1">
                 <Label for="caller">Caller ID</Label>
-                <Input id="caller" v-model="f.caller" class="font-mono" />
+                <Input id="caller" v-model="f.caller" class="font-monospace" />
             </div>
-            <div class="grid gap-1">
+            <div class="ss-grid gap-1">
                 <Label for="sip">SIP code</Label>
                 <Input id="sip" v-model="f.sip" type="number" min="100" max="699" placeholder="e.g. 503" />
             </div>
-            <div class="flex flex-wrap items-end gap-2 sm:col-span-2 lg:col-span-3">
+            <div class="d-flex flex-wrap align-items-end gap-2 ss-span-sm-2 ss-span-lg-3">
                 <Button>Apply</Button>
                 <Button type="button" variant="ghost" @click="preset(1)">Last hour</Button>
                 <Button type="button" variant="ghost" @click="preset(24)">24 hours</Button>
@@ -160,80 +160,80 @@ const duration = (s: number) => (s >= 60 ? `${Math.floor(s / 60)}m ${s % 60}s` :
             </div>
         </form>
 
-        <div class="grid gap-4 sm:grid-cols-3 lg:grid-cols-6">
-            <div class="rounded-lg border p-3">
-                <p class="text-xs text-muted-foreground">Calls</p>
-                <p class="text-xl font-semibold tabular-nums">{{ summary.calls.toLocaleString() }}</p>
-                <p class="text-xs text-muted-foreground">{{ summary.rejected.toLocaleString() }} rejected</p>
+        <div class="ss-grid gap-3 ss-cols-sm-3 ss-cols-lg-6">
+            <div class="card card-body p-2">
+                <p class="small text-secondary">Calls</p>
+                <p class="fs-2 fw-semibold tabular-nums">{{ summary.calls.toLocaleString() }}</p>
+                <p class="small text-secondary">{{ summary.rejected.toLocaleString() }} rejected</p>
             </div>
-            <div class="rounded-lg border p-3">
-                <p class="text-xs text-muted-foreground">ASR</p>
-                <p class="text-xl font-semibold tabular-nums">{{ summary.asr === null ? '—' : `${summary.asr}%` }}</p>
-                <p class="text-xs text-muted-foreground">of routed calls</p>
+            <div class="card card-body p-2">
+                <p class="small text-secondary">ASR</p>
+                <p class="fs-2 fw-semibold tabular-nums">{{ summary.asr === null ? '—' : `${summary.asr}%` }}</p>
+                <p class="small text-secondary">of routed calls</p>
             </div>
-            <div class="rounded-lg border p-3">
-                <p class="text-xs text-muted-foreground">ACD</p>
-                <p class="text-xl font-semibold tabular-nums">{{ summary.acd === null ? '—' : duration(summary.acd) }}</p>
+            <div class="card card-body p-2">
+                <p class="small text-secondary">ACD</p>
+                <p class="fs-2 fw-semibold tabular-nums">{{ summary.acd === null ? '—' : duration(summary.acd) }}</p>
             </div>
-            <div class="rounded-lg border p-3">
-                <p class="text-xs text-muted-foreground">Minutes</p>
-                <p class="text-xl font-semibold tabular-nums">{{ summary.minutes.toLocaleString() }}</p>
+            <div class="card card-body p-2">
+                <p class="small text-secondary">Minutes</p>
+                <p class="fs-2 fw-semibold tabular-nums">{{ summary.minutes.toLocaleString() }}</p>
             </div>
-            <div class="rounded-lg border p-3">
-                <p class="text-xs text-muted-foreground">Sell / buy</p>
-                <p class="text-sm font-semibold tabular-nums">{{ money(summary.sell, currency) }}</p>
-                <p class="text-sm tabular-nums text-muted-foreground">{{ money(summary.buy, currency) }}</p>
+            <div class="card card-body p-2">
+                <p class="small text-secondary">Sell / buy</p>
+                <p class="fw-semibold tabular-nums">{{ money(summary.sell, currency) }}</p>
+                <p class="tabular-nums text-secondary">{{ money(summary.buy, currency) }}</p>
             </div>
-            <div class="rounded-lg border p-3">
-                <p class="text-xs text-muted-foreground">Margin</p>
-                <p class="text-xl font-semibold tabular-nums" :class="{ 'text-destructive': Number(summary.margin) < 0 }">{{ money(summary.margin, currency) }}</p>
+            <div class="card card-body p-2">
+                <p class="small text-secondary">Margin</p>
+                <p class="fs-2 fw-semibold tabular-nums" :class="{ 'text-danger': Number(summary.margin) < 0 }">{{ money(summary.margin, currency) }}</p>
             </div>
         </div>
 
-        <div class="overflow-x-auto rounded-lg border">
-            <table class="w-full text-sm">
-                <thead class="bg-muted/50 text-left text-muted-foreground">
+        <div class="card table-responsive">
+            <table class="table table-vcenter card-table table-tight">
+                <thead>
                     <tr>
-                        <th class="px-3 py-2 font-medium">Started</th>
-                        <th class="px-3 py-2 font-medium">Customer</th>
-                        <th class="px-3 py-2 font-medium">From → To</th>
-                        <th class="px-3 py-2 font-medium">Outcome</th>
-                        <th class="px-3 py-2 font-medium">Vendor</th>
-                        <th class="px-3 py-2 text-right font-medium">Duration</th>
-                        <th class="px-3 py-2 text-right font-medium">Sell</th>
-                        <th class="px-3 py-2 text-right font-medium">Margin</th>
+                        <th>Started</th>
+                        <th>Customer</th>
+                        <th>From → To</th>
+                        <th>Outcome</th>
+                        <th>Vendor</th>
+                        <th class="text-end">Duration</th>
+                        <th class="text-end">Sell</th>
+                        <th class="text-end">Margin</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="r in cdrs.data" :key="r.id" class="border-t hover:bg-muted/30">
-                        <td class="px-3 py-1.5 whitespace-nowrap">
-                            <Link :href="show(r.id)" class="hover:underline">{{ dateTime(r.started_at) }}</Link>
+                    <tr v-for="r in cdrs.data" :key="r.id">
+                        <td class="px-2 py-1 text-nowrap">
+                            <Link :href="show(r.id)">{{ dateTime(r.started_at) }}</Link>
                         </td>
-                        <td class="px-3 py-1.5">{{ r.customer ?? '—' }}</td>
-                        <td class="px-3 py-1.5 font-mono text-xs">{{ r.caller ?? '?' }} → {{ r.destination ?? r.callee }}</td>
-                        <td class="px-3 py-1.5 whitespace-nowrap">
+                        <td class="px-2 py-1">{{ r.customer ?? '—' }}</td>
+                        <td class="px-2 py-1 font-monospace small">{{ r.caller ?? '?' }} → {{ r.destination ?? r.callee }}</td>
+                        <td class="px-2 py-1 text-nowrap">
                             <Badge :variant="variant(r)">{{ outcome(r) }}</Badge>
-                            <span class="ml-1 text-xs text-muted-foreground">{{ r.sip_code ?? '' }} {{ r.answered ? '' : r.hangup_cause }}</span>
+                            <span class="ms-1 small text-secondary">{{ r.sip_code ?? '' }} {{ r.answered ? '' : r.hangup_cause }}</span>
                         </td>
-                        <td class="px-3 py-1.5 text-xs">
+                        <td class="px-2 py-1 small">
                             <span v-if="r.vendor">{{ r.vendor }} / {{ r.trunk }}</span>
-                            <span v-else class="text-muted-foreground">{{ r.attempts ? `${r.attempts} tried` : '—' }}</span>
+                            <span v-else class="text-secondary">{{ r.attempts ? `${r.attempts} tried` : '—' }}</span>
                         </td>
-                        <td class="px-3 py-1.5 text-right tabular-nums">{{ r.answered ? duration(r.billsec) : '—' }}</td>
-                        <td class="px-3 py-1.5 text-right tabular-nums">{{ r.answered ? money(r.sell_cost, currency) : '—' }}</td>
-                        <td class="px-3 py-1.5 text-right tabular-nums" :class="{ 'text-destructive': Number(r.margin) < 0 }">{{ r.margin !== null ? money(r.margin, currency) : '—' }}</td>
+                        <td class="px-2 py-1 text-end tabular-nums">{{ r.answered ? duration(r.billsec) : '—' }}</td>
+                        <td class="px-2 py-1 text-end tabular-nums">{{ r.answered ? money(r.sell_cost, currency) : '—' }}</td>
+                        <td class="px-2 py-1 text-end tabular-nums" :class="{ 'text-danger': Number(r.margin) < 0 }">{{ r.margin !== null ? money(r.margin, currency) : '—' }}</td>
                     </tr>
                     <tr v-if="cdrs.data.length === 0">
-                        <td colspan="8" class="px-3 py-10 text-center text-muted-foreground">No calls in this range.</td>
+                        <td colspan="8" class="px-2 py-5 text-center text-secondary">No calls in this range.</td>
                     </tr>
                 </tbody>
             </table>
         </div>
 
-        <div v-if="cdrs.prev_page_url || cdrs.next_page_url" class="flex justify-between text-sm">
-            <Link v-if="cdrs.prev_page_url" :href="cdrs.prev_page_url" preserve-scroll class="rounded-md border px-3 py-1 hover:bg-muted">← Newer</Link>
+        <div v-if="cdrs.prev_page_url || cdrs.next_page_url" class="d-flex justify-content-between">
+            <Link v-if="cdrs.prev_page_url" :href="cdrs.prev_page_url" preserve-scroll class="rounded border px-2 py-1">← Newer</Link>
             <span v-else />
-            <Link v-if="cdrs.next_page_url" :href="cdrs.next_page_url" preserve-scroll class="rounded-md border px-3 py-1 hover:bg-muted">Older →</Link>
+            <Link v-if="cdrs.next_page_url" :href="cdrs.next_page_url" preserve-scroll class="rounded border px-2 py-1">Older →</Link>
         </div>
     </div>
 </template>

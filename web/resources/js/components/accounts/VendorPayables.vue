@@ -26,132 +26,132 @@ const lastDay = (iso: string) => new Date(new Date(iso).getTime() - 1000).toISOS
 </script>
 
 <template>
-    <section class="space-y-6 lg:col-span-2">
+    <section class="ss-stack-4 ss-span-lg-2">
         <Heading variant="small" title="Vendor payables" description="What you owe this vendor: usage from your own call records, less the payments you make." />
 
-        <div class="grid gap-4 sm:grid-cols-3">
-            <div class="rounded-lg border p-4">
-                <p class="text-xs text-muted-foreground">Owed to vendor</p>
-                <p class="text-2xl font-semibold tabular-nums">{{ m(owed) }}</p>
+        <div class="ss-grid gap-3 ss-cols-sm-3">
+            <div class="card card-body">
+                <p class="small text-secondary">Owed to vendor</p>
+                <p class="fs-1 fw-semibold tabular-nums">{{ m(owed) }}</p>
             </div>
             <Form
                 v-bind="VendorBillingController.storeEntry.form(accountId)"
                 reset-on-success
-                class="grid gap-2 rounded-lg border p-4 sm:col-span-2 sm:grid-cols-[auto_1fr_2fr_auto] sm:items-start"
+                class="ss-grid gap-2 rounded border p-3 ss-span-sm-2 ss-gtc-sm-auto-1fr-2fr-auto align-items-sm-start"
                 v-slot="{ errors, processing }"
             >
                 <select name="type" :class="selectClass" class="w-auto" aria-label="Type">
                     <option value="payment">Payment made</option>
                     <option value="adjustment">Adjustment</option>
                 </select>
-                <div class="grid gap-1">
+                <div class="ss-grid gap-1">
                     <Input name="amount" type="number" step="0.000001" placeholder="Amount" required aria-label="Amount" />
                     <InputError :message="errors.amount" />
                 </div>
-                <div class="grid gap-1">
+                <div class="ss-grid gap-1">
                     <Input name="description" placeholder="Reference (e.g. wire #)" required aria-label="Description" />
                     <InputError :message="errors.description" />
                 </div>
                 <Button :disabled="processing">Record</Button>
-                <p class="text-xs text-muted-foreground sm:col-span-4">Payments are entered as positive amounts. Adjustments: positive = you owe more.</p>
+                <p class="small text-secondary ss-span-sm-4">Payments are entered as positive amounts. Adjustments: positive = you owe more.</p>
             </Form>
         </div>
 
-        <div class="grid gap-6 lg:grid-cols-2">
-            <div class="space-y-3">
-                <h3 class="text-sm font-medium">Vendor invoices</h3>
-                <div class="overflow-x-auto rounded-lg border">
-                    <table class="w-full text-sm">
-                        <thead class="bg-muted/50 text-left text-muted-foreground">
+        <div class="ss-grid gap-4 ss-cols-lg-2">
+            <div class="ss-stack-2">
+                <h3 class="fw-medium">Vendor invoices</h3>
+                <div class="card table-responsive">
+                    <table class="table table-vcenter card-table table-tight">
+                        <thead>
                             <tr>
-                                <th class="px-3 py-2 font-medium">Invoice</th>
-                                <th class="px-3 py-2 font-medium">Period</th>
-                                <th class="px-3 py-2 text-right font-medium">Theirs</th>
-                                <th class="px-3 py-2 text-right font-medium">Difference</th>
+                                <th>Invoice</th>
+                                <th>Period</th>
+                                <th class="text-end">Theirs</th>
+                                <th class="text-end">Difference</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="i in invoices" :key="i.id" class="border-t">
-                                <td class="px-3 py-1.5">
-                                    <Link :href="showVendorInvoice(i.id)" class="font-mono hover:underline">{{ i.reference }}</Link>
-                                    <Badge :variant="statusVariant(i.status)" class="ml-2">{{ i.status }}</Badge>
+                            <tr v-for="i in invoices" :key="i.id">
+                                <td class="px-2 py-1">
+                                    <Link :href="showVendorInvoice(i.id)" class="font-monospace">{{ i.reference }}</Link>
+                                    <Badge :variant="statusVariant(i.status)" class="ms-2">{{ i.status }}</Badge>
                                 </td>
-                                <td class="px-3 py-1.5 whitespace-nowrap text-xs">{{ date(i.period_start, i.timezone) }} – {{ date(lastDay(i.period_end), i.timezone) }}</td>
-                                <td class="px-3 py-1.5 text-right tabular-nums">{{ m(i.amount) }}</td>
-                                <td class="px-3 py-1.5 text-right tabular-nums" :class="{ 'text-destructive': Number(i.difference) > 0 }">{{ m(i.difference) }}</td>
+                                <td class="px-2 py-1 text-nowrap small">{{ date(i.period_start, i.timezone) }} – {{ date(lastDay(i.period_end), i.timezone) }}</td>
+                                <td class="px-2 py-1 text-end tabular-nums">{{ m(i.amount) }}</td>
+                                <td class="px-2 py-1 text-end tabular-nums" :class="{ 'text-danger': Number(i.difference) > 0 }">{{ m(i.difference) }}</td>
                             </tr>
                             <tr v-if="invoices.length === 0">
-                                <td colspan="4" class="px-3 py-6 text-center text-muted-foreground">No vendor invoices recorded.</td>
+                                <td colspan="4" class="py-3 text-center text-secondary">No vendor invoices recorded.</td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
 
-                <details class="rounded-lg border p-4">
-                    <summary class="cursor-pointer text-sm font-medium">Enter a vendor invoice</summary>
-                    <Form v-bind="VendorBillingController.storeInvoice.form(accountId)" class="mt-4 grid gap-3 sm:grid-cols-2" v-slot="{ errors, processing }">
-                        <div class="grid gap-1 sm:col-span-2">
+                <details class="card card-body">
+                    <summary class="fw-medium">Enter a vendor invoice</summary>
+                    <Form v-bind="VendorBillingController.storeInvoice.form(accountId)" class="mt-3 ss-grid gap-2 ss-cols-sm-2" v-slot="{ errors, processing }">
+                        <div class="ss-grid gap-1 ss-span-sm-2">
                             <Label for="vi_reference">Their invoice number</Label>
                             <Input id="vi_reference" name="reference" required />
                             <InputError :message="errors.reference" />
                         </div>
-                        <div class="grid gap-1">
+                        <div class="ss-grid gap-1">
                             <Label for="vi_start">Period from</Label>
                             <Input id="vi_start" name="period_start" type="date" required />
                             <InputError :message="errors.period_start" />
                         </div>
-                        <div class="grid gap-1">
+                        <div class="ss-grid gap-1">
                             <Label for="vi_end">Period to (inclusive)</Label>
                             <Input id="vi_end" name="period_end" type="date" required />
                             <InputError :message="errors.period_end" />
                         </div>
-                        <div class="grid gap-1 sm:col-span-2">
+                        <div class="ss-grid gap-1 ss-span-sm-2">
                             <Label for="vi_tz">Their billing time zone</Label>
                             <select id="vi_tz" name="timezone" :class="selectClass">
                                 <option v-for="tz in timezones" :key="tz" :value="tz" :selected="tz === 'UTC'">{{ tz }}</option>
                             </select>
                         </div>
-                        <div class="grid gap-1">
+                        <div class="ss-grid gap-1">
                             <Label for="vi_amount">Their total</Label>
                             <Input id="vi_amount" name="amount" type="number" step="0.000001" min="0" required />
                             <InputError :message="errors.amount" />
                         </div>
-                        <div class="grid gap-1">
+                        <div class="ss-grid gap-1">
                             <Label for="vi_minutes">Their minutes (optional)</Label>
                             <Input id="vi_minutes" name="minutes" type="number" step="0.01" min="0" />
                         </div>
-                        <div class="grid gap-1 sm:col-span-2">
+                        <div class="ss-grid gap-1 ss-span-sm-2">
                             <Label for="vi_breakdown">Their breakdown CSV (optional)</Label>
                             <Input id="vi_breakdown" name="breakdown" type="file" accept=".csv,text/csv,text/plain" />
-                            <p class="text-xs text-muted-foreground">Columns: prefix, amount; optional destination, calls, minutes. Enables a per-destination comparison.</p>
+                            <p class="small text-secondary">Columns: prefix, amount; optional destination, calls, minutes. Enables a per-destination comparison.</p>
                             <InputError :message="errors.breakdown" />
                         </div>
-                        <Button :disabled="processing" class="sm:col-span-2 sm:justify-self-start">Compare with our records</Button>
+                        <Button :disabled="processing" class="ss-span-sm-2 ss-justify-self-sm-start">Compare with our records</Button>
                     </Form>
                 </details>
             </div>
 
-            <div class="space-y-3">
-                <h3 class="text-sm font-medium">Payables history</h3>
-                <div class="overflow-x-auto rounded-lg border">
-                    <table class="w-full text-sm">
-                        <thead class="bg-muted/50 text-left text-muted-foreground">
+            <div class="ss-stack-2">
+                <h3 class="fw-medium">Payables history</h3>
+                <div class="card table-responsive">
+                    <table class="table table-vcenter card-table table-tight">
+                        <thead>
                             <tr>
-                                <th class="px-3 py-2 font-medium">When</th>
-                                <th class="px-3 py-2 font-medium">Description</th>
-                                <th class="px-3 py-2 text-right font-medium">Amount</th>
-                                <th class="px-3 py-2 text-right font-medium">Owed</th>
+                                <th>When</th>
+                                <th>Description</th>
+                                <th class="text-end">Amount</th>
+                                <th class="text-end">Owed</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="e in entries" :key="e.id" class="border-t">
-                                <td class="px-3 py-1.5 whitespace-nowrap text-muted-foreground">{{ date(e.effective_at) }}</td>
-                                <td class="px-3 py-1.5"><Badge variant="outline" class="mr-1">{{ titleCase(e.type) }}</Badge>{{ e.description }}</td>
-                                <td class="px-3 py-1.5 text-right tabular-nums">{{ m(e.amount) }}</td>
-                                <td class="px-3 py-1.5 text-right tabular-nums">{{ m(e.balance_after) }}</td>
+                            <tr v-for="e in entries" :key="e.id">
+                                <td class="px-2 py-1 text-nowrap text-secondary">{{ date(e.effective_at) }}</td>
+                                <td class="px-2 py-1"><Badge variant="outline" class="me-1">{{ titleCase(e.type) }}</Badge>{{ e.description }}</td>
+                                <td class="px-2 py-1 text-end tabular-nums">{{ m(e.amount) }}</td>
+                                <td class="px-2 py-1 text-end tabular-nums">{{ m(e.balance_after) }}</td>
                             </tr>
                             <tr v-if="entries.length === 0">
-                                <td colspan="4" class="px-3 py-6 text-center text-muted-foreground">Nothing yet. Usage is posted from your call records every hour.</td>
+                                <td colspan="4" class="py-3 text-center text-secondary">Nothing yet. Usage is posted from your call records every hour.</td>
                             </tr>
                         </tbody>
                     </table>

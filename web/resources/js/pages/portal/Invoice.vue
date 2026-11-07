@@ -28,12 +28,12 @@ const csvUrl = invoiceCsv.url(props.invoice.id);
 <template>
     <Head :title="invoice.number" />
 
-    <div class="space-y-4 p-4 print:p-0">
-        <div class="flex flex-wrap items-center justify-between gap-3 print:hidden">
-            <Link :href="invoices()" class="text-sm hover:underline">← All invoices</Link>
-            <div class="flex gap-2">
-                <Button variant="outline" @click="print"><Printer class="size-4" /> Print / Save as PDF</Button>
-                <Button variant="outline" as-child><a :href="csvUrl"><Download class="size-4" /> CSV</a></Button>
+    <div class="ss-stack-3 ss-print-p-0">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 d-print-none">
+            <Link :href="invoices()">← All invoices</Link>
+            <div class="d-flex gap-2">
+                <Button variant="outline" @click="print"><Printer class="icon" /> Print / Save as PDF</Button>
+                <Button variant="outline" as-child><a :href="csvUrl"><Download class="icon" /> CSV</a></Button>
             </div>
         </div>
         <InvoiceDocument :invoice="invoice" :lines="lines" :issuer="issuer" />

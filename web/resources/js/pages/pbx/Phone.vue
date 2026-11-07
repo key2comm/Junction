@@ -197,21 +197,21 @@ const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#'];
 <template>
     <Head title="Web phone" />
 
-    <div class="max-w-md space-y-6 p-4">
+    <div class="ss-maxw-md ss-stack-4">
         <Heading title="Web phone" :description="`Make and take calls in the browser as one of ${account.name}'s extensions.`" />
 
-        <p v-if="!credentials" class="rounded-lg border p-4 text-sm text-muted-foreground">There are no enabled extensions yet. An administrator adds them on the PBX page.</p>
+        <p v-if="!credentials" class="card card-body text-secondary">There are no enabled extensions yet. An administrator adds them on the PBX page.</p>
 
         <template v-else>
-            <div class="grid gap-1">
+            <div class="ss-grid gap-1">
                 <Label for="ext">Extension</Label>
                 <select id="ext" :class="selectClass" :value="credentials.id" @change="choose">
                     <option v-for="e in extensions" :key="e.id" :value="e.id">{{ e.extension }} {{ e.name }}</option>
                 </select>
             </div>
 
-            <div class="flex items-center justify-between gap-2 rounded-lg border p-3 text-sm">
-                <div class="flex items-center gap-2">
+            <div class="card card-body d-flex align-items-center justify-content-between gap-2">
+                <div class="d-flex align-items-center gap-2">
                     <Badge :variant="status === 'registered' ? 'default' : status === 'failed' ? 'destructive' : 'secondary'">{{ status }}</Badge>
                     <span>{{ statusText }}</span>
                 </div>
@@ -219,34 +219,34 @@ const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#'];
                 <Button v-else size="sm" variant="outline" @click="disconnect">Disconnect</Button>
             </div>
 
-            <div v-if="callState === 'ringing-in'" class="flex items-center justify-between gap-2 rounded-lg border border-primary p-3">
-                <span class="flex items-center gap-2 font-medium"><PhoneIncoming class="size-4" /> {{ peer }} is calling</span>
-                <div class="flex gap-2">
-                    <Button size="sm" @click="answer"><Phone class="size-4" /> Answer</Button>
-                    <Button size="sm" variant="destructive" @click="hangup"><PhoneOff class="size-4" /> Decline</Button>
+            <div v-if="callState === 'ringing-in'" class="d-flex align-items-center justify-content-between gap-2 rounded border border-primary p-2">
+                <span class="d-flex align-items-center gap-2 fw-medium"><PhoneIncoming class="icon" /> {{ peer }} is calling</span>
+                <div class="d-flex gap-2">
+                    <Button size="sm" @click="answer"><Phone class="icon" /> Answer</Button>
+                    <Button size="sm" variant="destructive" @click="hangup"><PhoneOff class="icon" /> Decline</Button>
                 </div>
             </div>
 
-            <div v-if="callState === 'calling' || callState === 'in-call'" class="flex items-center justify-between gap-2 rounded-lg border p-3">
-                <span class="font-medium">{{ peer }} <span v-if="duration" class="ml-2 font-mono text-muted-foreground tabular-nums">{{ duration }}</span></span>
-                <div class="flex gap-2">
+            <div v-if="callState === 'calling' || callState === 'in-call'" class="d-flex align-items-center justify-content-between gap-2 rounded border p-2">
+                <span class="fw-medium">{{ peer }} <span v-if="duration" class="ms-2 font-monospace text-secondary tabular-nums">{{ duration }}</span></span>
+                <div class="d-flex gap-2">
                     <Button size="sm" variant="outline" :disabled="callState !== 'in-call'" :aria-label="muted ? 'Unmute' : 'Mute'" @click="toggleMute">
-                        <MicOff v-if="muted" class="size-4" /><Mic v-else class="size-4" />
+                        <MicOff v-if="muted" class="icon" /><Mic v-else class="icon" />
                     </Button>
-                    <Button size="sm" variant="destructive" @click="hangup"><PhoneOff class="size-4" /> Hang up</Button>
+                    <Button size="sm" variant="destructive" @click="hangup"><PhoneOff class="icon" /> Hang up</Button>
                 </div>
             </div>
 
-            <form class="space-y-3" @submit.prevent="call">
-                <Input v-model="number" inputmode="tel" placeholder="Extension or number" aria-label="Number to call" class="text-center font-mono text-lg" />
-                <div class="grid grid-cols-3 gap-2">
-                    <Button v-for="k in keys" :key="k" type="button" variant="outline" class="h-12 font-mono text-lg" @click="key(k)">{{ k }}</Button>
+            <form class="ss-stack-2" @submit.prevent="call">
+                <Input v-model="number" inputmode="tel" placeholder="Extension or number" aria-label="Number to call" class="text-center font-monospace fs-3" />
+                <div class="ss-grid ss-cols-3 gap-2">
+                    <Button v-for="k in keys" :key="k" type="button" variant="outline" class="py-2 font-monospace fs-3" @click="key(k)">{{ k }}</Button>
                 </div>
-                <Button type="submit" class="w-full" :disabled="status !== 'registered' || callState !== 'idle' || !number"><Phone class="size-4" /> Call</Button>
+                <Button type="submit" class="w-100" :disabled="status !== 'registered' || callState !== 'idle' || !number"><Phone class="icon" /> Call</Button>
             </form>
 
-            <p class="text-xs text-muted-foreground">
-                2-6 digits call an extension or IVR, longer numbers go out to carriers (international format), <span class="font-mono">*97</span> is voicemail. Not for emergency calls. The browser asks for the microphone on the first call.
+            <p class="small text-secondary">
+                2-6 digits call an extension or IVR, longer numbers go out to carriers (international format), <span class="font-monospace">*97</span> is voicemail. Not for emergency calls. The browser asks for the microphone on the first call.
             </p>
         </template>
 

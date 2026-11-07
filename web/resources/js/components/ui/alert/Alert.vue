@@ -1,21 +1,15 @@
 <script setup lang="ts">
-import type { HTMLAttributes } from "vue"
-import type { AlertVariants } from "."
-import { cn } from "@/lib/utils"
-import { alertVariants } from "."
+import type { HTMLAttributes } from 'vue';
+import { cn } from '@/lib/utils';
 
-const props = defineProps<{
-  class?: HTMLAttributes["class"]
-  variant?: AlertVariants["variant"]
-}>()
+const props = withDefaults(defineProps<{ variant?: 'default' | 'destructive' | 'success' | 'warning'; class?: HTMLAttributes['class'] }>(), {
+    variant: 'default',
+});
+const variants = { default: 'alert-info', destructive: 'alert-danger', success: 'alert-success', warning: 'alert-warning' };
 </script>
 
 <template>
-  <div
-    data-slot="alert"
-    :class="cn(alertVariants({ variant }), props.class)"
-    role="alert"
-  >
-    <slot />
-  </div>
+    <div role="alert" :class="cn('alert', variants[props.variant], props.class)">
+        <div class="d-flex gap-2"><slot /></div>
+    </div>
 </template>

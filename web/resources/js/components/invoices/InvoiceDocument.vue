@@ -41,103 +41,103 @@ const lastDay = new Date(new Date(props.invoice.period_end).getTime() - 1000).to
 </script>
 
 <template>
-<article class="invoice mx-auto max-w-3xl space-y-8 rounded-lg border bg-background p-8 text-sm print:max-w-none print:rounded-none print:border-0 print:p-0">
-    <header class="flex flex-wrap items-start justify-between gap-6">
+<article class="invoice mx-auto ss-maxw-3xl ss-stack-4 rounded border bg-body p-4 ss-print-maxw-none ss-print-border-0 ss-print-p-0">
+    <header class="d-flex flex-wrap align-items-start justify-content-between gap-4">
         <div>
-            <p class="text-lg font-semibold">{{ issuer.name }}</p>
-            <p v-if="issuer.host" class="text-muted-foreground">{{ issuer.host }}</p>
+            <p class="fs-3 fw-semibold">{{ issuer.name }}</p>
+            <p v-if="issuer.host" class="text-secondary">{{ issuer.host }}</p>
         </div>
-        <div class="text-right">
-            <p class="text-2xl font-semibold">{{ invoice.billing_type === 'postpaid' ? 'Invoice' : 'Statement' }}</p>
-            <p class="font-mono">{{ invoice.number }}</p>
+        <div class="text-end">
+            <p class="fs-1 fw-semibold">{{ invoice.billing_type === 'postpaid' ? 'Invoice' : 'Statement' }}</p>
+            <p class="font-monospace">{{ invoice.number }}</p>
             <Badge v-if="invoice.status === 'void'" variant="destructive" class="mt-1">VOID</Badge>
         </div>
     </header>
 
-    <p v-if="invoice.status === 'void'" class="rounded-md border border-destructive/50 p-3 text-destructive">
+    <p v-if="invoice.status === 'void'" class="rounded border border-danger p-2 text-danger">
         Voided {{ date(invoice.voided_at) }}: {{ invoice.void_reason }}
     </p>
 
-    <section class="grid gap-6 sm:grid-cols-2">
+    <section class="ss-grid gap-4 ss-cols-sm-2">
         <div>
-            <p class="text-xs uppercase text-muted-foreground">Bill to</p>
-            <p class="font-medium">{{ invoice.account_name }}</p>
-            <p class="text-muted-foreground">Account {{ invoice.account_code }}</p>
-            <p v-if="invoice.billing_email" class="text-muted-foreground">{{ invoice.billing_email }}</p>
+            <p class="small text-uppercase text-secondary">Bill to</p>
+            <p class="fw-medium">{{ invoice.account_name }}</p>
+            <p class="text-secondary">Account {{ invoice.account_code }}</p>
+            <p v-if="invoice.billing_email" class="text-secondary">{{ invoice.billing_email }}</p>
         </div>
-        <dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-0.5 sm:justify-self-end">
-            <dt class="text-muted-foreground">Period</dt>
+        <dl class="ss-grid ss-gtc-auto-1fr column-gap-3 row-gap-1 ss-justify-self-sm-end">
+            <dt class="text-secondary">Period</dt>
             <dd>{{ billingMonth(invoice.period_start, invoice.timezone) }}</dd>
-            <dt class="text-muted-foreground"></dt>
-            <dd class="text-xs text-muted-foreground">{{ date(invoice.period_start, invoice.timezone) }} – {{ date(lastDay, invoice.timezone) }} ({{ invoice.timezone }})</dd>
-            <dt class="text-muted-foreground">Issued</dt>
+            <dt class="text-secondary"></dt>
+            <dd class="small text-secondary">{{ date(invoice.period_start, invoice.timezone) }} – {{ date(lastDay, invoice.timezone) }} ({{ invoice.timezone }})</dd>
+            <dt class="text-secondary">Issued</dt>
             <dd>{{ date(invoice.issued_at, invoice.timezone) }}</dd>
             <template v-if="invoice.due_at">
-                <dt class="text-muted-foreground">Due</dt>
-                <dd class="font-medium">{{ date(invoice.due_at, invoice.timezone) }}</dd>
+                <dt class="text-secondary">Due</dt>
+                <dd class="fw-medium">{{ date(invoice.due_at, invoice.timezone) }}</dd>
             </template>
         </dl>
     </section>
 
     <section>
-        <h2 class="mb-2 font-semibold">Usage by destination</h2>
-        <table class="w-full">
-            <thead class="border-b text-left text-muted-foreground">
+        <h2 class="mb-2 fw-semibold">Usage by destination</h2>
+        <table class="w-100">
+            <thead>
                 <tr>
-                    <th class="py-1.5 font-medium">Destination</th>
-                    <th class="py-1.5 font-medium">Prefix</th>
-                    <th class="py-1.5 text-right font-medium">Calls</th>
-                    <th class="py-1.5 text-right font-medium">Minutes</th>
-                    <th class="py-1.5 text-right font-medium">Rate/min</th>
-                    <th class="py-1.5 text-right font-medium">Amount</th>
+                    <th class="py-1 fw-medium">Destination</th>
+                    <th class="py-1 fw-medium">Prefix</th>
+                    <th class="py-1 text-end fw-medium">Calls</th>
+                    <th class="py-1 text-end fw-medium">Minutes</th>
+                    <th class="py-1 text-end fw-medium">Rate/min</th>
+                    <th class="py-1 text-end fw-medium">Amount</th>
                 </tr>
             </thead>
             <tbody>
-                <tr v-for="l in lines" :key="l.position" class="border-b border-dashed">
+                <tr v-for="l in lines" :key="l.position" class="border-bottom ss-border-dashed">
                     <td class="py-1">{{ l.destination ?? '—' }}</td>
-                    <td class="py-1 font-mono">{{ l.prefix }}</td>
-                    <td class="py-1 text-right tabular-nums">{{ l.calls.toLocaleString() }}</td>
-                    <td class="py-1 text-right tabular-nums">{{ minutes(l.billsec) }}</td>
-                    <td class="py-1 text-right tabular-nums">{{ l.rate ? m(l.rate) : '—' }}</td>
-                    <td class="py-1 text-right tabular-nums">{{ m(l.amount) }}</td>
+                    <td class="py-1 font-monospace">{{ l.prefix }}</td>
+                    <td class="py-1 text-end tabular-nums">{{ l.calls.toLocaleString() }}</td>
+                    <td class="py-1 text-end tabular-nums">{{ minutes(l.billsec) }}</td>
+                    <td class="py-1 text-end tabular-nums">{{ l.rate ? m(l.rate) : '—' }}</td>
+                    <td class="py-1 text-end tabular-nums">{{ m(l.amount) }}</td>
                 </tr>
                 <tr v-if="lines.length === 0">
-                    <td colspan="6" class="py-4 text-center text-muted-foreground">No billable calls in this period.</td>
+                    <td colspan="6" class="py-3 text-center text-secondary">No billable calls in this period.</td>
                 </tr>
             </tbody>
             <tfoot>
-                <tr class="font-medium">
+                <tr class="fw-medium">
                     <td class="pt-2" colspan="2">Total usage</td>
-                    <td class="pt-2 text-right tabular-nums">{{ invoice.calls.toLocaleString() }}</td>
-                    <td class="pt-2 text-right tabular-nums">{{ minutes(invoice.billsec) }}</td>
+                    <td class="pt-2 text-end tabular-nums">{{ invoice.calls.toLocaleString() }}</td>
+                    <td class="pt-2 text-end tabular-nums">{{ minutes(invoice.billsec) }}</td>
                     <td></td>
-                    <td class="pt-2 text-right tabular-nums">{{ m(invoice.usage_total) }}</td>
+                    <td class="pt-2 text-end tabular-nums">{{ m(invoice.usage_total) }}</td>
                 </tr>
             </tfoot>
         </table>
     </section>
 
-    <section class="sm:ml-auto sm:w-80">
-        <h2 class="mb-2 font-semibold">Account summary</h2>
-        <dl class="grid grid-cols-[1fr_auto] gap-y-1">
-            <dt class="text-muted-foreground">Opening balance</dt>
-            <dd class="text-right tabular-nums">{{ m(invoice.opening_balance) }}</dd>
-            <dt class="text-muted-foreground">Payments received</dt>
-            <dd class="text-right tabular-nums">{{ m(invoice.payments_total) }}</dd>
+    <section class="ms-sm-auto ss-w-sm-80">
+        <h2 class="mb-2 fw-semibold">Account summary</h2>
+        <dl class="ss-grid ss-gtc-1fr-auto row-gap-1">
+            <dt class="text-secondary">Opening balance</dt>
+            <dd class="text-end tabular-nums">{{ m(invoice.opening_balance) }}</dd>
+            <dt class="text-secondary">Payments received</dt>
+            <dd class="text-end tabular-nums">{{ m(invoice.payments_total) }}</dd>
             <template v-if="Number(invoice.adjustments_total)">
-                <dt class="text-muted-foreground">Adjustments</dt>
-                <dd class="text-right tabular-nums">{{ m(invoice.adjustments_total) }}</dd>
+                <dt class="text-secondary">Adjustments</dt>
+                <dd class="text-end tabular-nums">{{ m(invoice.adjustments_total) }}</dd>
             </template>
-            <dt class="text-muted-foreground">Usage charges</dt>
-            <dd class="text-right tabular-nums">−{{ m(invoice.usage_total) }}</dd>
-            <dt class="border-t pt-1 font-medium">Closing balance</dt>
-            <dd class="border-t pt-1 text-right font-medium tabular-nums" :class="{ 'text-destructive': Number(invoice.closing_balance) < 0 }">{{ m(invoice.closing_balance) }}</dd>
+            <dt class="text-secondary">Usage charges</dt>
+            <dd class="text-end tabular-nums">−{{ m(invoice.usage_total) }}</dd>
+            <dt class="border-top pt-1 fw-medium">Closing balance</dt>
+            <dd class="border-top pt-1 text-end fw-medium tabular-nums" :class="{ 'text-danger': Number(invoice.closing_balance) < 0 }">{{ m(invoice.closing_balance) }}</dd>
             <template v-if="invoice.billing_type === 'postpaid'">
-                <dt class="pt-2 text-base font-semibold">Amount due</dt>
-                <dd class="pt-2 text-right text-base font-semibold tabular-nums">{{ m(invoice.amount_due) }}</dd>
+                <dt class="pt-2 fs-4 fw-semibold">Amount due</dt>
+                <dd class="pt-2 text-end fs-4 fw-semibold tabular-nums">{{ m(invoice.amount_due) }}</dd>
             </template>
         </dl>
-        <p v-if="invoice.billing_type === 'prepaid'" class="mt-2 text-xs text-muted-foreground">Prepaid account: usage is deducted from your balance; nothing is due.</p>
+        <p v-if="invoice.billing_type === 'prepaid'" class="mt-2 small text-secondary">Prepaid account: usage is deducted from your balance; nothing is due.</p>
     </section>
 </article>
 </template>
