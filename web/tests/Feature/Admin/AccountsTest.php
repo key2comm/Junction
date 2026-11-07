@@ -172,4 +172,32 @@ class AccountsTest extends TestCase
         $this->assertSame(2, LedgerEntry::query()->count());
         $this->assertSame($this->admin->id, LedgerEntry::query()->first()->user_id);
     }
+
+    public function test_route_tester_shows_the_routing_decision(): void
+    {
+        $sell = \App\Models\RateDeck::factory()->create();
+        \App\Models\Rate::factory()->for($sell)->create(['prefix' => '44', 'rate' => '0.05']);
+        $plan = \App\Models\RoutingPlan::factory()->create();
+        $account = Account::factory()->create(['sell_rate_deck_id' => $sell->id, 'routing_plan_id' => $plan->id, 'credit_limit' => 10]);
+        $buy = \App\Models\RateDeck::factory()->create();
+        \App\Models\Rate::factory()->for($buy)->create(['prefix' => '44', 'rate' => '0.02']);
+        $trunk = \App\Models\Trunk::factory()->create(['name' => 'Main', 'rate_deck_id' => $buy->id]);
+        \App\Models\Gateway::factory()->for($trunk)->create(['name' => 'main-gw']);
+        \App\Models\RoutingPlanRoute::factory()->create(['routing_plan_id' => $plan->id, 'trunk_id' => $trunk->id]);
+
+        $this->actingAs($this->admin)->getJson(route('accounts.route-test', [$account, 'number' => '+44 20 7946 0000']))
+            ->assertOk()
+            ->assertJsonPath('status', 'ok')
+            ->assertJsonPath('attempts.0.gateways.0.name', 'main-gw')
+            ->assertJsonPath('attempts.0.margin', '0.030000')
+            ->assertJsonPath('attempts.0.trunk', $trunk->account->code.' / Main');
+
+        $this->actingAs($this->admin)->getJson(route('accounts.route-test', [$account, 'number' => '33123']))
+            ->assertJsonPath('reason', 'no_sell_rate');
+        $this->actingAs($this->admin)->getJson(route('accounts.route-test', [$account, 'number' => "44'; drop table x"]))
+            ->assertUnprocessable();
+
+        // The tester never reserves funds.
+        $this->assertSame(0, \Illuminate\Support\Facades\DB::table('active_calls')->count());
+    }
 }

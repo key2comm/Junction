@@ -23,6 +23,10 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('accounts/{account}/ips/{ip}', [AccountIpController::class, 'destroy'])->name('accounts.ips.destroy');
     });
 
+    Route::get('accounts/{account}/route-test', [AccountController::class, 'routeTest'])
+        ->middleware('throttle:60,1')
+        ->name('accounts.route-test');
+
     Route::post('accounts/{account}/ledger', [LedgerEntryController::class, 'store'])
         ->middleware('throttle:30,1')
         ->name('accounts.ledger.store');

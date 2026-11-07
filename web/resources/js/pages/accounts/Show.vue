@@ -3,6 +3,7 @@ import { Form, Head, Link } from '@inertiajs/vue3';
 import { Pencil, Trash2 } from '@lucide/vue';
 import AccountIpController from '@/actions/App/Http/Controllers/Admin/AccountIpController';
 import LedgerEntryController from '@/actions/App/Http/Controllers/Admin/LedgerEntryController';
+import RouteTester from '@/components/accounts/RouteTester.vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
 import { Badge } from '@/components/ui/badge';
@@ -163,6 +164,8 @@ const select =
                     <Button :disabled="processing">Add IP</Button>
                 </Form>
             </section>
+
+            <RouteTester v-if="account.is_customer" :account-id="account.id" :currency="account.currency" />
 
             <!-- Money movements -->
             <section class="space-y-4">

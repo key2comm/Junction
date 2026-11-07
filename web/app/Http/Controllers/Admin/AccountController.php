@@ -9,6 +9,9 @@ use App\Http\Requests\Admin\AccountRequest;
 use App\Models\Account;
 use App\Models\RateDeck;
 use App\Models\RoutingPlan;
+use App\Models\Trunk;
+use App\Services\Router;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -109,6 +112,28 @@ class AccountController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Account updated.']);
 
         return to_route('accounts.show', $account);
+    }
+
+    /**
+     * Route tester: what the routing engine would do with a call from this
+     * customer to a number right now (the same function FreeSWITCH calls).
+     * Nothing is reserved.
+     */
+    public function routeTest(Request $request, Account $account, Router $router): JsonResponse
+    {
+        $data = $request->validate(['number' => ['required', 'string', 'max:64', 'regex:/^[0-9+\s()\-*#]+$/']]);
+        $result = $router->route($account, $data['number']);
+
+        $trunks = Trunk::query()->with('account:id,code')->whereIn('id', array_column($result['attempts'], 'trunk_id'))
+            ->get(['id', 'name', 'account_id'])->keyBy('id');
+        foreach ($result['attempts'] as &$attempt) {
+            $trunk = $trunks[$attempt['trunk_id']] ?? null;
+            $attempt['trunk'] = $trunk ? "{$trunk->account->code} / {$trunk->name}" : "#{$attempt['trunk_id']}";
+            $attempt['margin'] = $result['sell_rate'] !== null && $attempt['buy_rate'] !== null
+                ? bcsub((string) $result['sell_rate'], (string) $attempt['buy_rate'], 6) : null;
+        }
+
+        return response()->json($result);
     }
 
     private function formOptions(): array
