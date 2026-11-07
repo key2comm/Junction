@@ -75,9 +75,9 @@ done
 for profile in carrier internal; do
 	running=0
 	for _ in $(seq 1 20); do
-		case "$("$fs_cli" -x "sofia status profile $profile")" in
-			*RUNNING*) running=1; break ;;
-		esac
+		if "$fs_cli" -x "sofia status" | awk -v p="$profile" '$1 == p && $2 == "profile" && /RUNNING/ { f = 1 } END { exit !f }'; then
+			running=1; break
+		fi
 		sleep 1
 	done
 	[ "$running" = 1 ] || die "SIP profile '$profile' is not running; check $SS_FS_LOG/freeswitch.log"
