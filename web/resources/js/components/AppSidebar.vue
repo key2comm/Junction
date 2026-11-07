@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
-import { Building2, Cable, FileText, KeyRound, LayoutGrid, PhoneCall, Route, Tags } from '@lucide/vue';
+import { Activity, Building2, Cable, FileText, KeyRound, LayoutGrid, PhoneCall, Route, Tags } from '@lucide/vue';
 import AppLogo from '@/components/AppLogo.vue';
 import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
@@ -19,6 +19,7 @@ import { dashboard } from '@/routes';
 import { index as accounts } from '@/routes/accounts';
 import { index as cdrs } from '@/routes/cdrs';
 import { index as invoices } from '@/routes/invoices';
+import { index as quality } from '@/routes/quality';
 import { home as portalHome } from '@/routes/portal';
 import { index as portalTokens } from '@/routes/portal/api-tokens';
 import { index as portalCalls } from '@/routes/portal/calls';
@@ -39,6 +40,11 @@ const adminNavItems: NavItem[] = [
         title: 'Call records',
         href: cdrs(),
         icon: PhoneCall,
+    },
+    {
+        title: 'Vendor quality',
+        href: quality(),
+        icon: Activity,
     },
     {
         title: 'Invoices',

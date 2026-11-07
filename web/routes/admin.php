@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\GatewayController;
 use App\Http\Controllers\Admin\InvoiceController;
 use App\Http\Controllers\Admin\LedgerEntryController;
 use App\Http\Controllers\Admin\PortalUserController;
+use App\Http\Controllers\Admin\QualityController;
 use App\Http\Controllers\Admin\RateDeckController;
 use App\Http\Controllers\Admin\RateImportController;
 use App\Http\Controllers\Admin\RoutingPlanController;
@@ -37,6 +38,8 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::post('accounts/{account}/ledger', [LedgerEntryController::class, 'store'])
         ->middleware('throttle:30,1')
         ->name('accounts.ledger.store');
+
+    Route::get('quality', [QualityController::class, 'index'])->name('quality.index');
 
     Route::get('cdrs', [CdrController::class, 'index'])->name('cdrs.index');
     Route::get('cdrs/export', [CdrController::class, 'export'])->middleware('throttle:10,1')->name('cdrs.download');

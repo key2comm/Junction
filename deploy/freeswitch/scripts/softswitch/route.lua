@@ -193,7 +193,9 @@ for n = 1, #attempts do
     for _, gw in ipairs(a.gateways) do
       if not session:ready() then stop = true; break end
       local started = os.time()
-      session:execute("bridge", "{softswitch_gateway_id=" .. gw.id .. "}sofia/gateway/" .. gw.name .. "/" .. a.dial_number)
+      -- Tag the vendor leg so its own CDR (exact timings, PDD) joins this attempt.
+      local leg = "{softswitch_gateway_id=" .. gw.id .. ",softswitch_parent_uuid=" .. uuid .. ",softswitch_attempt_no=" .. (#log_rows + 1) .. "}"
+      session:execute("bridge", leg .. "sofia/gateway/" .. gw.name .. "/" .. a.dial_number)
 
       local disposition = var("originate_disposition") or ""
       local cause = var("last_bridge_hangup_cause") or var("originate_failed_cause") or disposition

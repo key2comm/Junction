@@ -24,3 +24,8 @@ Schedule::command('softswitch:invoices')->hourlyAt(5)->withoutOverlapping();
 
 // Low-balance alerts (one email per dip below a customer's threshold).
 Schedule::command('softswitch:check-balances')->everyFiveMinutes()->withoutOverlapping();
+
+// Vendor quality stats: rebuild the last few hours (catches late CDRs and leg timings).
+Schedule::command('softswitch:quality-rollup')->everyFiveMinutes()->withoutOverlapping();
+Schedule::call(fn () => DB::table('cdr_leg_timings')->where('created_at', '<', now()->subDays(2))->delete())
+    ->name('softswitch:prune-leg-timings')->daily();

@@ -7,6 +7,7 @@ use App\Models\Gateway;
 use App\Models\Rate;
 use App\Models\Trunk;
 use Carbon\CarbonImmutable;
+use Closure;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use SimpleXMLElement;
@@ -35,6 +36,13 @@ class CdrIngestor
         // The built-in self-test's fake customer and vendor legs (selftest
         // profile) are not traffic; only the carrier-profile leg is recorded.
         if ($var('sofia_profile_name') === 'selftest') {
+            return null;
+        }
+
+        // A vendor leg (B-leg) of one of our calls: only its timings are kept.
+        if ($parent = $var('softswitch_parent_uuid')) {
+            $this->legTimings($parent, (int) $var('softswitch_attempt_no'), $var);
+
             return null;
         }
 
@@ -86,6 +94,8 @@ class CdrIngestor
                 'answered_at' => $answered,
                 'ended_at' => $ended,
                 'billsec' => $billsec,
+                // Customer-perceived post-dial delay: their INVITE to first ringback or answer.
+                'pdd_ms' => $this->pdd($var('start_uepoch'), $var('progress_media_uepoch'), $var('progress_uepoch'), $var('answer_uepoch')),
                 'sip_code' => $int($var('softswitch_sip_code')) ?? $int($var('sip_term_status')) ?? ($answered ? 200 : null),
                 'hangup_cause' => $var('softswitch_reject_reason') ?? $var('hangup_cause'),
                 'attempts' => count($attempts),
@@ -119,8 +129,63 @@ class CdrIngestor
                 ]);
             }
 
+            // Vendor-leg timings (whether they arrived before or after this CDR;
+            // kept for two days so a re-posted CDR merges them again).
+            foreach (DB::table('cdr_leg_timings')->where('parent_uuid', $uuid)->get() as $t) {
+                $this->applyTimings($cdr, (int) $t->attempt, (array) $t);
+            }
+
             return $cdr;
         });
+    }
+
+    /** Store a vendor leg's exact timings on its attempt (or stage them until the parent CDR exists). */
+    private function legTimings(string $parent, int $attempt, Closure $var): void
+    {
+        if (! preg_match('/^[0-9a-f-]{36}$/i', $parent) || $attempt < 1) {
+            return;
+        }
+        $t = fn (?string $u) => $u && (int) $u > 0 ? CarbonImmutable::createFromTimestampUTC(intdiv((int) $u, 1_000_000))->addMicroseconds((int) $u % 1_000_000) : null;
+        $timings = [
+            'started_at' => $t($var('start_uepoch')),
+            'progress_at' => $t($var('progress_media_uepoch')) ?? $t($var('progress_uepoch')),
+            'answered_at' => $t($var('answer_uepoch')),
+            'ended_at' => $t($var('end_uepoch')),
+            // Vendor PDD: our INVITE to their first 180/183 (or answer).
+            'pdd_ms' => $this->pdd($var('start_uepoch'), $var('progress_media_uepoch'), $var('progress_uepoch'), $var('answer_uepoch')),
+            'sip_code' => is_numeric($var('sip_term_status')) ? (int) $var('sip_term_status') : null,
+            'hangup_cause' => $var('hangup_cause'),
+        ];
+
+        DB::transaction(function () use ($parent, $attempt, $timings) {
+            DB::table('cdr_leg_timings')->upsert([['parent_uuid' => $parent, 'attempt' => $attempt, ...$timings, 'created_at' => now()]],
+                ['parent_uuid', 'attempt']);
+            if ($cdr = Cdr::query()->where('uuid', $parent)->lockForUpdate()->first()) {
+                $this->applyTimings($cdr, $attempt, $timings);
+            }
+        });
+    }
+
+    private function applyTimings(Cdr $cdr, int $attempt, array $t): void
+    {
+        $cdr->attemptLog()->where('attempt', $attempt)->update(array_filter([
+            'started_at' => $t['started_at'] ?? null,
+            'answered_at' => $t['answered_at'] ?? null,
+            'ended_at' => $t['ended_at'] ?? null,
+            'pdd_ms' => $t['pdd_ms'] ?? null,
+        ], fn ($v) => $v !== null));
+    }
+
+    /** Milliseconds from start to the first of: early media, ringing, answer. */
+    private function pdd(?string $start, ?string ...$events): ?int
+    {
+        $start = (int) $start;
+        $first = collect($events)->map(fn ($e) => (int) $e)->filter(fn ($e) => $e > 0)->min();
+        if ($start <= 0 || ! $first || $first < $start) {
+            return null;
+        }
+
+        return (int) min(intdiv($first - $start, 1000), 600_000);
     }
 
     private function parse(string $xml): SimpleXMLElement

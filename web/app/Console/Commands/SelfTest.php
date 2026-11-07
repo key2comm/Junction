@@ -335,6 +335,8 @@ class SelfTest extends Command
         Model::withoutEvents(fn () => DB::transaction(function () {
             $ids = Account::query()->whereIn('code', [self::CUSTOMER, self::VENDOR])->pluck('id');
             DB::table('active_calls')->whereIn('account_id', $ids)->delete();
+            $uuids = Cdr::query()->whereIn('customer_account_id', $ids)->pluck('uuid');
+            DB::table('cdr_leg_timings')->whereIn('parent_uuid', $uuids)->delete();
             Cdr::query()->whereIn('customer_account_id', $ids)->orWhereIn('vendor_account_id', $ids)->delete();
             // The "unknown customer" scenario's CDRs have no account: they are the
             // test number, sent from the switch's own IP (no real carrier can be).

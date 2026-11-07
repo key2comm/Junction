@@ -1440,6 +1440,92 @@
             ]
           }
         }
+      },
+      "QualityRow": {
+        "type": "object",
+        "properties": {
+          "vendor_id": {
+            "type": "integer"
+          },
+          "vendor_code": {
+            "type": "string"
+          },
+          "vendor_name": {
+            "type": "string"
+          },
+          "trunk_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "trunk_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "prefix": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "attempts": {
+            "type": "integer"
+          },
+          "answered": {
+            "type": "integer"
+          },
+          "minutes": {
+            "type": "number"
+          },
+          "asr": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "% of vendor attempts answered"
+          },
+          "acd": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Seconds"
+          },
+          "pdd_ms": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Average post-dial delay, ms"
+          },
+          "busy_pct": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "no_answer_pct": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "congestion_pct": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "rejected_pct": {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        }
       }
     }
   },
@@ -3686,6 +3772,102 @@
                   "properties": {
                     "data": {
                       "$ref": "#/components/schemas/Invoice"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      }
+    },
+    "/quality": {
+      "get": {
+        "summary": "Vendor quality (ASR, ACD, PDD, failure mix)",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "x-ability": "routing:read",
+        "description": "Per vendor attempt, from hourly statistics (updated every 5 minutes).",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Default: 24h before `to`; range max 31 days"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "group",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "vendor",
+                "trunk",
+                "prefix"
+              ]
+            },
+            "description": "Default trunk"
+          },
+          {
+            "name": "vendor_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "min",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Minimum attempts per row"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/QualityRow"
+                      }
+                    },
+                    "meta": {
+                      "type": "object"
                     }
                   }
                 }

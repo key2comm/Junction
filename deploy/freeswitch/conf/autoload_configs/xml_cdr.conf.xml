@@ -6,7 +6,8 @@
     <param name="retries" value="5"/>
     <param name="delay" value="3"/>
     <param name="timeout" value="10"/>
-    <param name="log-b-leg" value="false"/>
+    <!-- Vendor legs too: their exact timings give per-attempt PDD. -->
+    <param name="log-b-leg" value="true"/>
     <param name="prefix-a-leg" value="false"/>
     <param name="encode" value="true"/>
     <param name="disable-100-continue" value="true"/>
