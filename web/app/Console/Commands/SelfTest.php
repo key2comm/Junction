@@ -269,7 +269,8 @@ class SelfTest extends Command
     private function routes(array $enabled): void
     {
         foreach ($this->f['routes'] as $name => $route) {
-            $route->update(['enabled' => in_array($name, $enabled, true)]);
+            // (string): PHP turns the array key '503' into the integer 503.
+            $route->update(['enabled' => in_array((string) $name, $enabled, true)]);
         }
         $this->f['customer']->update(['credit_limit' => '100']);
         DB::table('active_calls')->where('account_id', $this->f['customer']->id)->delete();
