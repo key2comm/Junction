@@ -25,7 +25,7 @@ _Last updated: 2026-11-07. All 8 phases of `docs/PLAN.md` are done._
   - Sell and buy rates still apply: LCR, the margin guard, and CDR rating. Usage is still posted to the ledger, so a later switch back on is consistent; the page warns that balances may then be negative.
   - The page also holds invoice options (payment terms; auto-email, moved from the Email page). New billing options go there.
 - **Admin UI restyled with Tabler** (the user's choice, replacing the starter kit's Tailwind/shadcn look). Every admin page was screenshot-checked with headless Firefox. Portal pages share the same components but weren't individually screenshot-checked.
-- **Tests:** 185 automated tests pass (`scripts/test-on-server.sh theswitch`). The built-in call self-test passes all 11 scenarios, 4 of them PBX.
+- **Tests:** 191 automated tests pass (`scripts/test-on-server.sh theswitch`). The built-in call self-test passes all 11 scenarios, 4 of them PBX (with billing off it swaps the two funds scenarios for one "no funds, call goes through").
 - **Git:** everything is committed and pushed to `github.com/key2comm/Softswitch` (private), on branch `main`.
 - **Test server** `theswitch.key2pbx.ca` (147.182.148.63, Rocky 10, 1 vCPU, 1.7 GB):
   - All services are running.
@@ -53,7 +53,7 @@ _Last updated: 2026-11-07. All 8 phases of `docs/PLAN.md` are done._
 
 - **Deploying:** commit, then `scripts/push-to-server.sh theswitch -- --steps 90` (copy plus app step). Add `60` when `deploy/freeswitch` changes and `80` when `deploy/nginx` changes. Run the self-test after anything that touches calls: `sudo -u softswitch bash -c 'cd /var/www/html && php artisan softswitch:selftest'`.
 - **No PHP or Node on this laptop.** Tests run on the server through `scripts/test-on-server.sh`. To change npm dependencies, regenerate `package-lock.json` on the server (`npm install --package-lock-only`) and copy it back.
-- **SSH:** the key has a passphrase. Load it into the agent Claude's shell uses (`env SSH_AUTH_SOCK=<Claude's socket> ssh-add ~/.ssh/id_rsa`); fish terminals have their own agent.
+- **SSH:** the key has a passphrase. On the Windows laptop the key is an RSA key (despite the name id_ed25519) that Git Bash's OpenSSH 10 can't read: use the Windows ssh-agent (`ssh-add` in PowerShell) and put `/c/Windows/System32/OpenSSH` first on PATH when running the bash scripts. Load it into the agent Claude's shell uses (`env SSH_AUTH_SOCK=<Claude's socket> ssh-add ~/.ssh/id_rsa`); fish terminals have their own agent.
 - **WebRTC needs WSS end to end:** browsers put `WSS` in `Via`, so FreeSWITCH must use `wss-binding` (loopback 7443, `tls/wss.pem`), not `ws-binding`. The installer makes the certificate.
 - **nginx FastCGI buffers** were raised to 32k: Vite's `Link` preload header plus cookies overflowed 4k and gave 502s on the real hostname.
 - **Emergency calls are not supported** by the PBX; the UI says so.
