@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { billingMonth, dateTime, money, titleCase } from '@/lib/format';
 import { edit, index, show } from '@/routes/accounts';
+import { show as showPbx } from '@/routes/accounts/pbx';
 import { index as cdrIndex } from '@/routes/cdrs';
 import { show as showInvoice } from '@/routes/invoices';
 
@@ -88,9 +89,12 @@ const select =
                     <Badge variant="secondary">{{ titleCase(account.billing_type) }}</Badge>
                 </div>
             </div>
-            <div class="flex gap-2">
+            <div class="flex flex-wrap gap-2">
                 <Button v-if="account.is_customer" variant="outline" as-child>
                     <Link :href="cdrIndex({ query: { customer: account.id } })">Calls sent</Link>
+                </Button>
+                <Button v-if="account.is_customer" variant="outline" as-child>
+                    <Link :href="showPbx(account.id)">PBX</Link>
                 </Button>
                 <Button v-if="account.is_vendor" variant="outline" as-child>
                     <Link :href="cdrIndex({ query: { vendor: account.id } })">Calls carried</Link>

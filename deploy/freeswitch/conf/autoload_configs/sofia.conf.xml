@@ -52,8 +52,10 @@
     </profile>
 
     <!--
-      internal: PBX phones (digest auth). No users exist yet, so every call and
-      registration is refused; fail2ban bans repeated failures.
+      internal: PBX phones, digest auth only (users in directory/pbx/, written
+      by the app). Authenticated calls run the "pbx" dialplan context; fail2ban
+      bans repeated auth failures. WebRTC phones arrive through nginx, so they
+      come from 127.0.0.1 (fail2ban ignores it); nginx rate-limits /ws instead.
     -->
     <profile name="internal">
       <gateways/>
@@ -68,6 +70,8 @@
         <param name="ext-sip-ip" value="$${softswitch_public_ip}"/>
         <param name="ext-rtp-ip" value="$${softswitch_public_ip}"/>
         <param name="sip-port" value="$${internal_sip_port}"/>
+        <!-- WebRTC phones, through nginx (wss://<host>/ws). -->
+        <param name="ws-binding" value="127.0.0.1:$${internal_ws_port}"/>
         <param name="username" value="softswitch"/>
         <param name="user-agent-string" value="Softswitch"/>
 
@@ -76,9 +80,17 @@
         <param name="accept-blind-reg" value="false"/>
         <param name="accept-blind-auth" value="false"/>
         <param name="log-auth-failures" value="true"/>
+        <param name="inbound-reg-force-matching-username" value="true"/>
         <param name="force-register-domain" value="$${domain}"/>
+        <param name="force-register-db-domain" value="$${domain}"/>
         <param name="force-subscription-domain" value="$${domain}"/>
         <param name="manage-presence" value="false"/>
+
+        <!-- Phones are usually behind NAT. -->
+        <param name="apply-nat-acl" value="nat.auto"/>
+        <param name="aggressive-nat-detection" value="true"/>
+        <param name="nat-options-ping" value="true"/>
+        <param name="NDLB-received-in-nat-reg-contact" value="true"/>
 
         <param name="inbound-codec-prefs" value="$${internal_codecs}"/>
         <param name="outbound-codec-prefs" value="$${internal_codecs}"/>

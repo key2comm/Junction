@@ -1,5 +1,6 @@
 <include>
-  <!-- PBX features are not built yet: refuse everything from the internal profile. -->
+  <!-- Unauthenticated calls on the internal profile are challenged (auth-calls);
+       anything that still lands here is refused. Phones run context "pbx". -->
   <context name="internal">
     <extension name="refuse">
       <condition field="destination_number" expression="^.*$">

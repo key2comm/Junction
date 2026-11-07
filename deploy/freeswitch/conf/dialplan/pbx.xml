@@ -1,0 +1,10 @@
+<include>
+  <!-- Calls from authenticated PBX phones: the directory sets user_context=pbx. -->
+  <context name="pbx">
+    <extension name="softswitch-phone">
+      <condition field="destination_number" expression="^.+$">
+        <action application="lua" data="softswitch/phone.lua"/>
+      </condition>
+    </extension>
+  </context>
+</include>

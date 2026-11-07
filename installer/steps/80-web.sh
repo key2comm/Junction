@@ -62,6 +62,10 @@ systemctl restart nginx
 # --- SELinux: keep enforcing, grant only what the app needs.
 if selinuxenabled 2>/dev/null; then
 	setsebool -P httpd_can_network_connect_db 1   # PHP -> PostgreSQL
+	# nginx -> FreeSWITCH WebSocket (wss://<host>/ws): reverse-proxy to an http port.
+	semanage port -a -t http_port_t -p tcp "$SS_PBX_WS_PORT" 2>/dev/null \
+		|| semanage port -m -t http_port_t -p tcp "$SS_PBX_WS_PORT"
+	setsebool -P httpd_can_network_relay 1
 	semanage fcontext -a -t httpd_sys_rw_content_t "$SS_WEB_ROOT/storage(/.*)?" 2>/dev/null \
 		|| semanage fcontext -m -t httpd_sys_rw_content_t "$SS_WEB_ROOT/storage(/.*)?"
 	semanage fcontext -a -t httpd_sys_rw_content_t "$SS_WEB_ROOT/bootstrap/cache(/.*)?" 2>/dev/null \

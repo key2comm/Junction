@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\GatewayController;
 use App\Http\Controllers\Admin\InvoiceController;
 use App\Http\Controllers\Admin\LedgerEntryController;
 use App\Http\Controllers\Admin\LiveCallsController;
+use App\Http\Controllers\Admin\PbxController;
 use App\Http\Controllers\Admin\PortalUserController;
 use App\Http\Controllers\Admin\QualityController;
 use App\Http\Controllers\Admin\RateDeckController;
@@ -40,6 +41,25 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::post('accounts/{account}/ledger', [LedgerEntryController::class, 'store'])
         ->middleware('throttle:30,1')
         ->name('accounts.ledger.store');
+
+    // PBX of a customer account
+    Route::get('pbx', [PbxController::class, 'index'])->name('pbx.index');
+    Route::scopeBindings()->prefix('accounts/{account}/pbx')->name('accounts.pbx.')->controller(PbxController::class)->group(function () {
+        Route::get('/', 'show')->name('show');
+        Route::get('phone', 'phone')->name('phone');
+        Route::post('extensions', 'storeExtension')->name('extensions.store');
+        Route::get('extensions/{pbxExtension}/edit', 'editExtension')->name('extensions.edit');
+        Route::put('extensions/{pbxExtension}', 'updateExtension')->name('extensions.update');
+        Route::delete('extensions/{pbxExtension}', 'destroyExtension')->name('extensions.destroy');
+        Route::post('ivrs', 'storeIvr')->name('ivrs.store');
+        Route::get('ivrs/{pbxIvr}/edit', 'editIvr')->name('ivrs.edit');
+        Route::post('ivrs/{pbxIvr}', 'updateIvr')->name('ivrs.update'); // POST: carries a file upload
+        Route::get('ivrs/{pbxIvr}/greeting', 'greeting')->name('ivrs.greeting');
+        Route::delete('ivrs/{pbxIvr}', 'destroyIvr')->name('ivrs.destroy');
+        Route::post('dids', 'storeDid')->name('dids.store');
+        Route::patch('dids/{pbxDid}', 'updateDid')->name('dids.update');
+        Route::delete('dids/{pbxDid}', 'destroyDid')->name('dids.destroy');
+    });
 
     Route::get('alerts', [AlertController::class, 'index'])->name('alerts.index');
     Route::put('alerts/rules/{type}', [AlertController::class, 'updateRule'])->name('alerts.rules.update');

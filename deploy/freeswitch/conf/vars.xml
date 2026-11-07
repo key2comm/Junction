@@ -5,6 +5,8 @@
   <X-PRE-PROCESS cmd="set" data="carrier_sip_port=@SS_CARRIER_PORT@"/>
   <X-PRE-PROCESS cmd="set" data="internal_sip_port=@SS_PBX_PORT@"/>
   <X-PRE-PROCESS cmd="set" data="internal_tls_port=@SS_PBX_TLS_PORT@"/>
+  <!-- WebRTC phones: plain WebSocket on loopback; nginx terminates TLS at wss://<host>/ws -->
+  <X-PRE-PROCESS cmd="set" data="internal_ws_port=@SS_PBX_WS_PORT@"/>
   <!-- Self-test vendor/customer (php artisan softswitch:selftest). Not opened in the firewall. -->
   <X-PRE-PROCESS cmd="set" data="selftest_sip_port=@SS_SELFTEST_PORT@"/>
 
@@ -17,6 +19,10 @@
   <X-PRE-PROCESS cmd="set" data="softswitch_max_call_duration=@SS_MAX_CALL_DURATION@"/>
   <X-PRE-PROCESS cmd="set" data="softswitch_progress_timeout=@SS_PROGRESS_TIMEOUT@"/>
   <X-PRE-PROCESS cmd="set" data="softswitch_answer_timeout=@SS_ANSWER_TIMEOUT@"/>
+
+  <!-- PBX: voicemail/IVR prompts, and IVR greetings uploaded in the admin UI (copied by PbxSync). -->
+  <X-PRE-PROCESS cmd="set" data="sound_prefix=$${sounds_dir}/en/us/callie"/>
+  <X-PRE-PROCESS cmd="set" data="softswitch_greeting_dir=@SS_FS_GREETINGS@"/>
 
   <X-PRE-PROCESS cmd="set" data="console_loglevel=info"/>
 </include>

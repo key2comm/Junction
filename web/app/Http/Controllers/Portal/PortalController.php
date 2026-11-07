@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Portal;
 
 use App\Http\Controllers\Admin\CdrController;
+use App\Http\Controllers\Admin\PbxController;
 use App\Http\Controllers\Controller;
 use App\Models\Account;
 use App\Models\ApiToken;
@@ -50,6 +51,12 @@ class PortalController extends Controller
             'invoices' => Invoice::query()->where('account_id', $account->id)->where('status', 'issued')->orderByDesc('period_start')->limit(3)
                 ->get(['id', 'number', 'period_start', 'timezone', 'currency', 'usage_total', 'amount_due', 'due_at']),
         ]);
+    }
+
+    /** Browser phone (WebRTC) for one of the account's PBX extensions. */
+    public function phone(Request $request): Response
+    {
+        return Inertia::render('pbx/Phone', PbxController::phoneProps($this->account($request), $request->integer('extension') ?: null, admin: false));
     }
 
     public function calls(Request $request): Response

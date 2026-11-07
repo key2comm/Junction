@@ -7,6 +7,11 @@ return [
 
     'carrier_port' => (int) env('SOFTSWITCH_CARRIER_PORT', 5080),
 
+    // Public FQDN of this switch (phones and the web phone connect to it).
+    'hostname' => env('SOFTSWITCH_HOSTNAME'),
+
+    'pbx_port' => (int) env('SOFTSWITCH_PBX_PORT', 5060),
+
     // Built-in self-test: fake vendor/customer on this FreeSWITCH profile port.
     'selftest_port' => (int) env('SOFTSWITCH_SELFTEST_PORT', 5090),
 
@@ -31,6 +36,9 @@ return [
     'freeswitch' => [
         // Carrier-profile gateway files written by App\Services\Freeswitch\GatewaySync.
         'gateway_dir' => env('SOFTSWITCH_FS_GATEWAY_DIR', '/usr/local/freeswitch/etc/freeswitch/sip_profiles/carrier'),
+        // PBX SIP users and IVR greetings written by App\Services\Freeswitch\PbxSync.
+        'directory_dir' => env('SOFTSWITCH_FS_DIRECTORY_DIR', '/usr/local/freeswitch/etc/freeswitch/directory/pbx'),
+        'greeting_dir' => env('SOFTSWITCH_FS_GREETING_DIR', '/usr/local/freeswitch/var/lib/freeswitch/greetings'),
     ],
 
     // Extra carrier IPs from the installer config, always allowed through the firewall.

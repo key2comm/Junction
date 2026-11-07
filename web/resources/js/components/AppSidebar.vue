@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
-import { Activity, AudioLines, BellRing, Building2, Cable, FileText, KeyRound, LayoutGrid, PhoneCall, Route, Tags } from '@lucide/vue';
+import { Activity, AudioLines, BellRing, Building2, Cable, FileText, Headphones, KeyRound, LayoutGrid, Phone, PhoneCall, Route, Tags } from '@lucide/vue';
 import AppLogo from '@/components/AppLogo.vue';
 import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
@@ -21,8 +21,9 @@ import { index as cdrs } from '@/routes/cdrs';
 import { index as alerts } from '@/routes/alerts';
 import { index as invoices } from '@/routes/invoices';
 import { index as live } from '@/routes/live';
+import { index as pbx } from '@/routes/pbx';
 import { index as quality } from '@/routes/quality';
-import { home as portalHome } from '@/routes/portal';
+import { home as portalHome, phone as portalPhone } from '@/routes/portal';
 import { index as portalTokens } from '@/routes/portal/api-tokens';
 import { index as portalCalls } from '@/routes/portal/calls';
 import { index as portalInvoices } from '@/routes/portal/invoices';
@@ -69,6 +70,11 @@ const adminNavItems: NavItem[] = [
         icon: Building2,
     },
     {
+        title: 'PBX',
+        href: pbx(),
+        icon: Phone,
+    },
+    {
         title: 'Rate decks',
         href: rateDecks(),
         icon: Tags,
@@ -91,6 +97,7 @@ const portalNavItems: NavItem[] = [
     { title: 'Calls', href: portalCalls(), icon: PhoneCall },
     { title: 'Invoices', href: portalInvoices(), icon: FileText },
     { title: 'Rates', href: portalRates(), icon: Tags },
+    { title: 'Web phone', href: portalPhone(), icon: Headphones },
     { title: 'API tokens', href: portalTokens(), icon: KeyRound },
 ];
 

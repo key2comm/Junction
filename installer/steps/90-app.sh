@@ -60,6 +60,10 @@ set_env SOFTSWITCH_MAX_CALL_DURATION "$SS_MAX_CALL_DURATION"
 set_env SOFTSWITCH_SELFTEST_PORT "$SS_SELFTEST_PORT"
 set_env SOFTSWITCH_CARRIER_PORT "$SS_CARRIER_PORT"
 set_env SOFTSWITCH_FS_GATEWAY_DIR "$SS_FS_CONF/sip_profiles/carrier"
+set_env SOFTSWITCH_FS_DIRECTORY_DIR "$SS_FS_CONF/directory/pbx"
+set_env SOFTSWITCH_FS_GREETING_DIR "$SS_FS_GREETINGS"
+set_env SOFTSWITCH_HOSTNAME "$SS_HOSTNAME"
+set_env SOFTSWITCH_PBX_PORT "$SS_PBX_PORT"
 set_env SOFTSWITCH_STATIC_CARRIER_IPS "$SS_CARRIER_IPS"
 chown "$SS_APP_USER:$SS_APP_USER" "$env_file"; chmod 0600 "$env_file"
 
@@ -85,6 +89,9 @@ runuser -u postgres -- psql -v ON_ERROR_STOP=1 -qAtX -d "$SS_DB_NAME" <<-SQL
 	GRANT EXECUTE ON FUNCTION softswitch_identify(inet, text) TO "$SS_FS_DB_USER";
 	GRANT EXECUTE ON FUNCTION softswitch_route(bigint, text, uuid, timestamptz, integer) TO "$SS_FS_DB_USER";
 	GRANT EXECUTE ON FUNCTION softswitch_release(uuid) TO "$SS_FS_DB_USER";
+	GRANT EXECUTE ON FUNCTION softswitch_pbx_caller(text) TO "$SS_FS_DB_USER";
+	GRANT EXECUTE ON FUNCTION softswitch_pbx_dial(bigint, text) TO "$SS_FS_DB_USER";
+	GRANT EXECUTE ON FUNCTION softswitch_pbx_did(text) TO "$SS_FS_DB_USER";
 SQL
 artisan optimize --no-interaction >/dev/null
 

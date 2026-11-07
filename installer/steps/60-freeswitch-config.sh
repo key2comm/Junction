@@ -26,20 +26,20 @@ fi
 
 # (Tolerates missing directories: on first install the config doesn't exist yet.)
 checksum() {
-	{ find "$conf" "$scripts" -type f ! -path "$conf/sip_profiles/carrier/*" -print0 2>/dev/null || true; } \
+	{ find "$conf" "$scripts" -type f ! -path "$conf/sip_profiles/carrier/*" ! -path "$conf/directory/pbx/*" -print0 2>/dev/null || true; } \
 		| sort -z | xargs -0 -r sha256sum | sha256sum
 }
 before="$(checksum)"
 
 # Render every file in the repo tree; remove files the repo no longer has
-# (except generated gateway files).
+# (except generated gateway and PBX user files).
 install -d -m 0750 "$conf"
 listing="$(mktemp)"
 ( cd "$src" && find . -type f | sed 's|^\./||' | sort ) > "$listing"
 while read -r rel; do
 	render "$src/$rel" "$conf/$rel" 0640
 done < "$listing"
-( cd "$conf" && find . -type f ! -path './sip_profiles/carrier/*' ! -name .softswitch | sed 's|^\./||' | sort ) \
+( cd "$conf" && find . -type f ! -path './sip_profiles/carrier/*' ! -path './directory/pbx/*' ! -name .softswitch | sed 's|^\./||' | sort ) \
 	| comm -23 - "$listing" | while read -r stale; do rm -f -- "$conf/$stale"; done
 rm -f -- "$listing"
 touch "$conf/.softswitch"
@@ -49,8 +49,9 @@ install -m 0640 "$SS_ROOT/deploy/freeswitch/scripts/softswitch/"*.lua "$scripts/
 
 chown -R root:freeswitch "$conf" "$scripts"
 find "$conf" "$scripts" -type d -exec chmod 0750 {} +
-# Gateway files are written by the app's queue worker (a member of the freeswitch group).
-install -d -o freeswitch -g freeswitch -m 2770 "$conf/sip_profiles/carrier"
+# Gateway files, PBX users and IVR greetings are written by the app's queue
+# worker (a member of the freeswitch group).
+install -d -o freeswitch -g freeswitch -m 2770 "$conf/sip_profiles/carrier" "$conf/directory/pbx" "$SS_FS_GREETINGS"
 install -d -o freeswitch -g freeswitch -m 0750 "$SS_FS_LOG/xml_cdr"
 
 # fs_cli on this host picks up the ESL password automatically (root only).

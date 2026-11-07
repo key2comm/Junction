@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Services\Freeswitch\EventSocket;
 use App\Services\MailSettings;
 use App\Services\Freeswitch\GatewaySync;
+use App\Services\Freeswitch\PbxSync;
 use Carbon\CarbonImmutable;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -29,6 +30,11 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(GatewaySync::class, fn ($app) => new GatewaySync(
             $app->make(EventSocket::class),
             config('softswitch.freeswitch.gateway_dir'),
+        ));
+        $this->app->bind(PbxSync::class, fn ($app) => new PbxSync(
+            $app->make(EventSocket::class),
+            config('softswitch.freeswitch.directory_dir'),
+            config('softswitch.freeswitch.greeting_dir'),
         ));
     }
 

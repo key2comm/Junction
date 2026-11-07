@@ -56,6 +56,21 @@ class Account extends Model
         return $this->hasMany(AccountIp::class);
     }
 
+    public function pbxExtensions(): HasMany
+    {
+        return $this->hasMany(PbxExtension::class);
+    }
+
+    public function pbxIvrs(): HasMany
+    {
+        return $this->hasMany(PbxIvr::class);
+    }
+
+    public function pbxDids(): HasMany
+    {
+        return $this->hasMany(PbxDid::class);
+    }
+
     public function trunks(): HasMany
     {
         return $this->hasMany(Trunk::class);

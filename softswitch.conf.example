@@ -9,6 +9,7 @@ SS_SSH_PORT=""          # default: read from sshd
 # SIP / media
 SS_PBX_PORT=5060        # PBX phones (digest auth), open to the internet
 SS_PBX_TLS_PORT=5061
+SS_PBX_WS_PORT=5066     # WebRTC phones: loopback only; nginx serves wss://<host>/ws
 SS_CARRIER_PORT=5080    # wholesale customers + vendors, allowlisted IPs only
 SS_SELFTEST_PORT=5090   # built-in self-test vendor; never opened in the firewall
 SS_RTP_START=16384

@@ -61,7 +61,7 @@ class CdrController extends Controller
 
         return Inertia::render('cdrs/Show', [
             'cdr' => [
-                ...$cdr->only(['id', 'uuid', 'caller', 'callee', 'destination', 'started_at', 'answered_at', 'ended_at', 'billsec',
+                ...$cdr->only(['id', 'uuid', 'direction', 'caller', 'callee', 'destination', 'started_at', 'answered_at', 'ended_at', 'billsec',
                     'sip_code', 'hangup_cause', 'attempts', 'sell_prefix', 'sell_rate', 'sell_cost', 'buy_prefix', 'buy_rate', 'buy_cost',
                     'rated_at', 'posted_at']),
                 'source_ip' => $cdr->source_ip,

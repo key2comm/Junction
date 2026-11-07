@@ -15,6 +15,7 @@ Route::middleware(['auth', 'customer'])->prefix('portal')->name('portal.')->grou
     Route::get('invoices', [PortalController::class, 'invoices'])->name('invoices.index');
     Route::get('invoices/{invoice}', [PortalController::class, 'invoice'])->name('invoices.show');
     Route::get('invoices/{invoice}/csv', [PortalController::class, 'invoiceCsv'])->name('invoices.download');
+    Route::get('phone', [PortalController::class, 'phone'])->name('phone');
     Route::get('rates', [PortalController::class, 'rates'])->name('rates.index');
     Route::get('rates/csv', [PortalController::class, 'ratesCsv'])->middleware('throttle:10,1')->name('rates.download');
     Route::get('api-tokens', [PortalController::class, 'tokens'])->name('api-tokens.index');

@@ -7,6 +7,9 @@ use App\Models\AccountIp;
 use App\Models\BlockedPrefix;
 use App\Models\Cdr;
 use App\Models\Gateway;
+use App\Models\PbxDid;
+use App\Models\PbxExtension;
+use App\Models\PbxIvr;
 use App\Models\Rate;
 use App\Models\RateDeck;
 use App\Models\RoutingPlan;
@@ -14,7 +17,10 @@ use App\Models\RoutingPlanRoute;
 use App\Models\Trunk;
 use App\Services\Freeswitch\EventSocket;
 use App\Services\Freeswitch\GatewaySync;
+use App\Services\Freeswitch\PbxSync;
 use App\Services\Router;
+use App\Support\SipWebSocketProbe;
+use Closure;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -30,7 +36,15 @@ use Throwable;
  * routing engine to vendor gateways that point back at the selftest profile
  * (the fake vendor), whose dialplan answers, returns 503 or returns busy
  * depending on the trunk's tech prefix. Each scenario checks the SIP outcome
- * and the CDR the app stored. Everything is removed afterwards.
+ * and the CDR the app stored.
+ *
+ * PBX scenarios: the fake customer account also gets extensions, an IVR and a
+ * DID. The selftest profile then acts as a phone (answering the internal
+ * profile's digest challenge with the extension's credentials) or as a carrier
+ * delivering the DID, and a small WebSocket client registers an extension
+ * through nginx (wss://<host>/ws) like the web phone does.
+ *
+ * Everything is removed afterwards.
  */
 class SelfTest extends Command
 {
@@ -42,13 +56,15 @@ class SelfTest extends Command
 
     private const DEST = '9901234567';    // test destination (prefix 990)
 
+    private const DID = '99099900011';    // PBX DID of the fake customer (-> IVR 5000)
+
     protected $signature = 'softswitch:selftest {--keep : Leave the test data in place afterwards}';
 
     protected $description = 'Place real test calls through the switch and check routing, failover, limits and billing';
 
     private array $f = [];
 
-    public function handle(EventSocket $esl, GatewaySync $gateways): int
+    public function handle(EventSocket $esl, GatewaySync $gateways, PbxSync $pbx): int
     {
         $ip = config('softswitch.public_ip');
         if (! $ip) {
@@ -61,7 +77,9 @@ class SelfTest extends Command
         try {
             $this->fixtures($ip);
             $gateways->sync();
+            $pbx->sync();
             $this->waitForGateways($esl);
+            $this->waitForPbxUsers($esl);
 
             $scenarios = [
                 'Answered call is rated' => fn () => $this->answered($esl, $ip),
@@ -71,6 +89,10 @@ class SelfTest extends Command
                 'Blocked destination is refused (403)' => fn () => $this->blocked($esl, $ip),
                 'No funds: call refused (402)' => fn () => $this->noFunds($esl, $ip),
                 'Call is cut off when funds run out' => fn () => $this->cutOff($esl, $ip),
+                'PBX: extension registers over WebSocket (wss)' => fn () => $this->pbxWebSocket($esl),
+                'PBX: extension calls out through LCR' => fn () => $this->pbxOutbound($esl, $ip),
+                'PBX: unanswered extension goes to voicemail' => fn () => $this->pbxVoicemail($esl, $ip),
+                'PBX: DID reaches the IVR, key press followed' => fn () => $this->pbxDidIvr($esl, $ip),
             ];
             foreach ($scenarios as $name => $scenario) {
                 $this->output->write("  {$name} … ");
@@ -91,8 +113,9 @@ class SelfTest extends Command
                 $this->cleanup();
                 try {
                     $gateways->sync();
+                    $pbx->sync();
                 } catch (Throwable) {
-                    // Leftover gateway files are removed by the next sync.
+                    // Leftover gateway and PBX user files are removed by the next sync.
                 }
             }
         }
@@ -205,19 +228,84 @@ class SelfTest extends Command
         return "hung up by the switch after {$cdr->billsec}s, cost {$cdr->sell_cost}";
     }
 
+    private function pbxWebSocket(EventSocket $esl): string
+    {
+        $ext = $this->f['extensions']['1001'];
+        $client = new SipWebSocketProbe($this->wsHost());
+        try {
+            $code = $client->register($ext->sip_username, $ext->sip_password, 60);
+            $this->check($code === 200, "REGISTER over wss://{$this->wsHost()}/ws got {$code}, expected 200");
+            $reg = $esl->api("sofia status profile internal reg {$ext->sip_username}");
+            $this->check(str_contains($reg, $ext->sip_username) && str_contains(strtolower($reg), 'transport=ws'), 'FreeSWITCH does not list the WebSocket registration');
+            $intruder = new SipWebSocketProbe($this->wsHost());
+            $bad = $intruder->register($ext->sip_username, 'wrong-password-123', 60);
+            $intruder->close();
+            $this->check($bad === 403 || $bad === 401, "a wrong password got {$bad}, expected 401/403");
+        } finally {
+            $client->register($ext->sip_username, $ext->sip_password, 0); // unregister
+            $client->close();
+        }
+
+        return "registered via wss://{$this->wsHost()}/ws; wrong password refused";
+    }
+
+    private function pbxOutbound(EventSocket $esl, string $ip): string
+    {
+        $this->routes(['ok']);
+        $cdr = $this->placeCall($esl, $ip, self::DEST, hold: 3, expectAnswer: true, phone: $this->f['extensions']['1001']);
+
+        $this->check($cdr->direction === 'pbx_out', "direction {$cdr->direction}, expected pbx_out");
+        $this->check((int) $cdr->trunk_id === $this->f['trunks']['ok']->id, 'carried by the wrong trunk');
+        $this->check(bccomp((string) $cdr->sell_cost, '0', 6) > 0, 'the call was not billed');
+
+        return "{$cdr->billsec}s via selftest-ok, sell {$cdr->sell_cost}";
+    }
+
+    private function pbxVoicemail(EventSocket $esl, string $ip): string
+    {
+        // 1002 has no phone registered: the PBX answers with its voicemail.
+        $cdr = $this->placeCall($esl, $ip, '1002', hold: 2, expectAnswer: true, phone: $this->f['extensions']['1001']);
+
+        $this->check($cdr->direction === 'pbx_local', "direction {$cdr->direction}, expected pbx_local");
+        $this->check($cdr->answered_at !== null && $cdr->sell_cost === null, 'expected an answered, unbilled call');
+
+        return 'answered by voicemail of 1002';
+    }
+
+    private function pbxDidIvr(EventSocket $esl, string $ip): string
+    {
+        // Key 9 hangs up. Without it the IVR would repeat for ~8s first.
+        $cdr = $this->placeCall($esl, $ip, self::DID, hold: 5, expectAnswer: true, expectRemoteHangup: true,
+            during: function (string $uuid) use ($esl) {
+                usleep(1_500_000);
+                $esl->api("uuid_send_dtmf {$uuid} 9");
+            });
+
+        $this->check($cdr->direction === 'pbx_in', "direction {$cdr->direction}, expected pbx_in");
+        $this->check($cdr->sell_cost === null, 'an inbound DID call was billed');
+
+        return 'IVR answered the DID and hung up on key 9';
+    }
+
     // --- helpers ---------------------------------------------------------
 
     /**
      * Place a call from the fake customer and return the CDR the app stored.
      */
     private function placeCall(EventSocket $esl, string $ip, string $number, int $hold, bool $expectAnswer,
-        bool $expectRemoteHangup = false, bool $customer = true): Cdr
+        bool $expectRemoteHangup = false, bool $customer = true, ?PbxExtension $phone = null, ?Closure $during = null): Cdr
     {
         $before = (int) Cdr::query()->max('id');
-        $port = (int) config('softswitch.carrier_port');
+        // As a carrier (carrier profile), or as a PBX phone (internal profile, digest auth).
+        $port = $phone ? (int) config('softswitch.pbx_port') : (int) config('softswitch.carrier_port');
+        $vars = $phone
+            ? "origination_caller_id_number={$phone->extension},sip_auth_username={$phone->sip_username},sip_auth_password={$phone->sip_password},"
+            : 'origination_caller_id_number=15550001000,';
+        // Phones address the switch by its hostname (the digest realm); fs_path sends it to our IP.
+        $target = $phone ? "sip:{$number}@{$this->wsHost()};fs_path=<sip:{$ip}:{$port}>" : "{$number}@{$ip}:{$port}";
         $reply = trim($esl->api(
-            'originate {origination_caller_id_number=15550001000,originate_timeout=20,ignore_early_media=true,absolute_codec_string=PCMU}'
-            ."sofia/selftest/{$number}@{$ip}:{$port} &park",
+            "originate {{$vars}originate_timeout=20,ignore_early_media=true,absolute_codec_string=PCMU}"
+            ."sofia/selftest/{$target} &park",
             30,
         ));
 
@@ -227,6 +315,9 @@ class SelfTest extends Command
         if ($answered) {
             $uuid = trim(substr($reply, 3));
             $deadline = microtime(true) + $hold;
+            if ($during) {
+                $during($uuid);
+            }
             while (microtime(true) < $deadline && str_contains($esl->api("uuid_exists {$uuid}"), 'true')) {
                 usleep(250_000);
             }
@@ -284,6 +375,25 @@ class SelfTest extends Command
         }
     }
 
+    private function waitForPbxUsers(EventSocket $esl): void
+    {
+        $domain = trim($esl->api('global_getvar domain'));
+        $deadline = microtime(true) + 15;
+        foreach ($this->f['extensions'] as $ext) {
+            while (trim($esl->api("user_exists id {$ext->sip_username} {$domain}")) !== 'true') {
+                if (microtime(true) > $deadline) {
+                    throw new RuntimeException("PBX user {$ext->sip_username} did not load into FreeSWITCH");
+                }
+                usleep(500_000);
+            }
+        }
+    }
+
+    private function wsHost(): string
+    {
+        return (string) (config('softswitch.hostname') ?: parse_url((string) config('app.url'), PHP_URL_HOST) ?: 'localhost');
+    }
+
     private function fixtures(string $ip): void
     {
         // Without model events: this command syncs FreeSWITCH itself, and queued
@@ -327,7 +437,20 @@ class SelfTest extends Command
                 'priority' => 1, 'weight' => 100, 'enabled' => false]);
         }
 
-        $this->f = compact('customer', 'vendor', 'trunks', 'routes', 'plan');
+        // PBX: 1001 places calls, 1002 never registers (voicemail), IVR 5000 behind a DID.
+        $extensions = [];
+        foreach (['1001', '1002'] as $n) {
+            $extensions[$n] = PbxExtension::create([
+                'account_id' => $customer->id, 'extension' => $n, 'name' => "Selftest {$n}", 'sip_username' => "selftest-{$n}",
+                'sip_password' => PbxExtension::generatePassword(), 'caller_id_number' => '15550001000', 'outbound_enabled' => true,
+                'voicemail_enabled' => true, 'voicemail_pin' => '246810', 'ring_seconds' => 5, 'enabled' => true,
+            ]);
+        }
+        PbxIvr::create(['account_id' => $customer->id, 'extension' => '5000', 'name' => 'Selftest IVR', 'timeout_seconds' => 2,
+            'options' => (object) ['9' => ['type' => 'hangup'], '1' => ['type' => 'voicemail', 'target' => '1002']]]);
+        PbxDid::create(['account_id' => $customer->id, 'number' => self::DID, 'destination' => ['type' => 'number', 'target' => '5000'], 'enabled' => true]);
+
+        $this->f = compact('customer', 'vendor', 'trunks', 'routes', 'plan', 'extensions');
     }
 
     private function cleanup(): void

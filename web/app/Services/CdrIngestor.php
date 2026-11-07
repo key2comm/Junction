@@ -39,6 +39,11 @@ class CdrIngestor
             return null;
         }
 
+        // The callee's leg of a PBX call: the caller's CDR covers the call.
+        if ($var('softswitch_pbx_leg') === 'true') {
+            return null;
+        }
+
         // A vendor leg (B-leg) of one of our calls: only its timings are kept.
         if ($parent = $var('softswitch_parent_uuid')) {
             $this->legTimings($parent, (int) $var('softswitch_attempt_no'), $var);
@@ -84,7 +89,9 @@ class CdrIngestor
             }
 
             $cdr = $existing ?? new Cdr(['uuid' => $uuid]);
+            $direction = $var('softswitch_direction');
             $cdr->fill([
+                'direction' => in_array($direction, Cdr::DIRECTIONS, true) ? $direction : 'carrier',
                 'customer_account_id' => $int($var('softswitch_account_id')),
                 'source_ip' => $this->ip((string) ($profile->network_addr ?? $var('network_addr') ?? '')),
                 'caller' => mb_substr((string) ($profile->caller_id_number ?? $var('caller_id_number') ?? ''), 0, 64) ?: null,

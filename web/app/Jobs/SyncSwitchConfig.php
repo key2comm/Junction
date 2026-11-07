@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Services\FirewallSync;
 use App\Services\Freeswitch\GatewaySync;
+use App\Services\Freeswitch\PbxSync;
 use Illuminate\Contracts\Queue\ShouldBeUniqueUntilProcessing;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -11,10 +12,11 @@ use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
- * Pushes carrier configuration from the database to the switch: FreeSWITCH
- * gateways and the firewall allowlist. Dispatched (debounced) whenever
- * accounts' IPs, trunks or gateways change, and every 15 minutes to follow
- * vendor hostnames whose IPs change.
+ * Pushes configuration from the database to the switch: FreeSWITCH gateways,
+ * the firewall allowlist and the PBX (SIP users, IVR greetings). Dispatched
+ * (debounced) whenever accounts' IPs, trunks, gateways, extensions or IVR
+ * greetings change, and every 15 minutes to follow vendor hostnames whose IPs
+ * change.
  */
 class SyncSwitchConfig implements ShouldBeUniqueUntilProcessing, ShouldQueue
 {
@@ -26,10 +28,10 @@ class SyncSwitchConfig implements ShouldBeUniqueUntilProcessing, ShouldQueue
 
     public int $uniqueFor = 60;
 
-    public function handle(GatewaySync $gateways, FirewallSync $firewall): void
+    public function handle(GatewaySync $gateways, FirewallSync $firewall, PbxSync $pbx): void
     {
         $errors = [];
-        foreach (['gateways' => fn () => $gateways->sync(), 'firewall' => fn () => $firewall->apply()] as $name => $sync) {
+        foreach (['gateways' => fn () => $gateways->sync(), 'firewall' => fn () => $firewall->apply(), 'pbx' => fn () => $pbx->sync()] as $name => $sync) {
             try {
                 Log::info("Switch config sync: {$name}", $sync());
             } catch (Throwable $e) {

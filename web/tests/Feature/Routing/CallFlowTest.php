@@ -146,6 +146,24 @@ class CallFlowTest extends TestCase
         $this->assertSame(0, $cdr->attempts);
     }
 
+    public function test_pbx_calls_keep_their_direction_and_callee_legs_are_not_cdrs(): void
+    {
+        $this->postCdr($this->xml($out = (string) Str::uuid(), ['softswitch_direction' => 'pbx_out']))->assertOk();
+        $this->assertSame('pbx_out', Cdr::query()->where('uuid', $out)->value('direction'));
+
+        $local = (string) Str::uuid();
+        $this->postCdr($this->xml($local, ['softswitch_direction' => 'pbx_local', 'softswitch_sell_rate_id' => '', 'softswitch_trunk_id' => '',
+            'softswitch_gateway_id' => '', 'softswitch_buy_rate_id' => '', 'softswitch_attempts' => '[]']))->assertOk();
+        $cdr = Cdr::query()->where('uuid', $local)->sole();
+        $this->assertSame(['pbx_local', null, 0], [$cdr->direction, $cdr->sell_cost, $cdr->attempts]);
+
+        // The ringing extension's own leg, and anything unknown.
+        $this->postCdr($this->xml($leg = (string) Str::uuid(), ['softswitch_pbx_leg' => 'true']))->assertOk();
+        $this->assertFalse(Cdr::query()->where('uuid', $leg)->exists());
+        $this->postCdr($this->xml($odd = (string) Str::uuid(), ['softswitch_direction' => 'sideways']))->assertOk();
+        $this->assertSame('carrier', Cdr::query()->where('uuid', $odd)->value('direction'));
+    }
+
     public function test_retried_posts_are_idempotent_and_posted_cdrs_are_never_rerated(): void
     {
         $uuid = (string) Str::uuid();
