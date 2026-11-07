@@ -25,6 +25,11 @@ class RateDeck extends Model
         return $this->hasMany(Rate::class);
     }
 
+    public function imports(): HasMany
+    {
+        return $this->hasMany(RateImport::class);
+    }
+
     /**
      * The rate that applies to a number at a moment in time: the longest
      * matching prefix among rates effective at $at.
