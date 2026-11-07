@@ -9,7 +9,7 @@ use RuntimeException;
 
 /**
  * Keeps the firewall's carrier allowlist (nftables sets used for the carrier
- * SIP port) equal to: enabled customer IPs + every enabled vendor gateway host
+ * SIP port) equal to: enabled customer IPs + every enabled carrier gateway host
  * (hostnames resolved) + static IPs from the installer config. The root helper
  * softswitch-firewall validates the list and swaps the sets atomically.
  */

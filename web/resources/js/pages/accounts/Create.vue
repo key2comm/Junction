@@ -22,7 +22,7 @@ defineOptions({
     <Head title="New account" />
 
     <div class="ss-maxw-3xl ss-stack-4">
-        <Heading title="New account" description="A customer, a vendor, or both" />
+        <Heading title="New account" description="A customer, a carrier, or both" />
         <AccountForm
             :action="AccountController.store.form()"
             :options="options"

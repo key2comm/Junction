@@ -149,7 +149,7 @@ function toggle(route: Route) {
                         </tr>
                         <tr v-if="routes.data.length === 0">
                             <td colspan="5" class="text-center text-secondary">
-                                {{ trunks.length === 0 ? 'Create a vendor trunk first, then route prefixes to it.' : 'No routes yet.' }}
+                                {{ trunks.length === 0 ? 'Create a carrier trunk first, then route prefixes to it.' : 'No routes yet.' }}
                             </td>
                         </tr>
                     </tbody>

@@ -93,7 +93,7 @@ function hangup(uuid: string) {
                         <th>Customer</th>
                         <th>From → To</th>
                         <th>State</th>
-                        <th>Vendor</th>
+                        <th>Carrier</th>
                         <th class="text-end">Talking</th>
                         <th class="text-end">Cut-off in</th>
                         <th></th>

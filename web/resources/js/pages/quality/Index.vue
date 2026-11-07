@@ -36,7 +36,7 @@ const props = defineProps<{
     vendors: { id: number; code: string; name: string }[];
 }>();
 
-defineOptions({ layout: { breadcrumbs: [{ title: 'Vendor quality', href: index() }] } });
+defineOptions({ layout: { breadcrumbs: [{ title: 'Carrier quality', href: index() }] } });
 
 const f = reactive({ group: props.filters.group, vendor: String(props.filters.vendor ?? ''), min: String(props.filters.min), hours: '' });
 
@@ -66,22 +66,22 @@ const cell = (asr: number | null, attempts: number) =>
 </script>
 
 <template>
-    <Head title="Vendor quality" />
+    <Head title="Carrier quality" />
 
     <div class="ss-stack-4">
-        <Heading title="Vendor quality" :description="`Per vendor attempt over the last ${rangeHours} hours. Updated every 5 minutes.`" />
+        <Heading title="Carrier quality" :description="`Per carrier attempt over the last ${rangeHours} hours. Updated every 5 minutes.`" />
 
         <div class="card card-body d-flex flex-wrap align-items-end gap-2 flex-row">
             <div class="ss-grid gap-1">
                 <Label for="group">Group by</Label>
                 <select id="group" v-model="f.group" :class="selectClass" class="w-auto" @change="apply()">
-                    <option value="vendor">Vendor</option>
+                    <option value="vendor">Carrier</option>
                     <option value="trunk">Trunk</option>
                     <option value="prefix">Trunk and destination</option>
                 </select>
             </div>
             <div class="ss-grid gap-1">
-                <Label for="vendor">Vendor</Label>
+                <Label for="vendor">Carrier</Label>
                 <select id="vendor" v-model="f.vendor" :class="selectClass" class="w-auto" @change="apply()">
                     <option value="">All</option>
                     <option v-for="v in vendors" :key="v.id" :value="String(v.id)">{{ v.code }} — {{ v.name }}</option>
@@ -103,7 +103,7 @@ const cell = (asr: number | null, attempts: number) =>
             <table class="table table-vcenter card-table table-tight">
                 <thead>
                     <tr>
-                        <th>Vendor</th>
+                        <th>Carrier</th>
                         <th v-if="filters.group !== 'vendor'">Trunk</th>
                         <th v-if="filters.group === 'prefix'">Prefix</th>
                         <th class="text-end">Attempts</th>
@@ -143,13 +143,13 @@ const cell = (asr: number | null, attempts: number) =>
                         </td>
                     </tr>
                     <tr v-if="rows.length === 0">
-                        <td colspan="10" class="text-center text-secondary">No vendor attempts in this range.</td>
+                        <td colspan="10" class="text-center text-secondary">No carrier attempts in this range.</td>
                     </tr>
                 </tbody>
             </table>
         </div>
         <p class="small text-secondary">
-            ASR here is per vendor attempt (a call that fails over counts against each vendor tried). PDD is the time from our INVITE to the vendor's first ringing or answer.
+            ASR here is per carrier attempt (a call that fails over counts against each carrier tried). PDD is the time from our INVITE to the carrier's first ringing or answer.
         </p>
     </div>
 </template>

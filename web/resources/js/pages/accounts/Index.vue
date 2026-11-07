@@ -61,7 +61,7 @@ const statusVariant = (s: string) => (s === 'active' ? 'default' : s === 'suspen
 
     <div class="ss-stack-4">
         <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
-            <Heading title="Accounts" description="Customers and vendors you exchange traffic with" />
+            <Heading title="Accounts" description="Customers and carriers you exchange traffic with" />
             <Button as-child>
                 <Link :href="create()"><Plus class="icon" /> New account</Link>
             </Button>
@@ -72,7 +72,7 @@ const statusVariant = (s: string) => (s === 'active' ? 'default' : s === 'suspen
             <select v-model="filters.role" :class="select" aria-label="Role" @change="apply()">
                 <option value="">All roles</option>
                 <option value="customer">Customers</option>
-                <option value="vendor">Vendors</option>
+                <option value="vendor">Carriers</option>
             </select>
             <select v-model="filters.status" :class="select" aria-label="Status" @change="apply()">
                 <option value="">Any status</option>
@@ -104,7 +104,7 @@ const statusVariant = (s: string) => (s === 'active' ? 'default' : s === 'suspen
                         </td>
                         <td class="ss-row-1">
                             <Badge v-if="a.is_customer" variant="outline">Customer</Badge>
-                            <Badge v-if="a.is_vendor" variant="outline">Vendor</Badge>
+                            <Badge v-if="a.is_vendor" variant="outline">Carrier</Badge>
                         </td>
                         <td><Badge :variant="statusVariant(a.status)">{{ titleCase(a.status) }}</Badge></td>
                         <template v-if="billing">

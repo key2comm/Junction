@@ -28,7 +28,7 @@ class VendorReconciliation
         'amount' => ['amount', 'cost', 'total', 'charge', 'charges'],
     ];
 
-    /** Our figures for a vendor and period: totals and per buy prefix. */
+    /** Our figures for a carrier and period: totals and per buy prefix. */
     public function ours(Account $vendor, CarbonImmutable $start, CarbonImmutable $end): array
     {
         $base = fn () => DB::table('cdrs')->where('vendor_account_id', $vendor->id)
@@ -48,7 +48,7 @@ class VendorReconciliation
     }
 
     /**
-     * Record a vendor invoice. $breakdown is their optional per-destination CSV.
+     * Record a carrier invoice. $breakdown is their optional per-destination CSV.
      *
      * @param  array{reference: string, period_start: CarbonImmutable, period_end: CarbonImmutable, timezone: string,
      *     amount: string, calls?: ?int, minutes?: ?string, notes?: ?string}  $data
@@ -135,18 +135,18 @@ class VendorReconciliation
         })->sortByDesc(fn ($r) => abs((float) $r['difference']))->values();
     }
 
-    /** Accept the vendor's figure: book the difference so what we owe matches it. */
+    /** Accept the carrier's figure: book the difference so what we owe matches it. */
     public function accept(VendorInvoice $invoice, VendorLedger $ledger, ?User $user = null): VendorInvoice
     {
         return DB::transaction(function () use ($invoice, $ledger, $user) {
             $invoice = VendorInvoice::query()->whereKey($invoice->id)->lockForUpdate()->firstOrFail();
             if ($invoice->status === 'accepted') {
-                throw new RuntimeException('This vendor invoice is already accepted.');
+                throw new RuntimeException('This carrier invoice is already accepted.');
             }
             $difference = $invoice->difference();
             if (bccomp($difference, '0', 6) !== 0) {
                 $ledger->post($invoice->account, 'adjustment', $difference,
-                    "Vendor invoice {$invoice->reference}: their total vs our records", $invoice, $user, $invoice->period_end);
+                    "Carrier invoice {$invoice->reference}: their total vs our records", $invoice, $user, $invoice->period_end);
             }
             $invoice->update(['status' => 'accepted', 'resolved_at' => now()]);
 

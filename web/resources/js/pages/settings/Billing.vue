@@ -45,7 +45,7 @@ const on = ref(props.settings.enabled);
                         <span class="fw-medium">Use the built-in billing</span>
                         <span class="small text-secondary">
                             Customer balances, payments and credit limits; calls are refused when funds run out. Monthly invoices, low-balance
-                            alerts, and vendor payables with invoice reconciliation.
+                            alerts, and carrier payables with invoice reconciliation.
                         </span>
                     </span>
                 </label>

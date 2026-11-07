@@ -20,7 +20,7 @@ const modeLabel: Record<string, string> = { lcr: 'Least cost', priority: 'Priori
 
     <div class="ss-stack-4">
         <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
-            <Heading title="Routing plans" description="Which vendor trunks may carry which destinations, assigned to customers" />
+            <Heading title="Routing plans" description="Which carrier trunks may carry which destinations, assigned to customers" />
             <Button as-child><Link :href="create()"><Plus class="icon" /> New routing plan</Link></Button>
         </div>
 

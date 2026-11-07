@@ -305,7 +305,7 @@ const editingDid = ref<number | null>(null);
                 <Button variant="outline" :disabled="processing">Add DID</Button>
             </Form>
             <p v-else class="text-secondary">Add an extension or IVR first: a DID needs somewhere to go.</p>
-            <p class="small text-secondary">Carriers must send these calls from an allowed IP (a customer IP or vendor gateway) to the carrier port.</p>
+            <p class="small text-secondary">Carriers must send these calls from an allowed IP (a customer IP or carrier gateway) to the carrier port.</p>
         </section>
     </div>
 </template>

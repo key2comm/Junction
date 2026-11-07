@@ -62,7 +62,7 @@ const paramLabel: Record<string, string> = {
 
     <div class="ss-stack-4">
         <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
-            <Heading title="Alerts" description="Fraud and vendor problems, checked every minute" />
+            <Heading title="Alerts" description="Fraud and carrier problems, checked every minute" />
             <div class="d-flex gap-1">
                 <Button v-for="s in ['live', 'resolved', 'all']" :key="s" :variant="props.status === s ? 'default' : 'ghost'" size="sm" @click="setStatus(s)">{{ s }}</Button>
             </div>

@@ -81,7 +81,7 @@ const adminNav = computed((): NavEntry[] => [
         items: [
             { title: 'Live calls', href: live(), icon: AudioLines },
             { title: 'Call records', href: cdrs(), icon: PhoneCall },
-            { title: 'Vendor quality', href: quality(), icon: Activity },
+            { title: 'Carrier quality', href: quality(), icon: Activity },
         ],
     },
     billing.value

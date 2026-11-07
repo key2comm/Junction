@@ -1515,7 +1515,7 @@
               "number",
               "null"
             ],
-            "description": "% of vendor attempts answered"
+            "description": "% of carrier attempts answered"
           },
           "acd": {
             "type": [
@@ -2757,7 +2757,7 @@
     },
     "/trunks": {
       "get": {
-        "summary": "List vendor trunks",
+        "summary": "List carrier trunks",
         "security": [
           {
             "bearer": []
@@ -3708,7 +3708,7 @@
             "$ref": "#/components/responses/Invalid"
           }
         },
-        "description": "Customer tokens see only their own calls, without vendor or cost fields."
+        "description": "Customer tokens see only their own calls, without carrier or cost fields."
       }
     },
     "/cdrs/summary": {
@@ -3842,7 +3842,7 @@
     },
     "/cdrs/{cdr}": {
       "get": {
-        "summary": "Get a call record with its vendor attempts",
+        "summary": "Get a call record with its carrier attempts",
         "security": [
           {
             "bearer": []
@@ -4018,14 +4018,14 @@
     },
     "/quality": {
       "get": {
-        "summary": "Vendor quality (ASR, ACD, PDD, failure mix)",
+        "summary": "Carrier quality (ASR, ACD, PDD, failure mix)",
         "security": [
           {
             "bearer": []
           }
         ],
         "x-ability": "routing:read",
-        "description": "Per vendor attempt, from hourly statistics (updated every 5 minutes).",
+        "description": "Per carrier attempt, from hourly statistics (updated every 5 minutes).",
         "parameters": [
           {
             "name": "from",

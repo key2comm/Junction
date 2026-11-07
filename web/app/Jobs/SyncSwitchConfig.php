@@ -15,7 +15,7 @@ use Throwable;
  * Pushes configuration from the database to the switch: FreeSWITCH gateways,
  * the firewall allowlist and the PBX (SIP users, IVR greetings). Dispatched
  * (debounced) whenever accounts' IPs, trunks, gateways, extensions or IVR
- * greetings change, and every 15 minutes to follow vendor hostnames whose IPs
+ * greetings change, and every 15 minutes to follow carrier hostnames whose IPs
  * change.
  */
 class SyncSwitchConfig implements ShouldBeUniqueUntilProcessing, ShouldQueue

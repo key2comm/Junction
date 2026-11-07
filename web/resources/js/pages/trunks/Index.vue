@@ -30,7 +30,7 @@ defineOptions({ layout: { breadcrumbs: [{ title: 'Trunks', href: index() }] } })
 
     <div class="ss-stack-4">
         <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
-            <Heading title="Vendor trunks" description="Where traffic goes: each trunk is a vendor product with a buy rate deck and one or more gateways" />
+            <Heading title="Carrier trunks" description="Where traffic goes: each trunk is a carrier product with a buy rate deck and one or more gateways" />
             <Button as-child><Link :href="create()"><Plus class="icon" /> New trunk</Link></Button>
         </div>
 
@@ -38,7 +38,7 @@ defineOptions({ layout: { breadcrumbs: [{ title: 'Trunks', href: index() }] } })
             <table class="table table-vcenter card-table table-tight">
                 <thead>
                     <tr>
-                        <th class="fw-medium">Vendor</th>
+                        <th class="fw-medium">Carrier</th>
                         <th class="fw-medium">Trunk</th>
                         <th class="fw-medium">Buy rates</th>
                         <th class="text-end fw-medium">Gateways</th>
@@ -62,7 +62,7 @@ defineOptions({ layout: { breadcrumbs: [{ title: 'Trunks', href: index() }] } })
                         <td class="text-secondary">{{ t.max_channels ?? '∞' }} ch, {{ t.max_cps ?? '∞' }} CPS</td>
                     </tr>
                     <tr v-if="trunks.length === 0">
-                        <td colspan="6" class="text-center text-secondary">No trunks yet. Create a vendor account first, then add its trunks.</td>
+                        <td colspan="6" class="text-center text-secondary">No trunks yet. Create a carrier account first, then add its trunks.</td>
                     </tr>
                 </tbody>
             </table>

@@ -21,7 +21,7 @@ class Router
         'no_routing_plan' => 'The customer has no routing plan.',
         'insufficient_funds' => 'Not enough funds for the minimum billable duration.',
         'no_route' => 'No enabled trunk with a gateway and a buy rate is routed for this destination.',
-        'negative_margin' => 'Every routed vendor costs more than the sell rate.',
+        'negative_margin' => 'Every routed carrier costs more than the sell rate.',
     ];
 
     /**

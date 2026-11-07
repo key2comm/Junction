@@ -81,7 +81,7 @@ class AccountRequest extends FormRequest
     {
         $data = $validator->getData();
         if (empty($data['is_customer']) && empty($data['is_vendor'])) {
-            $validator->errors()->add('is_customer', 'An account must be a customer, a vendor, or both.');
+            $validator->errors()->add('is_customer', 'An account must be a customer, a carrier, or both.');
         }
     }
 

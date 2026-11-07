@@ -155,7 +155,7 @@ const increments = (r: Rate) => `${r.initial_increment}/${r.increment}`;
                     </ul>
                 </div>
                 <div>
-                    <p class="text-secondary">Vendor trunks (buy)</p>
+                    <p class="text-secondary">Carrier trunks (buy)</p>
                     <ul>
                         <li v-for="t in usage.trunks" :key="t.id"><Link :href="showTrunk(t.id)">{{ t.account.code }} / {{ t.name }}</Link></li>
                         <li v-if="!usage.trunks.length" class="text-secondary">—</li>

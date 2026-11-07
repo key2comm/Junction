@@ -10,7 +10,7 @@ class QualityRollupCommand extends Command
 {
     protected $signature = 'softswitch:quality-rollup {--hours=3 : Rebuild this many recent hours} {--from= : Rebuild from this time (backfill)}';
 
-    protected $description = 'Rebuild vendor quality statistics (quality_hourly) for recent hours';
+    protected $description = 'Rebuild carrier quality statistics (quality_hourly) for recent hours';
 
     public function handle(QualityRollup $rollup): int
     {

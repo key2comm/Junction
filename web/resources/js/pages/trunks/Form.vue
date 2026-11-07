@@ -46,17 +46,17 @@ const vendorId = t?.account_id ?? props.defaults.account_id ?? null;
     <Head :title="t ? `Edit ${t.name}` : 'New trunk'" />
 
     <div class="ss-maxw-2xl ss-stack-4">
-        <Heading :title="t ? `Edit ${t.name}` : 'New trunk'" description="A vendor product: what we pay (buy rate deck) and where we send calls (gateways)" />
+        <Heading :title="t ? `Edit ${t.name}` : 'New trunk'" description="A carrier product: what we pay (buy rate deck) and where we send calls (gateways)" />
 
         <p v-if="vendors.length === 0" class="rounded border ss-border-dashed p-3 text-secondary">
-            There are no vendor accounts yet. Create an account and tick "Vendor" first.
+            There are no carrier accounts yet. Create an account and tick "Carrier" first.
         </p>
 
         <Form v-else v-bind="action" class="ss-grid gap-4 ss-cols-sm-2" v-slot="{ errors, processing }">
             <div class="ss-grid gap-2">
-                <Label for="account_id">Vendor</Label>
+                <Label for="account_id">Carrier</Label>
                 <select id="account_id" name="account_id" :class="selectClass" required>
-                    <option value="" disabled :selected="!vendorId">Choose a vendor</option>
+                    <option value="" disabled :selected="!vendorId">Choose a carrier</option>
                     <option v-for="v in vendors" :key="v.id" :value="v.id" :selected="v.id === vendorId">{{ v.name }} ({{ v.code }})</option>
                 </select>
                 <InputError :message="errors.account_id" />
@@ -72,7 +72,7 @@ const vendorId = t?.account_id ?? props.defaults.account_id ?? null;
                     <option value="">— None —</option>
                     <option v-for="d in rateDecks" :key="d.id" :value="d.id" :selected="d.id === t?.rate_deck_id">{{ d.name }} ({{ d.currency }})</option>
                 </select>
-                <p class="small text-secondary">What this vendor charges us. Least-cost routing skips trunks without a rate for the destination.</p>
+                <p class="small text-secondary">What this carrier charges us. Least-cost routing skips trunks without a rate for the destination.</p>
                 <InputError :message="errors.rate_deck_id" />
             </div>
             <div class="ss-grid gap-2">

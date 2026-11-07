@@ -87,7 +87,7 @@ const select = 'form-select w-auto';
                 <div class="d-flex flex-wrap gap-1">
                     <Badge :variant="account.status === 'active' ? 'default' : 'destructive'">{{ titleCase(account.status) }}</Badge>
                     <Badge v-if="account.is_customer" variant="outline">Customer</Badge>
-                    <Badge v-if="account.is_vendor" variant="outline">Vendor</Badge>
+                    <Badge v-if="account.is_vendor" variant="outline">Carrier</Badge>
                     <Badge v-if="billing" variant="secondary">{{ titleCase(account.billing_type) }}</Badge>
                 </div>
             </div>
@@ -265,7 +265,7 @@ const select = 'form-select w-auto';
                 <Heading
                     variant="small"
                     title="Portal logins"
-                    :description="`People at this customer who can sign in to see their ${billing ? 'balance, calls, invoices' : 'calls'} and rates (never your vendors or costs).`"
+                    :description="`People at this customer who can sign in to see their ${billing ? 'balance, calls, invoices' : 'calls'} and rates (never your carriers or costs).`"
                 />
                 <div v-if="portalPassword" class="rounded border border-primary p-2">
                     <p class="fw-medium">Login created for {{ portalPassword.email }}</p>
@@ -317,9 +317,9 @@ const select = 'form-select w-auto';
                 </Form>
             </section>
 
-            <!-- Vendor egress -->
+            <!-- Carrier egress -->
             <section v-if="account.is_vendor" class="ss-stack-3">
-                <Heading variant="small" title="Vendor trunks" description="Where we send traffic to this vendor. Managed from the Trunks page." />
+                <Heading variant="small" title="Carrier trunks" description="Where we send traffic to this carrier. Managed from the Trunks page." />
                 <ul class="list-group">
                     <li v-for="t in trunks" :key="t.id" class="list-group-item d-flex justify-content-between px-2 py-2">
                         <span :class="{ 'opacity-50': !t.enabled }">{{ t.name }}</span>

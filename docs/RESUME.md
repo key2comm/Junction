@@ -24,6 +24,7 @@ _Last updated: 2026-11-07. All 8 phases of `docs/PLAN.md` are done._
   - `softswitch_route()` skips the funds check (`softswitch_billing_enabled()` reads `app_settings`)
   - Sell and buy rates still apply: LCR, the margin guard, and CDR rating. Usage is still posted to the ledger, so a later switch back on is consistent; the page warns that balances may then be negative.
   - The page also holds invoice options (payment terms; auto-email, moved from the Email page). New billing options go there.
+- **Wording: "Carrier", not "Vendor"** (the user's choice) everywhere people see it: UI, portal, messages, alert labels, API docs. Internal names stay `vendor` (`is_vendor`, `vendor_account_id`, API fields, URLs, CSV columns) so nothing breaks. Use "Carrier" in any new visible text.
 - **Admin UI restyled with Tabler** (the user's choice, replacing the starter kit's Tailwind/shadcn look). Every admin page was screenshot-checked with headless Firefox. Portal pages share the same components but weren't individually screenshot-checked.
 - **Tests:** 191 automated tests pass (`scripts/test-on-server.sh theswitch`). The built-in call self-test passes all 11 scenarios, 4 of them PBX (with billing off it swaps the two funds scenarios for one "no funds, call goes through").
 - **Git:** everything is committed and pushed to `github.com/key2comm/Softswitch` (private), on branch `main`.

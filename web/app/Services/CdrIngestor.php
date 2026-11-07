@@ -17,7 +17,7 @@ use SimpleXMLElement;
  * vendor attempts, and releases the call's funds reservation.
  *
  * The routing script (route.lua) leaves softswitch_* channel variables on the
- * A-leg describing the customer, the sell/buy rates chosen and every vendor
+ * A-leg describing the customer, the sell/buy rates chosen and every carrier
  * attempt, so nothing has to be re-derived here.
  *
  * Idempotent: FreeSWITCH retries failed posts, and a CDR already posted to the
@@ -158,7 +158,7 @@ class CdrIngestor
             'progress_at' => $t($var('progress_media_uepoch')) ?? $t($var('progress_uepoch')),
             'answered_at' => $t($var('answer_uepoch')),
             'ended_at' => $t($var('end_uepoch')),
-            // Vendor PDD: our INVITE to their first 180/183 (or answer).
+            // Carrier PDD: our INVITE to their first 180/183 (or answer).
             'pdd_ms' => $this->pdd($var('start_uepoch'), $var('progress_media_uepoch'), $var('progress_uepoch'), $var('answer_uepoch')),
             'sip_code' => is_numeric($var('sip_term_status')) ? (int) $var('sip_term_status') : null,
             'hangup_cause' => $var('hangup_cause'),

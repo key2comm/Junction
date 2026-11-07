@@ -62,14 +62,14 @@ const inv = props.invoice;
 const m = (v: string | null) => (v === null ? '—' : money(v, inv.currency));
 const pct = computed(() => (Number(inv.our_amount) ? ((Number(inv.difference) / Number(inv.our_amount)) * 100).toFixed(2) : null));
 const lastDay = new Date(new Date(inv.period_end).getTime() - 1000).toISOString();
-// Our CDRs for this vendor and period, as evidence (the call records page shows up to 31 days at a time).
+// Our CDRs for this carrier and period, as evidence (the call records page shows up to 31 days at a time).
 const evidenceEnd = new Date(Math.min(new Date(inv.period_end).getTime(), new Date(inv.period_start).getTime() + 31 * 86400_000)).toISOString();
 const evidence = cdrIndex({ query: { vendor: inv.vendor.id, from: inv.period_start, to: evidenceEnd, status: 'answered' } });
 const flagged = (r: Row) => Math.abs(Number(r.difference)) > Math.max(0.01, Math.abs(Number(r.our_amount)) * 0.01);
 </script>
 
 <template>
-    <Head :title="`Vendor invoice ${props.invoice.reference}`" />
+    <Head :title="`Carrier invoice ${props.invoice.reference}`" />
 
     <div class="ss-maxw-5xl ss-stack-4">
         <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
@@ -135,7 +135,7 @@ const flagged = (r: Row) => Math.abs(Number(r.difference)) > Math.max(0.01, Math
                             <td v-if="has_breakdown" class="text-end tabular-nums">{{ m(r.difference) }}</td>
                         </tr>
                         <tr v-if="comparison.length === 0">
-                            <td colspan="7" class="text-center text-secondary">No calls to this vendor in the period.</td>
+                            <td colspan="7" class="text-center text-secondary">No calls to this carrier in the period.</td>
                         </tr>
                     </tbody>
                 </table>

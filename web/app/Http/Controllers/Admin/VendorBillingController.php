@@ -62,7 +62,7 @@ class VendorBillingController extends Controller
             'minutes' => ['nullable', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string', 'max:2000'],
             'breakdown' => ['nullable', 'file', 'mimes:csv,txt', 'max:10240'],
-        ], ['reference.unique' => 'An invoice with this reference is already recorded for this vendor.']);
+        ], ['reference.unique' => 'An invoice with this reference is already recorded for this carrier.']);
 
         // Dates are whole days in the vendor's billing time zone; the end date is inclusive.
         $start = CarbonImmutable::parse($data['period_start'], $data['timezone'])->startOfDay();

@@ -117,7 +117,7 @@ class TrunkController extends Controller
             'max_cps' => ['nullable', 'numeric', 'min:0.1', 'max:10000'],
             'tech_prefix' => ['nullable', 'string', 'max:16', 'regex:/^[0-9#*]*$/'],
             'strip_digits' => ['nullable', 'integer', 'min:0', 'max:15'],
-        ], ['account_id.exists' => 'Choose an account marked as a vendor.']);
+        ], ['account_id.exists' => 'Choose an account marked as a carrier.']);
 
         return [...$data, 'tech_prefix' => $data['tech_prefix'] ?? '', 'strip_digits' => $data['strip_digits'] ?? 0];
     }

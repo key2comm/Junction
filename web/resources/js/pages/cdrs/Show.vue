@@ -108,7 +108,7 @@ const outcome = c.answered_at ? 'Answered' : c.attempts === 0 ? 'Rejected before
                 <dd>{{ cdr.sell_rate ? `${money(cdr.sell_rate, cdr.currency)}/min (prefix ${cdr.sell_prefix})` : '—' }}</dd>
                 <dt class="text-secondary">Charged</dt>
                 <dd class="tabular-nums">{{ cdr.sell_cost !== null ? money(cdr.sell_cost, cdr.currency) : '—' }}</dd>
-                <dt class="text-secondary">Vendor</dt>
+                <dt class="text-secondary">Carrier</dt>
                 <dd>
                     <Link v-if="cdr.vendor" :href="showAccount(cdr.vendor.id)">{{ cdr.vendor.code }}</Link>
                     <span v-if="cdr.trunk"> / <Link :href="showTrunk(cdr.trunk.id)">{{ cdr.trunk.name }}</Link></span>
@@ -127,7 +127,7 @@ const outcome = c.answered_at ? 'Answered' : c.attempts === 0 ? 'Rejected before
         </div>
 
         <section class="ss-stack-2">
-            <Heading variant="small" title="Vendor attempts" description="Every vendor tried for this call, in order." />
+            <Heading variant="small" title="Carrier attempts" description="Every carrier tried for this call, in order." />
             <div class="card table-responsive">
                 <table class="table table-vcenter card-table table-tight">
                     <thead>
@@ -154,7 +154,7 @@ const outcome = c.answered_at ? 'Answered' : c.attempts === 0 ? 'Rejected before
                             </td>
                         </tr>
                         <tr v-if="attempts.length === 0">
-                            <td colspan="5" class="text-center text-secondary">No vendor was tried: the call was refused before routing.</td>
+                            <td colspan="5" class="text-center text-secondary">No carrier was tried: the call was refused before routing.</td>
                         </tr>
                     </tbody>
                 </table>

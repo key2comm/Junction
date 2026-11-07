@@ -118,7 +118,7 @@ const duration = (s: number) => (s >= 60 ? `${Math.floor(s / 60)}m ${s % 60}s` :
                 </select>
             </div>
             <div class="ss-grid gap-1">
-                <Label for="vendor">Vendor</Label>
+                <Label for="vendor">Carrier</Label>
                 <select id="vendor" v-model="f.vendor" :class="selectClass">
                     <option value="">Any</option>
                     <option v-for="v in options.vendors" :key="v.id" :value="String(v.id)">{{ v.code }} — {{ v.name }}</option>
@@ -136,7 +136,7 @@ const duration = (s: number) => (s >= 60 ? `${Math.floor(s / 60)}m ${s % 60}s` :
                 <select id="status" v-model="f.status" :class="selectClass">
                     <option value="">Any</option>
                     <option value="answered">Answered</option>
-                    <option value="failed">Failed (vendors tried)</option>
+                    <option value="failed">Failed (carriers tried)</option>
                     <option value="rejected">Rejected (not routed)</option>
                 </select>
             </div>
@@ -198,7 +198,7 @@ const duration = (s: number) => (s >= 60 ? `${Math.floor(s / 60)}m ${s % 60}s` :
                         <th>Customer</th>
                         <th>From → To</th>
                         <th>Outcome</th>
-                        <th>Vendor</th>
+                        <th>Carrier</th>
                         <th class="text-end">Duration</th>
                         <th class="text-end">Sell</th>
                         <th class="text-end">Margin</th>

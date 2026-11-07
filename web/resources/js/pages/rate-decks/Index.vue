@@ -25,7 +25,7 @@ defineOptions({ layout: { breadcrumbs: [{ title: 'Rate decks', href: index() }] 
 
     <div class="ss-stack-4">
         <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
-            <Heading title="Rate decks" description="Price lists by destination prefix: sell decks for customers, buy decks for vendor trunks" />
+            <Heading title="Rate decks" description="Price lists by destination prefix: sell decks for customers, buy decks for carrier trunks" />
             <Button as-child><Link :href="create()"><Plus class="icon" /> New rate deck</Link></Button>
         </div>
 

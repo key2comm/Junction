@@ -27,11 +27,11 @@ const lastDay = (iso: string) => new Date(new Date(iso).getTime() - 1000).toISOS
 
 <template>
     <section class="ss-stack-4 ss-span-lg-2">
-        <Heading variant="small" title="Vendor payables" description="What you owe this vendor: usage from your own call records, less the payments you make." />
+        <Heading variant="small" title="Carrier payables" description="What you owe this carrier: usage from your own call records, less the payments you make." />
 
         <div class="ss-grid gap-3 ss-cols-sm-3">
             <div class="card card-body">
-                <p class="small text-secondary">Owed to vendor</p>
+                <p class="small text-secondary">Owed to carrier</p>
                 <p class="fs-1 fw-semibold tabular-nums">{{ m(owed) }}</p>
             </div>
             <Form
@@ -59,7 +59,7 @@ const lastDay = (iso: string) => new Date(new Date(iso).getTime() - 1000).toISOS
 
         <div class="ss-grid gap-4 ss-cols-lg-2">
             <div class="ss-stack-2">
-                <h3 class="fw-medium">Vendor invoices</h3>
+                <h3 class="fw-medium">Carrier invoices</h3>
                 <div class="card table-responsive">
                     <table class="table table-vcenter card-table table-tight">
                         <thead>
@@ -81,14 +81,14 @@ const lastDay = (iso: string) => new Date(new Date(iso).getTime() - 1000).toISOS
                                 <td class="text-end tabular-nums" :class="{ 'text-danger': Number(i.difference) > 0 }">{{ m(i.difference) }}</td>
                             </tr>
                             <tr v-if="invoices.length === 0">
-                                <td colspan="4" class="text-center text-secondary">No vendor invoices recorded.</td>
+                                <td colspan="4" class="text-center text-secondary">No carrier invoices recorded.</td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
 
                 <details class="card card-body">
-                    <summary class="fw-medium">Enter a vendor invoice</summary>
+                    <summary class="fw-medium">Enter a carrier invoice</summary>
                     <Form v-bind="VendorBillingController.storeInvoice.form(accountId)" class="mt-3 ss-grid gap-2 ss-cols-sm-2" v-slot="{ errors, processing }">
                         <div class="ss-grid gap-1 ss-span-sm-2">
                             <Label for="vi_reference">Their invoice number</Label>

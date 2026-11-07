@@ -28,7 +28,7 @@ defineProps<{
     <div class="ss-grid gap-3 ss-cols-sm-6">
         <div class="ss-grid gap-1 ss-span-sm-3">
             <Label for="gw_host">Host</Label>
-            <Input id="gw_host" name="host" :default-value="gateway?.host" required placeholder="sip.vendor.example or 203.0.113.10" class="font-monospace" />
+            <Input id="gw_host" name="host" :default-value="gateway?.host" required placeholder="sip.carrier.example or 203.0.113.10" class="font-monospace" />
             <InputError :message="errors.host" />
         </div>
         <div class="ss-grid gap-1">

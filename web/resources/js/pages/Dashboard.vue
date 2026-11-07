@@ -116,7 +116,7 @@ const overdue = (iso: string | null) => iso !== null && new Date(iso) < new Date
             </section>
 
             <section class="ss-stack-2">
-                <Heading variant="small" title="Open vendor invoices" description="Waiting to be accepted or in dispute" />
+                <Heading variant="small" title="Open carrier invoices" description="Waiting to be accepted or in dispute" />
                 <ul class="list-group">
                     <li v-for="d in disputes" :key="d.id" class="list-group-item d-flex justify-content-between gap-2 px-2 py-2">
                         <span>

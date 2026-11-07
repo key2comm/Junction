@@ -24,7 +24,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * The customer portal. Every query here is scoped to the signed-in user's own
- * account, and nothing exposes vendors, buy costs or margins.
+ * account, and nothing exposes carriers, buy costs or margins.
  */
 class PortalController extends Controller
 {

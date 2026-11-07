@@ -23,7 +23,7 @@ class PostUsage extends Command
 {
     protected $signature = 'softswitch:post-usage {--account= : Only this account id}';
 
-    protected $description = 'Post rated call usage to customer ledgers and vendor payables';
+    protected $description = 'Post rated call usage to customer ledgers and carrier payables';
 
     public function handle(Ledger $ledger, VendorLedger $vendorLedger): int
     {
@@ -40,7 +40,7 @@ class PostUsage extends Command
             $entries += $this->postAccount((int) $accountId, $ledger);
         }
 
-        $this->info("Posted {$entries} customer and {$vendorEntries} vendor usage entr".($entries + $vendorEntries === 1 ? 'y' : 'ies').'.');
+        $this->info("Posted {$entries} customer and {$vendorEntries} carrier usage entr".($entries + $vendorEntries === 1 ? 'y' : 'ies').'.');
 
         return self::SUCCESS;
     }

@@ -84,7 +84,7 @@ class SelfTest extends Command
 
             $scenarios = [
                 'Answered call is rated' => fn () => $this->answered($esl, $ip),
-                'Fails over on 503 to the next vendor' => fn () => $this->failover($esl, $ip),
+                'Fails over on 503 to the next carrier' => fn () => $this->failover($esl, $ip),
                 'Busy is final (no failover)' => fn () => $this->busy($esl, $ip),
                 'Unknown customer is refused (403)' => fn () => $this->unknownCustomer($esl, $ip),
                 'Blocked destination is refused (403)' => fn () => $this->blocked($esl, $ip),
@@ -160,7 +160,7 @@ class SelfTest extends Command
 
         $codes = $cdr->attemptLog()->orderBy('attempt')->pluck('sip_code')->all();
         $this->check($codes === [503, 200], 'attempt SIP codes '.json_encode($codes).', expected [503,200]');
-        $this->check((int) $cdr->trunk_id === $this->f['trunks']['ok']->id, 'not carried by the second vendor');
+        $this->check((int) $cdr->trunk_id === $this->f['trunks']['ok']->id, 'not carried by the second carrier');
 
         return 'attempts: 503 → 200';
     }
@@ -174,7 +174,7 @@ class SelfTest extends Command
         $this->check($codes === [486], 'attempt SIP codes '.json_encode($codes).', expected [486] only');
         $this->check($cdr->billsec === 0 && $cdr->sell_cost === '0.000000', 'an unanswered call was billed');
 
-        return 'customer got busy; next vendor not tried';
+        return 'customer got busy; next carrier not tried';
     }
 
     private function unknownCustomer(EventSocket $esl, string $ip): string
@@ -444,11 +444,11 @@ class SelfTest extends Command
         ]);
         AccountIp::create(['account_id' => $customer->id, 'ip' => $ip, 'tech_prefix' => self::TECH, 'description' => 'selftest']);
         $vendor = Account::create([
-            'name' => 'Self-test vendor', 'code' => self::VENDOR, 'is_vendor' => true, 'status' => 'active',
+            'name' => 'Self-test carrier', 'code' => self::VENDOR, 'is_vendor' => true, 'status' => 'active',
             'currency' => 'USD', 'billing_type' => 'postpaid', 'credit_limit' => 0, 'timezone' => 'UTC',
         ]);
 
-        // name => [buy rate, tech prefix that tells the fake vendor what to do]
+        // name => [buy rate, tech prefix that tells the fake carrier what to do]
         $behaviours = ['503' => ['0.010', '8503'], 'busy' => ['0.015', '8486'], 'ok' => ['0.020', '8200']];
         $trunks = $routes = [];
         foreach ($behaviours as $name => [$rate, $prefix]) {

@@ -31,7 +31,7 @@ class VendorLedger
         ?DateTimeInterface $effectiveAt = null,
     ): VendorLedgerEntry {
         if (! in_array($type, self::TYPES, true)) {
-            throw new InvalidArgumentException("Unknown vendor ledger type [{$type}].");
+            throw new InvalidArgumentException("Unknown carrier ledger type [{$type}].");
         }
         if (! is_numeric($amount)) {
             throw new InvalidArgumentException("Amount must be numeric, got [{$amount}].");
@@ -41,13 +41,13 @@ class VendorLedger
             throw new InvalidArgumentException('Entries cannot be zero.');
         }
         if ($type === 'usage' && bccomp($amount, '0', 6) < 0) {
-            throw new InvalidArgumentException('Vendor usage must be positive (it increases what we owe).');
+            throw new InvalidArgumentException('Carrier usage must be positive (it increases what we owe).');
         }
         if ($type === 'payment' && bccomp($amount, '0', 6) > 0) {
-            throw new InvalidArgumentException('Payments to a vendor must be negative (they reduce what we owe).');
+            throw new InvalidArgumentException('Payments to a carrier must be negative (they reduce what we owe).');
         }
         if (! $vendor->is_vendor) {
-            throw new InvalidArgumentException("{$vendor->code} is not a vendor account.");
+            throw new InvalidArgumentException("{$vendor->code} is not a carrier account.");
         }
 
         return DB::transaction(function () use ($vendor, $type, $amount, $description, $reference, $user, $effectiveAt) {

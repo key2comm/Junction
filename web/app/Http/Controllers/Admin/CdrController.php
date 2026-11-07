@@ -142,7 +142,7 @@ class CdrController extends Controller
             'calls' => (int) $row->calls,
             'answered' => $answered,
             'rejected' => (int) $row->calls - (int) $row->routed,
-            // ASR over calls that reached a vendor; refusals before routing don't count against vendors.
+            // ASR over calls that reached a carrier; refusals before routing don't count against carriers.
             'asr' => (int) $row->routed > 0 ? round($answered / (int) $row->routed * 100, 1) : null,
             'acd' => $answered > 0 ? (int) round((int) $row->billsec / $answered) : null,
             'minutes' => round((int) $row->billsec / 60, 1),

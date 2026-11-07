@@ -36,7 +36,7 @@ defineOptions({
 const p = props.plan;
 const action = p ? RoutingPlanController.update.form(p.id) : RoutingPlanController.store.form();
 const modeHelp: Record<string, string> = {
-    lcr: 'Least cost: cheapest vendor rate for the destination first; priority breaks ties.',
+    lcr: 'Least cost: cheapest carrier rate for the destination first; priority breaks ties.',
     priority: 'Priority: fixed order by route priority, regardless of cost.',
     weight: 'Load balance: spread calls across routes in proportion to their weight.',
 };
@@ -62,16 +62,16 @@ const modeHelp: Record<string, string> = {
                 <InputError :message="errors.mode" />
             </div>
             <div class="ss-grid gap-2">
-                <Label for="max_attempts">Max vendor attempts per call</Label>
+                <Label for="max_attempts">Max carrier attempts per call</Label>
                 <Input id="max_attempts" name="max_attempts" type="number" min="1" max="10" :default-value="p?.max_attempts ?? 3" required class="ss-w-24" />
-                <p class="small text-secondary">How many vendors to try before giving up when calls fail.</p>
+                <p class="small text-secondary">How many carriers to try before giving up when calls fail.</p>
                 <InputError :message="errors.max_attempts" />
             </div>
             <fieldset class="ss-stack-2 rounded border p-3">
                 <legend class="px-1 fw-medium">Quality-aware routing</legend>
                 <label class="d-flex align-items-start gap-2">
                     <input type="checkbox" name="quality_routing" value="1" :checked="p?.quality_routing ?? false" class="mt-1 icon" />
-                    <span>Try vendors performing badly over the last hour <strong>after</strong> the others, even if they're cheaper. They're kept as a last resort, never dropped.</span>
+                    <span>Try carriers performing badly over the last hour <strong>after</strong> the others, even if they're cheaper. They're kept as a last resort, never dropped.</span>
                 </label>
                 <div class="ss-grid gap-2 ss-cols-sm-3">
                     <div class="ss-grid gap-1">
@@ -90,7 +90,7 @@ const modeHelp: Record<string, string> = {
                         <InputError :message="errors.quality_min_attempts" />
                     </div>
                 </div>
-                <p class="small text-secondary">Uses each vendor's figures for the destination when it has enough attempts, otherwise its overall figures. Updated every minute.</p>
+                <p class="small text-secondary">Uses each carrier's figures for the destination when it has enough attempts, otherwise its overall figures. Updated every minute.</p>
             </fieldset>
 
             <div class="ss-grid gap-2">

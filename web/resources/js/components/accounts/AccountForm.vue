@@ -93,7 +93,7 @@ const billing = useBilling();
                     </label>
                     <label class="d-flex align-items-center gap-2">
                         <input type="checkbox" name="is_vendor" value="1" :checked="v.is_vendor" class="form-check-input m-0" />
-                        Vendor <span class="text-secondary">(we send traffic to them)</span>
+                        Carrier <span class="text-secondary">(we send traffic to them)</span>
                     </label>
                 </div>
                 <InputError :message="errors.is_customer" />
