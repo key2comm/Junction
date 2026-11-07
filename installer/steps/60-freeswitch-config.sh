@@ -26,20 +26,20 @@ fi
 
 # (Tolerates missing directories: on first install the config doesn't exist yet.)
 checksum() {
-	{ find "$conf" "$scripts" -type f ! -path "$conf/sip_profiles/carrier/*" ! -path "$conf/directory/pbx/*" -print0 2>/dev/null || true; } \
+	{ find "$conf" "$scripts" -type f ! -path "$conf/sip_profiles/carrier/*" ! -path "$conf/directory/pbx/*" ! -path "$conf/tls/*" -print0 2>/dev/null || true; } \
 		| sort -z | xargs -0 -r sha256sum | sha256sum
 }
 before="$(checksum)"
 
 # Render every file in the repo tree; remove files the repo no longer has
-# (except generated gateway and PBX user files).
+# (except generated gateway and PBX user files, and certificates).
 install -d -m 0750 "$conf"
 listing="$(mktemp)"
 ( cd "$src" && find . -type f | sed 's|^\./||' | sort ) > "$listing"
 while read -r rel; do
 	render "$src/$rel" "$conf/$rel" 0640
 done < "$listing"
-( cd "$conf" && find . -type f ! -path './sip_profiles/carrier/*' ! -path './directory/pbx/*' ! -name .softswitch | sed 's|^\./||' | sort ) \
+( cd "$conf" && find . -type f ! -path './sip_profiles/carrier/*' ! -path './directory/pbx/*' ! -path './tls/*' ! -name .softswitch | sed 's|^\./||' | sort ) \
 	| comm -23 - "$listing" | while read -r stale; do rm -f -- "$conf/$stale"; done
 rm -f -- "$listing"
 touch "$conf/.softswitch"
@@ -53,6 +53,21 @@ find "$conf" "$scripts" -type d -exec chmod 0750 {} +
 # worker (a member of the freeswitch group).
 install -d -o freeswitch -g freeswitch -m 2770 "$conf/sip_profiles/carrier" "$conf/directory/pbx" "$SS_FS_GREETINGS"
 install -d -o freeswitch -g freeswitch -m 0750 "$SS_FS_LOG/xml_cdr"
+
+# Certificates (tls/ is FreeSWITCH's certs_dir). FreeSWITCH writes its WebRTC
+# DTLS certificate here itself. wss.pem serves the WSS port for WebRTC phones,
+# reached only by nginx on loopback, so a long-lived self-signed one is fine.
+install -d -o freeswitch -g freeswitch -m 0750 "$conf/tls"
+if [ ! -s "$conf/tls/wss.pem" ]; then
+	wss_key="$(mktemp)"; wss_crt="$(mktemp)"
+	openssl req -x509 -newkey rsa:2048 -nodes -days 3650 -subj "/CN=softswitch-wss" \
+		-keyout "$wss_key" -out "$wss_crt" >/dev/null 2>&1 || die "could not create the WSS certificate"
+	cat "$wss_key" "$wss_crt" > "$conf/tls/wss.pem"
+	rm -f -- "$wss_key" "$wss_crt"
+	info "Created the loopback WSS certificate $conf/tls/wss.pem"
+fi
+chown -R freeswitch:freeswitch "$conf/tls"
+chmod 0600 "$conf/tls/wss.pem"
 
 # fs_cli on this host picks up the ESL password automatically (root only).
 install -m 0600 /dev/null /etc/fs_cli.conf

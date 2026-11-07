@@ -71,7 +71,8 @@
         <param name="ext-rtp-ip" value="$${softswitch_public_ip}"/>
         <param name="sip-port" value="$${internal_sip_port}"/>
         <!-- WebRTC phones, through nginx (wss://<host>/ws). -->
-        <param name="ws-binding" value="127.0.0.1:$${internal_ws_port}"/>
+        <param name="wss-binding" value="127.0.0.1:$${internal_wss_port}"/>
+        <param name="tls-cert-dir" value="$${certs_dir}"/>
         <param name="username" value="softswitch"/>
         <param name="user-agent-string" value="Softswitch"/>
 

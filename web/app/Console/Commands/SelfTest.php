@@ -254,6 +254,7 @@ class SelfTest extends Command
         $this->routes(['ok']);
         $cdr = $this->placeCall($esl, $ip, self::DEST, hold: 3, expectAnswer: true, phone: $this->f['extensions']['1001']);
 
+        $this->check($cdr->callee === self::DEST, "the switch saw {$cdr->callee}, expected ".self::DEST);
         $this->check($cdr->direction === 'pbx_out', "direction {$cdr->direction}, expected pbx_out");
         $this->check((int) $cdr->trunk_id === $this->f['trunks']['ok']->id, 'carried by the wrong trunk');
         $this->check(bccomp((string) $cdr->sell_cost, '0', 6) > 0, 'the call was not billed');
@@ -266,6 +267,7 @@ class SelfTest extends Command
         // 1002 has no phone registered: the PBX answers with its voicemail.
         $cdr = $this->placeCall($esl, $ip, '1002', hold: 2, expectAnswer: true, phone: $this->f['extensions']['1001']);
 
+        $this->check($cdr->callee === '1002', "the switch saw {$cdr->callee}, expected 1002");
         $this->check($cdr->direction === 'pbx_local', "direction {$cdr->direction}, expected pbx_local");
         $this->check($cdr->answered_at !== null && $cdr->sell_cost === null, 'expected an answered, unbilled call');
 
@@ -281,6 +283,7 @@ class SelfTest extends Command
                 $esl->api("uuid_send_dtmf {$uuid} 9");
             });
 
+        $this->check($cdr->callee === self::DID, "the switch saw {$cdr->callee}, expected ".self::DID);
         $this->check($cdr->direction === 'pbx_in', "direction {$cdr->direction}, expected pbx_in");
         $this->check($cdr->sell_cost === null, 'an inbound DID call was billed');
 
@@ -301,11 +304,14 @@ class SelfTest extends Command
         $vars = $phone
             ? "origination_caller_id_number={$phone->extension},sip_auth_username={$phone->sip_username},sip_auth_password={$phone->sip_password},"
             : 'origination_caller_id_number=15550001000,';
-        // Phones address the switch by its hostname (the digest realm); fs_path sends it to our IP.
-        $target = $phone ? "sip:{$number}@{$this->wsHost()};fs_path=<sip:{$ip}:{$port}>" : "{$number}@{$ip}:{$port}";
+        // Phones address the switch by its hostname (which becomes the digest realm),
+        // while the INVITE itself is sent to our IP.
+        if ($phone) {
+            $vars .= "sip_invite_req_uri=sip:{$number}@{$this->wsHost()},sip_invite_to_uri=<sip:{$number}@{$this->wsHost()}>,";
+        }
         $reply = trim($esl->api(
             "originate {{$vars}originate_timeout=20,ignore_early_media=true,absolute_codec_string=PCMU}"
-            ."sofia/selftest/{$target} &park",
+            ."sofia/selftest/{$number}@{$ip}:{$port} &park",
             30,
         ));
 
