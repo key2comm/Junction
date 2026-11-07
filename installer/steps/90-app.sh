@@ -52,6 +52,7 @@ set_env SESSION_DRIVER database
 set_env SESSION_SECURE_COOKIE true
 set_env QUEUE_CONNECTION database
 set_env CACHE_STORE database
+set_env SOFTSWITCH_PUBLIC_IP "$SS_PUBLIC_IP"
 chown "$SS_APP_USER:$SS_APP_USER" "$env_file"; chmod 0600 "$env_file"
 
 # --- Dependencies + assets.

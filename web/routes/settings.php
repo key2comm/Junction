@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Settings\CertificateController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\SecurityController;
 use Illuminate\Auth\Middleware\RequirePassword;
@@ -24,6 +25,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('user-password.update');
 
     Route::inertia('settings/appearance', 'settings/Appearance')->name('appearance.edit');
+
+    // Server TLS certificate (Let's Encrypt). Changing it requires a recent password confirmation.
+    Route::get('settings/certificate', [CertificateController::class, 'edit'])->name('certificate.edit');
+    Route::post('settings/certificate', [CertificateController::class, 'store'])
+        ->middleware([RequirePassword::class, 'throttle:6,1'])
+        ->name('certificate.store');
+    Route::delete('settings/certificate', [CertificateController::class, 'destroy'])
+        ->middleware(RequirePassword::class)
+        ->name('certificate.destroy');
 });
 
 Route::get('.well-known/passkey-endpoints', function () {
