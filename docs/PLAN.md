@@ -84,7 +84,7 @@ flowchart LR
 4. **Routing engine** (done; the built-in self-test passes on the live switch): routing in PostgreSQL functions shared by FreeSWITCH and the route tester, route.lua, the Softswitch FreeSWITCH config, CDR ingestion and rating, usage posting, and gateway and firewall sync. Lua dialplan with customer identification by source IP (and tech-prefix), number normalization, LCR, failover, CPS and channel limits, balance checks, and maximum duration. FreeSWITCH gateways and the firewall `carriers` set generated from the database.
 5. **Billing** (done: per-call rating, usage posting in 15-minute batches, call records page, monthly invoices per customer time zone, vendor payables and vendor invoice reconciliation, SMTP settings in the admin UI, low-balance alerts, invoice emailing, dashboard): CDRs into PostgreSQL, rating, ledger, invoices, rate deck import with effective dates.
 6. **API** (done: /api/v1, 37 operations, bearer tokens with abilities and customer scoping, OpenAPI 3.1 at /api/v1/openapi.json, customer portal at /portal): `/api/v1` with token scopes and OpenAPI docs. A customer portal built on the same API.
-7. **Quality and operations** (next): ASR/ACD/PDD stats, alerts, live calls view, and dashboards.
+7. **Quality and operations** (in progress; done: per-attempt PDD from vendor-leg CDRs, hourly vendor quality stats, Vendor quality page and API; next: live calls, operational alerts, quality-aware routing): ASR/ACD/PDD stats, alerts, live calls view, and dashboards.
 8. **Minimal PBX:** extensions, voicemail, simple IVR, and WebRTC through nginx WSS, with outbound calls routed through LCR.
 
 ## Deploy model
