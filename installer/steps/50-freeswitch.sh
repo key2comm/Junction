@@ -84,8 +84,9 @@ getent passwd freeswitch >/dev/null || useradd --system -g freeswitch -d "$SS_FS
 chown -R freeswitch:freeswitch "$SS_FS_PREFIX"
 chmod -R o-rwx "$SS_FS_PREFIX"
 
-ln -sf "$SS_FS_PREFIX/bin/fs_cli" /usr/local/bin/fs_cli
-ln -sf "$SS_FS_PREFIX/bin/freeswitch" /usr/local/bin/freeswitch
+# /usr/bin so it works under sudo (secure_path excludes /usr/local/bin)
+rm -f /usr/local/bin/fs_cli /usr/local/bin/freeswitch
+ln -sf "$SS_FS_PREFIX/bin/fs_cli" /usr/bin/fs_cli
 
 render "$SS_ROOT/deploy/systemd/freeswitch.service" /etc/systemd/system/freeswitch.service
 systemctl daemon-reload
