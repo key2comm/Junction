@@ -1,5 +1,8 @@
+# Overrides for fail2ban's stock freeswitch filter.
 [Definition]
-# Only failures; "auth challenge" lines are normal for every legit REGISTER.
-failregex = \[WARNING\] sofia_reg\.c:\d+ SIP auth failure \((?:REGISTER|INVITE)\) on sofia profile '[^']+' for \[[^\]]*\] from ip <HOST>
-            \[WARNING\] sofia_reg\.c:\d+ Can't find user \[[^\]]*\] from <HOST>
-ignoreregex =
+# FreeSWITCH 1.10+ writes a CPU-idle field ("97.50%") after the timestamp,
+# which the stock prefix doesn't allow for.
+_pref_line = ^%(__prefix_line)s(?:(?:\d+-)?\d+-\d+ \d+:\d+:\d+\.\d+)?(?: ?\d+\.\d+%%)?
+# Count only real failures. The stock "extra" mode also counts
+# "auth challenge" lines, which every legitimate REGISTER produces.
+mode = normal
