@@ -11,8 +11,8 @@ export function deckKind(kind: 'tariff' | 'carrier') {
               description: 'What your customer pays when calls are made to each prefix. Only one tariff can be assigned to a customer.',
           }
         : {
-              singular: 'Carrier rates',
-              plural: 'Carrier rates',
+              singular: 'Carrier Rates',
+              plural: 'Carrier Rates',
               index: carrierRates,
               description: 'What carriers charge you, per destination prefix. Each carrier trunk uses one, and least-cost routing compares them.',
           };

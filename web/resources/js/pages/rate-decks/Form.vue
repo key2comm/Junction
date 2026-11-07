@@ -34,7 +34,7 @@ const kind = ref<Kind>(props.kind);
 const currency = props.deck?.currency ?? 'CAD';
 const topCurrencies = props.currencies.filter((c) => c.top);
 const otherCurrencies = props.currencies.filter((c) => !c.top);
-const title = props.deck ? `Edit ${props.deck.name}` : `New ${deckKind(props.kind).singular.toLowerCase()}`;
+const title = props.deck ? `Edit ${props.deck.name}` : `New ${deckKind(props.kind).singular}`;
 </script>
 
 <template>

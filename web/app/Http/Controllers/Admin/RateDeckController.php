@@ -51,7 +51,7 @@ class RateDeckController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $deck = RateDeck::create($this->validated($request));
-        Inertia::flash('toast', ['type' => 'success', 'message' => ($deck->kind === RateDeckKind::Tariff ? 'Tariff' : 'Carrier rates').' created. Import a CSV to add rates.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => ($deck->kind === RateDeckKind::Tariff ? 'Tariff' : 'Carrier Rates').' created. Import a CSV to add rates.']);
 
         return to_route('rate-decks.show', $deck);
     }

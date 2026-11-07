@@ -93,7 +93,11 @@ class RoutingSetupTest extends TestCase
         // Each list shows only its own kind.
         $this->actingAs($this->admin)->get(route('tariffs.index'))->assertInertia(fn (Assert $p) => $p->where('kind', 'tariff')->has('decks', 1)->where('decks.0.name', 'Retail'));
         $this->actingAs($this->admin)->get(route('carrier-rates.index'))->assertInertia(fn (Assert $p) => $p->where('kind', 'carrier')->has('decks', 1)->where('decks.0.name', 'Acme A-Z'));
-        $this->actingAs($this->admin)->get('/rate-decks')->assertRedirect('/carrier-rates');
+        $this->actingAs($this->admin)->get('/rate-decks')->assertInertia(fn (Assert $p) => $p->where('kind', 'carrier'));
+        // The create form posts to /rate-decks: nothing else may claim that (a catch-all redirect did, once routes were cached).
+        $posts = collect(app('router')->getRoutes()->getRoutes())->filter(fn ($r) => $r->uri() === 'rate-decks' && in_array('POST', $r->methods()));
+        $this->assertSame(['rate-decks.store'], $posts->map->getName()->values()->all());
+        $this->assertSame('rate-decks.store', app('router')->getRoutes()->match(\Illuminate\Http\Request::create('/rate-decks', 'POST'))->getName());
         $this->actingAs($this->admin)->post(route('rate-decks.store'), ['name' => 'No kind', 'currency' => 'CAD'])->assertSessionHasErrors('kind');
         $this->actingAs($this->admin)->post(route('rate-decks.store'), ['name' => 'Bad currency', 'kind' => 'tariff', 'currency' => 'XYZ'])->assertSessionHasErrors('currency');
 

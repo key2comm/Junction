@@ -35,7 +35,7 @@ const used = (d: (typeof props.decks)[number]) =>
     <div class="ss-stack-4">
         <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
             <Heading :title="k.plural" :description="k.description" />
-            <Button as-child><Link :href="create({ query: { kind } })"><Plus class="icon" /> New {{ k.singular.toLowerCase() }}</Link></Button>
+            <Button as-child><Link :href="create({ query: { kind } })"><Plus class="icon" /> New {{ k.singular }}</Link></Button>
         </div>
 
         <div class="card table-responsive">
@@ -59,7 +59,7 @@ const used = (d: (typeof props.decks)[number]) =>
                         <td class="text-secondary">{{ used(d) }}</td>
                     </tr>
                     <tr v-if="decks.length === 0">
-                        <td colspan="4" class="text-center text-secondary">No {{ k.plural.toLowerCase() }} yet.</td>
+                        <td colspan="4" class="text-center text-secondary">No {{ k.plural }} yet.</td>
                     </tr>
                 </tbody>
             </table>

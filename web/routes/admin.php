@@ -98,7 +98,9 @@ Route::middleware(['auth', 'admin'])->group(function () {
     // Rate decks, listed by kind: tariffs (customers) and carrier rates (trunks).
     Route::get('tariffs', [RateDeckController::class, 'index'])->defaults('kind', 'tariff')->name('tariffs.index');
     Route::get('carrier-rates', [RateDeckController::class, 'index'])->defaults('kind', 'carrier')->name('carrier-rates.index');
-    Route::redirect('rate-decks', '/carrier-rates');
+    // Old /rate-decks links show carrier rates. GET only: Route::redirect() would match every
+    // method and swallow the create form's POST /rate-decks once routes are cached.
+    Route::get('rate-decks', [RateDeckController::class, 'index'])->defaults('kind', 'carrier');
     Route::resource('rate-decks', RateDeckController::class)->except(['index', 'destroy']);
     Route::post('rate-decks/{rate_deck}/imports', [RateImportController::class, 'store'])
         ->middleware('throttle:10,1')
