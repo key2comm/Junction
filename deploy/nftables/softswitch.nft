@@ -1,14 +1,14 @@
 #!/usr/sbin/nft -f
-# Softswitch host firewall. Installed to /etc/nftables/softswitch.nft
+# Softswitch host firewall. Rendered by install.sh to /etc/nftables/softswitch.nft
 # fail2ban manages its own table (inet f2b-table) and is not touched here.
 
 destroy table inet softswitch
 table inet softswitch {
-	# Wholesale peers (customers AND vendors) allowed to reach the carrier profile (5080).
+	# Wholesale peers (customers AND vendors) allowed to reach the carrier profile.
+	# Populated from /etc/nftables/softswitch-carriers.nft.
 	set carriers {
 		type ipv4_addr
 		flags interval
-		# elements = { 203.0.113.10, 198.51.100.0/24 }
 	}
 
 	chain input {
@@ -18,23 +18,22 @@ table inet softswitch {
 		ct state invalid drop
 		iif lo accept
 
-		ip protocol icmp accept
-		ip6 nexthdr ipv6-icmp accept
+		meta l4proto { icmp, ipv6-icmp } accept
 
-		tcp dport 22 ct state new limit rate 15/minute burst 10 packets accept
+		tcp dport @SS_SSH_PORT@ ct state new limit rate 15/minute burst 10 packets accept
 
 		tcp dport { 80, 443 } accept
 
 		# internal profile: PBX phones only (digest auth + fail2ban)
-		udp dport 5060 accept
-		tcp dport { 5060, 5061 } accept
+		udp dport @SS_PBX_PORT@ accept
+		tcp dport { @SS_PBX_PORT@, @SS_PBX_TLS_PORT@ } accept
 
 		# carrier profile: all wholesale traffic, allowlisted peers only
-		ip saddr @carriers udp dport 5080 accept
-		ip saddr @carriers tcp dport 5080 accept
+		ip saddr @carriers udp dport @SS_CARRIER_PORT@ accept
+		ip saddr @carriers tcp dport @SS_CARRIER_PORT@ accept
 
 		# RTP
-		udp dport 16384-32768 accept
+		udp dport @SS_RTP_START@-@SS_RTP_END@ accept
 
 		counter drop
 	}
@@ -43,3 +42,5 @@ table inet softswitch {
 		type filter hook forward priority filter; policy drop;
 	}
 }
+
+include "/etc/nftables/softswitch-carriers.nft"

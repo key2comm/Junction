@@ -55,4 +55,11 @@ FreeSWITCH relays every call's media (RTP). The current 1 vCPU droplet is for bu
 
 ## Deploy model
 
-The `deploy/` folder mirrors where files go on the server (for example `deploy/nftables/` → `/etc/nftables/`). Changes are made here, committed, then pushed to the server. Don't edit files on the server by hand.
+The project ships as an installer (`install.sh` plus `installer/steps/`), so anyone can install it on their own EL9/EL10 server. `deploy/` holds the config templates; `@SS_VAR@` placeholders are filled in from `/etc/softswitch/softswitch.conf`. Nothing is hand-edited on servers. Change the repo and re-run the installer.
+
+FreeSWITCH is built from public source (signalwire/freeswitch, freeswitch/sofia-sip, freeswitch/spandsp). No SignalWire token or paid repo is needed.
+
+## Later
+
+- STIR/SHAKEN signing and verification (needed for North American carriers; FreeSWITCH supports it through libstirshaken).
+- Support more operating systems (Debian/Ubuntu).

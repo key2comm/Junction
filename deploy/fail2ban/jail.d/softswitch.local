@@ -1,3 +1,4 @@
+# Rendered by install.sh to /etc/fail2ban/jail.d/softswitch.local
 [DEFAULT]
 banaction = nftables-multiport
 banaction_allports = nftables-allports
@@ -11,11 +12,11 @@ ignoreip = 127.0.0.1/8 ::1
 [sshd]
 enabled = true
 backend = systemd
+port = @SS_SSH_PORT@
 
-# Enabled in phase 2 once FreeSWITCH is logging.
 [freeswitch]
-enabled = false
+enabled = @SS_F2B_FREESWITCH@
 filter = freeswitch
-logpath = /var/log/freeswitch/freeswitch.log
+logpath = @SS_FS_PREFIX@/log/freeswitch.log
 banaction = %(banaction_allports)s
 maxretry = 5

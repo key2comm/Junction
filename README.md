@@ -1,10 +1,36 @@
 # Softswitch
 
-## Getting started on a new device
+An open Class 4 (wholesale carrier) softswitch built on FreeSWITCH. It routes VoIP traffic between customer and vendor carriers using least-cost routing, and includes a few light PBX features.
+
+> Status: early development. Not ready for production traffic.
+
+## Install
+
+Requirements: Rocky Linux, AlmaLinux, RHEL, or CentOS Stream 9/10. Use a fresh server with a public IP and root/sudo access. No SignalWire token is needed, because FreeSWITCH is built from public source.
 
 ```sh
-gh repo clone Softswitch ~/projects/Softswitch
-code ~/projects/Softswitch
+git clone https://github.com/key2comm/Softswitch.git
+cd Softswitch
+sudo ./install.sh
 ```
 
-Sync: `git pull` before you start, then commit and `git push` when you're done.
+The first run creates `/etc/softswitch/softswitch.conf`. To change a setting (carrier IPs, ports, versions), edit that file and run `sudo ./install.sh` again. Every step can be safely re-run.
+
+Generated secrets (event socket password and others) are kept in `/etc/softswitch/secrets`, readable by root only.
+
+| Step | What it does |
+|---|---|
+| 10-base | Enables EPEL and CRB, and installs base tools |
+| 20-firewall | Sets up the nftables firewall, with an automatic 3-minute rollback until you confirm SSH still works |
+| 30-fail2ban | Bans repeated SSH and SIP login failures |
+| 40-ssh | Turns off SSH password and root login (only when you already log in with a key) |
+| 50-freeswitch | Builds FreeSWITCH, sofia-sip, and spandsp from source |
+| 60-freeswitch-config | Secures the stock config and starts FreeSWITCH |
+
+## Development
+
+The repo is synced across devices through GitHub. `git pull` before you start; commit and `git push` when you're done.
+
+`scripts/push-to-server.sh theswitch -- --steps 20` copies the committed code to the test server and runs the chosen installer steps there.
+
+See [docs/PLAN.md](docs/PLAN.md) for the architecture and roadmap.

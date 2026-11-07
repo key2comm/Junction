@@ -1,0 +1,23 @@
+# Rendered by install.sh to /etc/systemd/system/freeswitch.service
+[Unit]
+Description=FreeSWITCH (Softswitch)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=forking
+PIDFile=@SS_FS_PREFIX@/run/freeswitch.pid
+ExecStart=@SS_FS_PREFIX@/bin/freeswitch -u freeswitch -g freeswitch -ncwait -nonat
+TimeoutStartSec=90
+Restart=on-failure
+RestartSec=5
+UMask=0007
+LimitCORE=infinity
+LimitNOFILE=100000
+LimitNPROC=60000
+LimitSTACK=250000
+LimitRTPRIO=infinity
+LimitRTTIME=infinity
+
+[Install]
+WantedBy=multi-user.target
