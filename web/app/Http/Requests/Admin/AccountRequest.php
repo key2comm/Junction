@@ -5,6 +5,7 @@ namespace App\Http\Requests\Admin;
 use App\Enums\AccountStatus;
 use App\Enums\BillingType;
 use App\Models\Account;
+use App\Support\Currencies;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Validator as ValidatorFactory;
 use Illuminate\Validation\Rule;
@@ -45,7 +46,7 @@ class AccountRequest extends FormRequest
 
         return [
             'code' => strtoupper(trim((string) ($input['code'] ?? ''))),
-            'currency' => strtoupper(trim((string) ($input['currency'] ?? 'USD'))),
+            'currency' => strtoupper(trim((string) ($input['currency'] ?? Currencies::DEFAULT))),
             'is_customer' => $role !== null ? $role === 'customer' : $bool($input['is_customer'] ?? false),
             'is_vendor' => $role !== null ? $role === 'carrier' : $bool($input['is_vendor'] ?? false),
         ];
@@ -59,7 +60,7 @@ class AccountRequest extends FormRequest
             'is_customer' => ['boolean'],
             'is_vendor' => ['boolean'],
             'status' => ['required', Rule::enum(AccountStatus::class)],
-            'currency' => ['required', 'string', 'size:3', 'regex:/^[A-Z]{3}$/'],
+            'currency' => ['required', 'string', Rule::in(array_keys(Currencies::ALL))],
             'billing_type' => ['required', Rule::enum(BillingType::class)],
             'credit_limit' => ['required', 'numeric', 'min:0', 'max:9999999999'],
             'low_balance_threshold' => ['nullable', 'numeric', 'min:0', 'max:9999999999'],
@@ -76,7 +77,7 @@ class AccountRequest extends FormRequest
 
     public static function messagesFor(): array
     {
-        return ['code.regex' => 'Use letters, digits, dashes and underscores only.'];
+        return ['code.regex' => 'Use letters, digits, dashes and underscores only.', 'currency.in' => 'Choose a currency from the list.'];
     }
 
     public static function checkRoles(Validator $validator): void

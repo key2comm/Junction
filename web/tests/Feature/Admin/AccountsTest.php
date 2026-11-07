@@ -112,6 +112,18 @@ class AccountsTest extends TestCase
         $this->assertSame('2500.0000', $account->credit_limit);
     }
 
+    public function test_currency_comes_from_the_list_with_usd_and_cad_first(): void
+    {
+        $this->actingAs($this->admin)->post(route('accounts.store'), $this->validAccount(['currency' => 'XYZ']))->assertSessionHasErrors('currency');
+
+        $this->actingAs($this->admin)->get(route('accounts.create'))->assertInertia(fn (Assert $page) => $page
+            ->where('options.currencies.0.code', 'USD')->where('options.currencies.1.code', 'CAD')->where('options.currencies.2.code', 'AED'));
+
+        // No currency given (e.g. over the API): CAD.
+        $this->actingAs($this->admin)->post(route('accounts.store'), $this->validAccount(['currency' => null]))->assertSessionHasNoErrors();
+        $this->assertSame('CAD', Account::query()->sole()->currency);
+    }
+
     public function test_an_account_is_either_a_customer_or_a_carrier(): void
     {
         $this->actingAs($this->admin)->post(route('accounts.store'), $this->validAccount(['is_vendor' => '1']))

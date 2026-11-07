@@ -14,6 +14,7 @@ export type AccountFormOptions = {
     rateDecks: { id: number; name: string; currency: string }[];
     routingPlans: { id: number; name: string }[];
     timezones: string[];
+    currencies: { code: string; name: string; top: boolean }[];
 };
 
 export type AccountFormValues = {
@@ -46,7 +47,7 @@ const props = defineProps<{
 
 const v: Partial<AccountFormValues> = {
     status: 'active',
-    currency: 'USD',
+    currency: 'CAD',
     billing_type: 'prepaid',
     credit_limit: '0',
     timezone: 'UTC',
@@ -55,6 +56,8 @@ const v: Partial<AccountFormValues> = {
 };
 
 const select = 'form-select';
+const topCurrencies = props.options.currencies.filter((c) => c.top);
+const otherCurrencies = props.options.currencies.filter((c) => !c.top);
 
 // Settings → Billing off: balances aren't used, so the billing fields are kept as they are (hidden).
 const billing = useBilling();
@@ -134,7 +137,11 @@ const billing = useBilling();
 
             <div class="ss-grid gap-2">
                 <Label for="currency">Currency</Label>
-                <Input id="currency" name="currency" :default-value="v.currency" maxlength="3" required class="text-uppercase" />
+                <select id="currency" name="currency" :class="select" required>
+                    <option v-for="c in topCurrencies" :key="c.code" :value="c.code" :selected="c.code === v.currency">{{ c.code }} — {{ c.name }}</option>
+                    <option disabled>──────────</option>
+                    <option v-for="c in otherCurrencies" :key="c.code" :value="c.code" :selected="c.code === v.currency">{{ c.code }} — {{ c.name }}</option>
+                </select>
                 <InputError :message="errors.currency" />
             </div>
 
@@ -166,7 +173,7 @@ const billing = useBilling();
             </div>
 
             <div class="ss-grid gap-2">
-                <Label for="sell_rate_deck_id">Sell rate deck</Label>
+                <Label for="sell_rate_deck_id">Tariffs</Label>
                 <select id="sell_rate_deck_id" name="sell_rate_deck_id" :class="select">
                     <option value="">— None —</option>
                     <option v-for="d in options.rateDecks" :key="d.id" :value="d.id" :selected="d.id === v.sell_rate_deck_id">{{ d.name }} ({{ d.currency }})</option>

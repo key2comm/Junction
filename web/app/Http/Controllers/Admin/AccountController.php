@@ -13,6 +13,7 @@ use App\Models\RoutingPlan;
 use App\Models\Trunk;
 use App\Models\User;
 use App\Services\Router;
+use App\Support\Currencies;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -166,6 +167,7 @@ class AccountController extends Controller
                 'rateDecks' => RateDeck::query()->orderBy('name')->get(['id', 'name', 'currency']),
                 'routingPlans' => RoutingPlan::query()->orderBy('name')->get(['id', 'name']),
                 'timezones' => timezone_identifiers_list(),
+                'currencies' => Currencies::options(),
             ],
         ];
     }

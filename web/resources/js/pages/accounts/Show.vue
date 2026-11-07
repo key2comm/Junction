@@ -139,7 +139,7 @@ const select = 'form-select w-auto';
                     description="Traffic from these addresses is identified as this customer. They are also allowed through the firewall."
                 />
                 <dl class="ss-grid ss-cols-2 gap-2">
-                    <dt class="text-secondary">Sell rate deck</dt>
+                    <dt class="text-secondary">Tariffs</dt>
                     <dd>{{ account.sell_rate_deck?.name ?? '— not set —' }}</dd>
                     <dt class="text-secondary">Routing plan</dt>
                     <dd>{{ account.routing_plan?.name ?? '— not set —' }}</dd>
