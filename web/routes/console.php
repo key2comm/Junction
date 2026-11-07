@@ -17,3 +17,7 @@ Schedule::call(function () {
 
 // Follow vendor hostnames whose IPs change, and repair any drift.
 Schedule::job(new \App\Jobs\SyncSwitchConfig)->everyFifteenMinutes();
+
+// Monthly invoices: hourly, so each customer is invoiced two hours after the
+// month ends in their own time zone (issueDue skips anyone not due yet).
+Schedule::command('softswitch:invoices')->hourlyAt(5)->withoutOverlapping();

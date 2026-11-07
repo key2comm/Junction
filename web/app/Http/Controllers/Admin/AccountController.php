@@ -7,6 +7,7 @@ use App\Enums\BillingType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\AccountRequest;
 use App\Models\Account;
+use App\Models\Invoice;
 use App\Models\RateDeck;
 use App\Models\RoutingPlan;
 use App\Models\Trunk;
@@ -87,7 +88,11 @@ class AccountController extends Controller
             'ips' => $account->ips()->orderBy('ip')->get(['id', 'ip', 'tech_prefix', 'description', 'enabled']),
             'trunks' => $account->trunks->map->only(['id', 'name', 'enabled', 'gateways_count']),
             'ledger' => $account->ledgerEntries()->latest('id')->limit(50)
-                ->get(['id', 'type', 'amount', 'balance_after', 'description', 'created_at']),
+                ->get(['id', 'type', 'amount', 'balance_after', 'description', 'created_at', 'effective_at']),
+            'invoices' => $account->is_customer
+                ? Invoice::query()->where('account_id', $account->id)->orderByDesc('period_start')->orderByDesc('id')->limit(24)
+                    ->get(['id', 'number', 'status', 'period_start', 'period_end', 'timezone', 'currency', 'usage_total', 'amount_due'])
+                : [],
         ]);
     }
 

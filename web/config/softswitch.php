@@ -10,6 +10,9 @@ return [
     // Built-in self-test: fake vendor/customer on this FreeSWITCH profile port.
     'selftest_port' => (int) env('SOFTSWITCH_SELFTEST_PORT', 5090),
 
+    // Postpaid invoices are due this many days after issue.
+    'invoice_due_days' => (int) env('SOFTSWITCH_INVOICE_DUE_DAYS', 15),
+
     // Longest call allowed, in seconds (the funds reservation covers this much).
     'max_call_duration' => (int) env('SOFTSWITCH_MAX_CALL_DURATION', 14400),
 

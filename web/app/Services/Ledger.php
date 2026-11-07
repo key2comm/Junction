@@ -7,6 +7,7 @@ use App\Models\Account;
 use App\Models\LedgerEntry;
 use App\Models\User;
 use App\Support\Decimal;
+use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -28,6 +29,7 @@ class Ledger
         string $description,
         ?Model $reference = null,
         ?User $user = null,
+        ?DateTimeInterface $effectiveAt = null,
     ): LedgerEntry {
         if (! is_numeric($amount)) {
             throw new InvalidArgumentException("Amount must be numeric, got [{$amount}].");
@@ -43,7 +45,7 @@ class Ledger
             throw new InvalidArgumentException('Usage charges must be negative.');
         }
 
-        return DB::transaction(function () use ($account, $type, $amount, $description, $reference, $user) {
+        return DB::transaction(function () use ($account, $type, $amount, $description, $reference, $user, $effectiveAt) {
             $locked = Account::query()->whereKey($account->getKey())->lockForUpdate()->firstOrFail();
             $balance = bcadd((string) $locked->balance, $amount, 6);
 
@@ -55,6 +57,8 @@ class Ledger
                 'currency' => $locked->currency,
                 'description' => $description,
                 'user_id' => $user?->id,
+                // When it applies (usage: when the calls happened). Defaults to now.
+                'effective_at' => $effectiveAt ?? now(),
             ]);
             if ($reference) {
                 $entry->reference()->associate($reference);

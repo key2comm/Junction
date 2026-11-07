@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * An append-only money movement. Create entries through App\Services\Ledger,
  * which keeps accounts.balance in step; the database rejects updates/deletes.
  */
-#[Fillable(['account_id', 'type', 'amount', 'balance_after', 'currency', 'description', 'reference_type', 'reference_id', 'user_id'])]
+#[Fillable(['account_id', 'type', 'amount', 'balance_after', 'currency', 'description', 'reference_type', 'reference_id', 'user_id', 'effective_at'])]
 class LedgerEntry extends Model
 {
     public const UPDATED_AT = null;
@@ -24,6 +24,7 @@ class LedgerEntry extends Model
             'amount' => 'decimal:6',
             'balance_after' => 'decimal:6',
             'created_at' => 'datetime',
+            'effective_at' => 'datetime',
         ];
     }
 

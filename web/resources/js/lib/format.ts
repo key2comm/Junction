@@ -21,3 +21,12 @@ export function dateTime(value: string | null | undefined): string {
 export function titleCase(value: string): string {
     return value.charAt(0).toUpperCase() + value.slice(1);
 }
+
+/** "October 2026" for a billing period starting at `iso`, in the account's time zone. */
+export function billingMonth(iso: string, timeZone: string): string {
+    return new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric', timeZone }).format(new Date(iso));
+}
+
+export function date(iso: string | null | undefined, timeZone?: string): string {
+    return iso ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeZone }).format(new Date(iso)) : '—';
+}

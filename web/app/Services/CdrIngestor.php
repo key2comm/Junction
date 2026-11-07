@@ -90,6 +90,7 @@ class CdrIngestor
                 'hangup_cause' => $var('softswitch_reject_reason') ?? $var('hangup_cause'),
                 'attempts' => count($attempts),
                 'sell_prefix' => $sellRate?->prefix,
+                'sell_destination' => $sellRate?->destination,
                 'sell_rate' => $sellRate?->rate,
                 'sell_cost' => $sellRate ? $sellRate->costFor($billsec) : null,
                 'vendor_account_id' => $trunkId && $answered ? Trunk::query()->whereKey($trunkId)->value('account_id') : null,

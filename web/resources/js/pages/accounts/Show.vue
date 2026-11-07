@@ -2,6 +2,7 @@
 import { Form, Head, Link } from '@inertiajs/vue3';
 import { Pencil, Trash2 } from '@lucide/vue';
 import AccountIpController from '@/actions/App/Http/Controllers/Admin/AccountIpController';
+import InvoiceController from '@/actions/App/Http/Controllers/Admin/InvoiceController';
 import LedgerEntryController from '@/actions/App/Http/Controllers/Admin/LedgerEntryController';
 import RouteTester from '@/components/accounts/RouteTester.vue';
 import Heading from '@/components/Heading.vue';
@@ -10,9 +11,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { dateTime, money, titleCase } from '@/lib/format';
+import { billingMonth, dateTime, money, titleCase } from '@/lib/format';
 import { edit, index, show } from '@/routes/accounts';
 import { index as cdrIndex } from '@/routes/cdrs';
+import { show as showInvoice } from '@/routes/invoices';
 
 type Account = {
     id: number;
@@ -40,7 +42,8 @@ const props = defineProps<{
     account: Account;
     ips: { id: number; ip: string; tech_prefix: string; description: string | null; enabled: boolean }[];
     trunks: { id: number; name: string; enabled: boolean; gateways_count: number }[];
-    ledger: { id: number; type: string; amount: string; balance_after: string; description: string; created_at: string }[];
+    ledger: { id: number; type: string; amount: string; balance_after: string; description: string; created_at: string; effective_at: string }[];
+    invoices: { id: number; number: string; status: string; period_start: string; timezone: string; currency: string; usage_total: string; amount_due: string }[];
 }>();
 
 defineOptions({
@@ -229,6 +232,29 @@ const select =
                         </tbody>
                     </table>
                 </div>
+            </section>
+
+            <!-- Invoices -->
+            <section v-if="account.is_customer" class="space-y-4">
+                <Heading variant="small" title="Invoices" description="Issued automatically after each month ends. Issue one by hand for any finished month (e.g. after voiding)." />
+                <ul class="divide-y rounded-lg border text-sm">
+                    <li v-for="i in invoices" :key="i.id" class="flex flex-wrap items-center justify-between gap-2 px-3 py-2" :class="{ 'opacity-60': i.status === 'void' }">
+                        <span>
+                            <Link :href="showInvoice(i.id)" class="font-mono hover:underline">{{ i.number }}</Link>
+                            <span class="ml-2 text-muted-foreground">{{ billingMonth(i.period_start, i.timezone) }}</span>
+                            <Badge v-if="i.status === 'void'" variant="secondary" class="ml-2">void</Badge>
+                        </span>
+                        <span class="tabular-nums">{{ Number(i.amount_due) ? `${money(i.amount_due, i.currency)} due` : money(i.usage_total, i.currency) }}</span>
+                    </li>
+                    <li v-if="invoices.length === 0" class="px-3 py-6 text-center text-muted-foreground">No invoices yet.</li>
+                </ul>
+                <Form v-bind="InvoiceController.store.form(account.id)" class="flex flex-wrap items-start gap-2" v-slot="{ errors, processing }">
+                    <div class="grid gap-1">
+                        <Input name="month" type="month" required aria-label="Billing month" class="w-44" />
+                        <InputError :message="errors.month" />
+                    </div>
+                    <Button variant="outline" :disabled="processing">Issue invoice</Button>
+                </Form>
             </section>
 
             <!-- Vendor egress -->

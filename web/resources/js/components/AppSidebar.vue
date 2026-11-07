@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-import { Building2, Cable, LayoutGrid, PhoneCall, Route, Tags } from '@lucide/vue';
+import { Building2, Cable, FileText, LayoutGrid, PhoneCall, Route, Tags } from '@lucide/vue';
 import AppLogo from '@/components/AppLogo.vue';
 import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
@@ -17,6 +17,7 @@ import {
 import { dashboard } from '@/routes';
 import { index as accounts } from '@/routes/accounts';
 import { index as cdrs } from '@/routes/cdrs';
+import { index as invoices } from '@/routes/invoices';
 import { index as rateDecks } from '@/routes/rate-decks';
 import { index as routingPlans } from '@/routes/routing-plans';
 import { index as trunks } from '@/routes/trunks';
@@ -32,6 +33,11 @@ const mainNavItems: NavItem[] = [
         title: 'Call records',
         href: cdrs(),
         icon: PhoneCall,
+    },
+    {
+        title: 'Invoices',
+        href: invoices(),
+        icon: FileText,
     },
     {
         title: 'Accounts',

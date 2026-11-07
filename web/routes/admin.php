@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\AccountController;
 use App\Http\Controllers\Admin\AccountIpController;
 use App\Http\Controllers\Admin\CdrController;
 use App\Http\Controllers\Admin\GatewayController;
+use App\Http\Controllers\Admin\InvoiceController;
 use App\Http\Controllers\Admin\LedgerEntryController;
 use App\Http\Controllers\Admin\RateDeckController;
 use App\Http\Controllers\Admin\RateImportController;
@@ -35,6 +36,12 @@ Route::middleware(['auth'])->group(function () {
     Route::get('cdrs', [CdrController::class, 'index'])->name('cdrs.index');
     Route::get('cdrs/export', [CdrController::class, 'export'])->middleware('throttle:10,1')->name('cdrs.download');
     Route::get('cdrs/{cdr}', [CdrController::class, 'show'])->whereNumber('cdr')->name('cdrs.show');
+
+    Route::get('invoices', [InvoiceController::class, 'index'])->name('invoices.index');
+    Route::get('invoices/{invoice}', [InvoiceController::class, 'show'])->name('invoices.show');
+    Route::get('invoices/{invoice}/csv', [InvoiceController::class, 'csv'])->name('invoices.csv');
+    Route::post('invoices/{invoice}/void', [InvoiceController::class, 'void'])->name('invoices.void');
+    Route::post('accounts/{account}/invoices', [InvoiceController::class, 'store'])->middleware('throttle:20,1')->name('accounts.invoices.store');
 
     Route::resource('rate-decks', RateDeckController::class)->except(['destroy']);
     Route::post('rate-decks/{rate_deck}/imports', [RateImportController::class, 'store'])
