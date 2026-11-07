@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\PortalUserController;
 use App\Http\Controllers\Admin\QualityController;
 use App\Http\Controllers\Admin\RateDeckController;
 use App\Http\Controllers\Admin\RateImportController;
+use App\Http\Controllers\Admin\TariffController;
 use App\Http\Controllers\Admin\RoutingPlanController;
 use App\Http\Controllers\Admin\TrunkController;
 use App\Http\Controllers\Admin\VendorBillingController;
@@ -105,6 +106,9 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::post('rate-decks/{rate_deck}/imports', [RateImportController::class, 'store'])
         ->middleware('throttle:10,1')
         ->name('rate-decks.imports.store');
+    // Tariffs: build from Carrier Rates plus a markup, and adjust single rates by hand.
+    Route::post('rate-decks/{rate_deck}/build', [TariffController::class, 'build'])->middleware('throttle:10,1')->name('rate-decks.build');
+    Route::patch('rate-decks/{rate_deck}/rates/{rate}', [TariffController::class, 'updateRate'])->scopeBindings()->name('rate-decks.rates.update');
 
     Route::resource('trunks', TrunkController::class)->except(['destroy']);
     Route::resource('trunks.gateways', GatewayController::class)->only(['store', 'edit', 'update', 'destroy'])->scoped();

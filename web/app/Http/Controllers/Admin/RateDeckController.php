@@ -51,7 +51,9 @@ class RateDeckController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $deck = RateDeck::create($this->validated($request));
-        Inertia::flash('toast', ['type' => 'success', 'message' => ($deck->kind === RateDeckKind::Tariff ? 'Tariff' : 'Carrier Rates').' created. Import a CSV to add rates.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => $deck->kind === RateDeckKind::Tariff
+            ? 'Tariff created. Build it from your Carrier Rates with a markup, or import a CSV.'
+            : 'Carrier Rates created. Import a CSV to add rates.']);
 
         return to_route('rate-decks.show', $deck);
     }
@@ -92,6 +94,14 @@ class RateDeckController extends Controller
                 'user' => $i->user?->name,
             ]),
             'importing' => $imports->contains(fn (RateImport $i) => $i->isPending()),
+            // Tariffs: built from Carrier Rates plus a markup.
+            'build' => $rateDeck->kind === RateDeckKind::Tariff ? [
+                'sources' => $rateDeck->sources()->pluck('rate_decks.id'),
+                'markup_type' => $rateDeck->markup_type ?? 'percent',
+                'markup_value' => $rateDeck->markup_value,
+                'built_at' => $rateDeck->built_at,
+                'carrier_rates' => RateDeck::query()->where('kind', RateDeckKind::Carrier)->orderBy('name')->get(['id', 'name', 'currency']),
+            ] : null,
             'usage' => [
                 'customers' => Account::query()->where('sell_rate_deck_id', $rateDeck->id)->orderBy('name')->get(['id', 'name', 'code']),
                 'trunks' => Trunk::query()->where('rate_deck_id', $rateDeck->id)->with('account:id,code')->get(['id', 'name', 'account_id']),

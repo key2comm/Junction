@@ -203,8 +203,13 @@ class RateImporter
         ];
     }
 
-    /** @return array<string, int> */
-    private function apply(RateImport $import, array $rows): array
+    /**
+     * Apply validated rows (also used by App\Jobs\BuildTariff). Mode "build"
+     * behaves like "replace": the rows are the whole deck.
+     *
+     * @return array<string, int>
+     */
+    public function apply(RateImport $import, array $rows): array
     {
         $deck = $import->rate_deck_id;
         $effective = CarbonImmutable::parse($import->effective_from)->utc()->format('Y-m-d H:i:sP');
@@ -239,7 +244,7 @@ class RateImporter
                  WHERE r.rate_deck_id = ? AND r.prefix = t.prefix AND r.effective_from >= t.effective_from',
                 [$deck],
             );
-            if ($import->mode === 'replace') {
+            if (in_array($import->mode, ['replace', 'build'], true)) {
                 DB::delete(
                     'DELETE FROM rates r WHERE r.rate_deck_id = ? AND r.effective_from >= ?
                      AND NOT EXISTS (SELECT 1 FROM rate_import_rows t WHERE t.prefix = r.prefix)',
@@ -280,7 +285,7 @@ class RateImporter
 
             // 5. Replace mode: prefixes missing from the file stop at the import's effective time.
             $ended = 0;
-            if ($import->mode === 'replace') {
+            if (in_array($import->mode, ['replace', 'build'], true)) {
                 $ended = DB::update(
                     'UPDATE rates r SET effective_to = ?, updated_at = now()
                      WHERE r.rate_deck_id = ? AND r.effective_from < ?

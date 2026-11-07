@@ -9,6 +9,7 @@ use DateTimeInterface;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
@@ -16,7 +17,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * to customer accounts) or carrier rates (what a carrier charges us, attached
  * to carrier trunks).
  */
-#[Fillable(['name', 'kind', 'currency', 'description'])]
+#[Fillable(['name', 'kind', 'currency', 'description', 'markup_type', 'markup_value'])]
 class RateDeck extends Model
 {
     /** @use HasFactory<RateDeckFactory> */
@@ -24,7 +25,13 @@ class RateDeck extends Model
 
     protected function casts(): array
     {
-        return ['kind' => RateDeckKind::class];
+        return ['kind' => RateDeckKind::class, 'markup_value' => 'decimal:6', 'built_at' => 'datetime'];
+    }
+
+    /** A tariff's source Carrier Rates (App\Services\TariffBuilder). */
+    public function sources(): BelongsToMany
+    {
+        return $this->belongsToMany(RateDeck::class, 'tariff_sources', 'tariff_id', 'carrier_rate_deck_id');
     }
 
     public function inUse(): bool

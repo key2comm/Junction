@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { Form, Head, Link, router, usePoll } from '@inertiajs/vue3';
 import { Pencil } from '@lucide/vue';
-import { reactive, watch } from 'vue';
+import { reactive, ref, watch } from 'vue';
 import RateImportController from '@/actions/App/Http/Controllers/Admin/RateImportController';
+import TariffController from '@/actions/App/Http/Controllers/Admin/TariffController';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
 import Pagination from '@/components/Pagination.vue';
@@ -50,6 +51,13 @@ const props = defineProps<{
     imports: Import[];
     importing: boolean;
     usage: { customers: { id: number; name: string; code: string }[]; trunks: { id: number; name: string; account: { code: string } }[] };
+    build: {
+        sources: number[];
+        markup_type: 'percent' | 'fixed';
+        markup_value: string | null;
+        built_at: string | null;
+        carrier_rates: { id: number; name: string; currency: string }[];
+    } | null;
 }>();
 
 defineOptions({
@@ -74,6 +82,35 @@ function apply(delay = 0) {
 }
 
 const increments = (r: Rate) => `${r.initial_increment}/${r.increment}`;
+
+// Tariffs: markup choice on the build form.
+const markupType = ref<'percent' | 'fixed'>(props.build?.markup_type ?? 'percent');
+// Returning false cancels the visit.
+const rebuildOk = () => !props.build?.built_at || confirm('Rebuild this tariff? Every rate is replaced, including any you changed by hand.');
+
+// Changing one prefix's rate by hand (tariffs).
+const editing = ref<number | null>(null);
+const editRate = ref('');
+const editError = ref<string | null>(null);
+const ended = (r: Rate) => r.effective_to !== null && new Date(r.effective_to) <= new Date();
+function startEdit(r: Rate) {
+    editing.value = r.id;
+    editRate.value = String(Number(r.rate));
+    editError.value = null;
+}
+function saveEdit(r: Rate) {
+    router.patch(
+        TariffController.updateRate.url([props.deck.id, r.id]),
+        { rate: editRate.value },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            only: ['rates'],
+            onSuccess: () => (editing.value = null),
+            onError: (errors) => (editError.value = errors.rate ?? 'Could not save.'),
+        },
+    );
+}
 </script>
 
 <template>
@@ -84,6 +121,65 @@ const increments = (r: Rate) => `${r.initial_increment}/${r.increment}`;
             <Heading :title="deck.name" :description="deck.description ?? `Rates in ${deck.currency} per minute`" />
             <Button variant="outline" as-child><Link :href="edit(deck.id)"><Pencil class="icon" /> Edit</Link></Button>
         </div>
+
+        <!-- Tariffs: build from Carrier Rates plus a markup -->
+        <section v-if="build" class="ss-stack-3 rounded border p-3">
+            <Heading
+                variant="small"
+                title="Build from Carrier Rates"
+                :description="
+                    build.built_at
+                        ? `Last built ${dateTime(build.built_at)}. Rebuild after carrier rates change; this replaces every rate here, including ones you changed by hand.`
+                        : 'Pick the Carrier Rates this tariff covers and your markup. For each prefix the most expensive of them is marked up, so every carrier stays profitable.'
+                "
+            />
+            <p v-if="build.carrier_rates.length === 0" class="text-secondary">There are no Carrier Rates yet. Create them under Routing → Carrier Rates first.</p>
+            <Form v-else v-bind="TariffController.build.form(deck.id)" class="ss-grid gap-3 ss-cols-md-2" v-slot="{ errors, processing }" :on-before="rebuildOk">
+                <fieldset class="ss-grid gap-1">
+                    <legend class="fw-medium fs-5 mb-1">Carrier Rates</legend>
+                    <label v-for="c in build.carrier_rates" :key="c.id" class="d-flex align-items-center gap-2" :class="{ 'text-secondary': c.currency !== deck.currency }">
+                        <input type="checkbox" name="sources[]" :value="c.id" :checked="build.sources.includes(c.id)" :disabled="c.currency !== deck.currency" class="form-check-input m-0" />
+                        {{ c.name }} <span class="small text-secondary">{{ c.currency }}</span>
+                    </label>
+                    <InputError :message="errors.sources ?? errors['sources.0']" />
+                </fieldset>
+                <div class="ss-stack-2">
+                    <fieldset class="ss-grid gap-1">
+                        <legend class="fw-medium fs-5 mb-1">Markup</legend>
+                        <label class="d-flex align-items-center gap-2">
+                            <input v-model="markupType" type="radio" name="markup_type" value="percent" class="form-check-input m-0" /> Percentage of the carrier rate
+                        </label>
+                        <label class="d-flex align-items-center gap-2">
+                            <input v-model="markupType" type="radio" name="markup_type" value="fixed" class="form-check-input m-0" /> Fixed amount added per minute
+                        </label>
+                    </fieldset>
+                    <div class="d-flex align-items-center gap-2">
+                        <span v-if="markupType === 'fixed'" class="text-secondary">{{ deck.currency }}</span>
+                        <Input
+                            name="markup_value"
+                            type="number"
+                            min="0"
+                            :step="markupType === 'percent' ? '0.01' : '0.0001'"
+                            :default-value="build.markup_value !== null ? String(Number(build.markup_value)) : ''"
+                            :placeholder="markupType === 'percent' ? '15' : '0.10'"
+                            required
+                            class="ss-w-32"
+                            aria-label="Markup"
+                        />
+                        <span class="text-secondary">{{ markupType === 'percent' ? '%' : 'per minute' }}</span>
+                    </div>
+                    <InputError :message="errors.markup_value" />
+                    <div class="ss-grid gap-1">
+                        <Label for="build_effective">Effective from (UTC)</Label>
+                        <Input id="build_effective" name="effective_from" type="datetime-local" class="ss-w-64" />
+                        <p class="small text-secondary">Blank = immediately.</p>
+                    </div>
+                    <div>
+                        <Button :disabled="processing || importing">{{ build.built_at ? 'Rebuild tariff' : 'Build tariff' }}</Button>
+                    </div>
+                </div>
+            </Form>
+        </section>
 
         <div class="ss-grid gap-4 ss-gtc-lg-2fr-1fr">
             <!-- Import -->
@@ -130,10 +226,10 @@ const increments = (r: Rate) => `${r.initial_increment}/${r.increment}`;
                             <Spinner v-if="i.status === 'queued' || i.status === 'running'" />
                             <Badge :variant="i.status === 'failed' ? 'destructive' : i.status === 'done' ? 'default' : 'secondary'">{{ i.status }}</Badge>
                             <span class="fw-medium">{{ i.filename }}</span>
-                            <span class="text-secondary">{{ i.mode }}, effective {{ dateTime(i.effective_from) }}, by {{ i.user ?? 'unknown' }}</span>
+                            <span class="text-secondary">{{ i.mode === 'build' ? 'built' : i.mode }}, effective {{ dateTime(i.effective_from) }}, by {{ i.user ?? 'unknown' }}</span>
                         </div>
                         <p v-if="i.status === 'done' && i.stats" class="text-secondary">
-                            {{ i.stats.added }} added · {{ i.stats.changed }} changed · {{ i.stats.unchanged }} unchanged<span v-if="i.mode === 'replace'"> · {{ i.stats.ended }} ended</span>
+                            {{ i.stats.added }} added · {{ i.stats.changed }} changed · {{ i.stats.unchanged }} unchanged<span v-if="i.mode !== 'update'"> · {{ i.stats.ended }} ended</span>
                             <span v-if="i.stats.increases_within_notice" class="text-danger">
                                 · {{ i.stats.increases_within_notice }} increase(s) take effect in under 7 days
                             </span>
@@ -187,21 +283,46 @@ const increments = (r: Rate) => `${r.initial_increment}/${r.increment}`;
                             <th class="text-end">Connect</th>
                             <th>Billing</th>
                             <th>Effective</th>
+                            <th v-if="deck.kind === 'tariff'"></th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr v-for="r in rates.data" :key="r.id">
                             <td class="font-monospace">{{ r.prefix }}</td>
                             <td>{{ r.destination }}</td>
-                            <td class="text-end tabular-nums">{{ money(r.rate, deck.currency) }}</td>
+                            <td class="text-end tabular-nums">
+                                <template v-if="editing === r.id">
+                                    <div class="d-flex justify-content-end align-items-center gap-1">
+                                        <Input
+                                            v-model="editRate"
+                                            type="number"
+                                            min="0"
+                                            step="0.000001"
+                                            class="ss-w-32 text-end"
+                                            :aria-label="`New rate for ${r.prefix}`"
+                                            @keydown.enter.prevent="saveEdit(r)"
+                                            @keydown.esc="editing = null"
+                                        />
+                                    </div>
+                                    <div v-if="editError" class="small text-danger">{{ editError }}</div>
+                                </template>
+                                <template v-else>{{ money(r.rate, deck.currency) }}</template>
+                            </td>
                             <td class="text-end tabular-nums">{{ Number(r.connect_fee) ? money(r.connect_fee, deck.currency) : '—' }}</td>
                             <td class="font-monospace">{{ increments(r) }}</td>
                             <td class="text-nowrap text-secondary">
                                 {{ dateTime(r.effective_from) }}<span v-if="r.effective_to"> → {{ dateTime(r.effective_to) }}</span>
                             </td>
+                            <td v-if="deck.kind === 'tariff'" class="text-end text-nowrap">
+                                <template v-if="editing === r.id">
+                                    <Button size="sm" @click="saveEdit(r)">Save</Button>
+                                    <Button size="sm" variant="ghost" @click="editing = null">Cancel</Button>
+                                </template>
+                                <Button v-else-if="!ended(r)" size="sm" variant="ghost" :disabled="importing" @click="startEdit(r)">Edit</Button>
+                            </td>
                         </tr>
                         <tr v-if="rates.data.length === 0">
-                            <td colspan="6" class="text-center text-secondary">No rates{{ filters.q ? ' match' : '' }}.</td>
+                            <td :colspan="deck.kind === 'tariff' ? 7 : 6" class="text-center text-secondary">No rates{{ filters.q ? ' match' : '' }}.</td>
                         </tr>
                     </tbody>
                 </table>
