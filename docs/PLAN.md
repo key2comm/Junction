@@ -50,7 +50,7 @@ FreeSWITCH relays every call's media (RTP). The current 1 vCPU droplet is for bu
    - CDRs into PostgreSQL with both buy and sell rating.
    - Routing logic in Lua, so routes stay in the database rather than in XML.
 4. **Quality and operations:** per-vendor ASR/ACD/PDD, alerts, and rate deck CSV import.
-5. **nginx and admin UI:** Let's Encrypt for `theswitch.key2pbx.ca`. Web UI for carriers, IPs, rate decks, routes, CDRs and stats, and live calls.
+5. **nginx and admin UI:** Let's Encrypt for `theswitch.key2pbx.ca`. Website installed under `/var/www/html` (`SS_WEB_ROOT`). Web UI for carriers, IPs, rate decks, routes, CDRs and stats, and live calls.
 6. **Minimal PBX:** extensions, voicemail, simple IVR, and WebRTC through nginx WSS. Calls to outside numbers go through the same LCR engine as wholesale traffic.
 
 ## Deploy model

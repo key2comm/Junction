@@ -5,7 +5,7 @@ pkg_install gcc gcc-c++ make autoconf automake libtool pkgconf-pkg-config \
 	diffutils patch which file \
 	libtiff-devel libjpeg-turbo-devel sqlite-devel libcurl-devel pcre2-devel \
 	speex-devel speexdsp-devel ldns-devel libedit-devel openssl-devel \
-	lua-devel libsndfile-devel opus-devel libuuid-devel zlib-devel libpq-devel
+	lua-devel libsndfile-devel opus-devel libuuid-devel 'pkgconfig(zlib)' libpq-devel
 
 export PKG_CONFIG_PATH="/usr/local/lib/pkgconfig:/usr/local/lib64/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
 printf '/usr/local/lib\n/usr/local/lib64\n' > /etc/ld.so.conf.d/softswitch.conf
