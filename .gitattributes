@@ -1,0 +1,10 @@
+# Everything here runs on Linux (installer, FreeSWITCH config, Lua, PHP).
+# Keep LF line endings on every checkout, including on Windows.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.ico binary
+*.wav binary
+*.woff binary
+*.woff2 binary
