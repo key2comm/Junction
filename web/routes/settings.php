@@ -29,23 +29,23 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('settings/appearance', 'settings/Appearance')->name('appearance.edit');
 
     // Server TLS certificate (Let's Encrypt). Changing it requires a recent password confirmation.
-    Route::get('settings/certificate', [CertificateController::class, 'edit'])->name('certificate.edit');
+    Route::get('settings/certificate', [CertificateController::class, 'edit'])->middleware('admin')->name('certificate.edit');
     Route::post('settings/certificate', [CertificateController::class, 'store'])
         ->middleware([RequirePassword::class, 'throttle:6,1'])
-        ->name('certificate.store');
+        ->middleware('admin')->name('certificate.store');
     // REST API tokens. Creating and revoking require a recent password confirmation.
-    Route::get('settings/api-tokens', [ApiTokenController::class, 'index'])->name('api-tokens.index');
-    Route::post('settings/api-tokens', [ApiTokenController::class, 'store'])->middleware(RequirePassword::class)->name('api-tokens.store');
-    Route::delete('settings/api-tokens/{api_token}', [ApiTokenController::class, 'destroy'])->middleware(RequirePassword::class)->name('api-tokens.destroy');
+    Route::get('settings/api-tokens', [ApiTokenController::class, 'index'])->middleware('admin')->name('api-tokens.index');
+    Route::post('settings/api-tokens', [ApiTokenController::class, 'store'])->middleware(RequirePassword::class)->middleware('admin')->name('api-tokens.store');
+    Route::delete('settings/api-tokens/{api_token}', [ApiTokenController::class, 'destroy'])->middleware(RequirePassword::class)->middleware('admin')->name('api-tokens.destroy');
 
     // Outgoing email (SMTP) for invoices and alerts. Changing it requires a recent password confirmation.
-    Route::get('settings/email', [EmailController::class, 'edit'])->name('email.edit');
-    Route::put('settings/email', [EmailController::class, 'update'])->middleware(RequirePassword::class)->name('email.update');
-    Route::post('settings/email/test', [EmailController::class, 'test'])->middleware('throttle:6,1')->name('email.test');
+    Route::get('settings/email', [EmailController::class, 'edit'])->middleware('admin')->name('email.edit');
+    Route::put('settings/email', [EmailController::class, 'update'])->middleware(RequirePassword::class)->middleware('admin')->name('email.update');
+    Route::post('settings/email/test', [EmailController::class, 'test'])->middleware('throttle:6,1')->middleware('admin')->name('email.test');
 
     Route::delete('settings/certificate', [CertificateController::class, 'destroy'])
         ->middleware(RequirePassword::class)
-        ->name('certificate.destroy');
+        ->middleware('admin')->name('certificate.destroy');
 });
 
 Route::get('.well-known/passkey-endpoints', function () {

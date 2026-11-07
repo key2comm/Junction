@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3';
-import { Building2, Cable, FileText, LayoutGrid, PhoneCall, Route, Tags } from '@lucide/vue';
+import { Link, usePage } from '@inertiajs/vue3';
+import { computed } from 'vue';
+import { Building2, Cable, FileText, KeyRound, LayoutGrid, PhoneCall, Route, Tags } from '@lucide/vue';
 import AppLogo from '@/components/AppLogo.vue';
 import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
@@ -18,12 +19,17 @@ import { dashboard } from '@/routes';
 import { index as accounts } from '@/routes/accounts';
 import { index as cdrs } from '@/routes/cdrs';
 import { index as invoices } from '@/routes/invoices';
+import { home as portalHome } from '@/routes/portal';
+import { index as portalTokens } from '@/routes/portal/api-tokens';
+import { index as portalCalls } from '@/routes/portal/calls';
+import { index as portalInvoices } from '@/routes/portal/invoices';
+import { index as portalRates } from '@/routes/portal/rates';
 import { index as rateDecks } from '@/routes/rate-decks';
 import { index as routingPlans } from '@/routes/routing-plans';
 import { index as trunks } from '@/routes/trunks';
 import type { NavItem } from '@/types';
 
-const mainNavItems: NavItem[] = [
+const adminNavItems: NavItem[] = [
     {
         title: 'Dashboard',
         href: dashboard(),
@@ -61,6 +67,20 @@ const mainNavItems: NavItem[] = [
     },
 ];
 
+// Customer portal users get their own menu.
+const portalNavItems: NavItem[] = [
+    { title: 'Overview', href: portalHome(), icon: LayoutGrid },
+    { title: 'Calls', href: portalCalls(), icon: PhoneCall },
+    { title: 'Invoices', href: portalInvoices(), icon: FileText },
+    { title: 'Rates', href: portalRates(), icon: Tags },
+    { title: 'API tokens', href: portalTokens(), icon: KeyRound },
+];
+
+const page = usePage();
+const isPortal = computed(() => Boolean((page.props.auth as { user?: { account_id?: number | null } }).user?.account_id));
+const mainNavItems = computed(() => (isPortal.value ? portalNavItems : adminNavItems));
+const homeLink = computed(() => (isPortal.value ? portalHome() : dashboard()));
+
 const footerNavItems: NavItem[] = [];
 </script>
 
@@ -70,7 +90,7 @@ const footerNavItems: NavItem[] = [];
             <SidebarMenu>
                 <SidebarMenuItem>
                     <SidebarMenuButton size="lg" as-child>
-                        <Link :href="dashboard()">
+                        <Link :href="homeLink">
                             <AppLogo />
                         </Link>
                     </SidebarMenuButton>

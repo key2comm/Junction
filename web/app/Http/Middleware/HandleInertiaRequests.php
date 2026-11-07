@@ -40,6 +40,8 @@ class HandleInertiaRequests extends Middleware
             'name' => config('app.name'),
             'auth' => [
                 'user' => $request->user(),
+                // Portal users: the customer account they belong to.
+                'account' => $request->user()?->account?->only(['id', 'code', 'name']),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];

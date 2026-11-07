@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { Form, Head, Link } from '@inertiajs/vue3';
+import { Form, Head, Link, usePage } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import { Pencil, Trash2 } from '@lucide/vue';
 import AccountIpController from '@/actions/App/Http/Controllers/Admin/AccountIpController';
 import InvoiceController from '@/actions/App/Http/Controllers/Admin/InvoiceController';
+import PortalUserController from '@/actions/App/Http/Controllers/Admin/PortalUserController';
 import LedgerEntryController from '@/actions/App/Http/Controllers/Admin/LedgerEntryController';
 import RouteTester from '@/components/accounts/RouteTester.vue';
 import VendorPayables from '@/components/accounts/VendorPayables.vue';
@@ -49,6 +51,7 @@ const props = defineProps<{
     trunks: { id: number; name: string; enabled: boolean; gateways_count: number }[];
     ledger: { id: number; type: string; amount: string; balance_after: string; description: string; created_at: string; effective_at: string }[];
     timezones: string[];
+    portalUsers: { id: number; name: string; email: string; created_at: string }[];
     vendorLedger: { id: number; type: string; amount: string; balance_after: string; description: string; effective_at: string }[];
     vendorInvoices: { id: number; reference: string; period_start: string; period_end: string; timezone: string; amount: string; our_amount: string; status: string; difference: string }[];
     invoices: { id: number; number: string; status: string; period_start: string; timezone: string; currency: string; usage_total: string; amount_due: string }[];
@@ -62,6 +65,10 @@ defineOptions({
         ],
     }),
 });
+
+const page = usePage();
+// One-time password for a new portal login (only when email isn't set up).
+const portalPassword = computed(() => (page.flash as Record<string, unknown> | undefined)?.portalPassword as { email: string; password: string } | undefined);
 
 const select =
     'h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 dark:bg-input/30';
@@ -245,6 +252,36 @@ const select =
                         </tbody>
                     </table>
                 </div>
+            </section>
+
+            <!-- Customer portal logins -->
+            <section v-if="account.is_customer" class="space-y-4">
+                <Heading variant="small" title="Portal logins" description="People at this customer who can sign in to see their balance, calls, invoices and rates (never your vendors or costs)." />
+                <div v-if="portalPassword" class="rounded-lg border border-primary p-3 text-sm">
+                    <p class="font-medium">Login created for {{ portalPassword.email }}</p>
+                    <p class="text-muted-foreground">Email isn't set up, so pass on this password securely; it won't be shown again. They can change it under Settings.</p>
+                    <code class="mt-1 inline-block rounded bg-muted px-2 py-1 font-mono">{{ portalPassword.password }}</code>
+                </div>
+                <ul class="divide-y rounded-lg border text-sm">
+                    <li v-for="u in portalUsers" :key="u.id" class="flex items-center justify-between gap-2 px-3 py-2">
+                        <span>{{ u.name }} <span class="text-muted-foreground">{{ u.email }}</span></span>
+                        <Form v-bind="PortalUserController.destroy.form([account.id, u.id])" v-slot="{ processing }">
+                            <Button size="sm" variant="ghost" :disabled="processing" :aria-label="`Remove ${u.email}`"><Trash2 class="size-4" /></Button>
+                        </Form>
+                    </li>
+                    <li v-if="portalUsers.length === 0" class="px-3 py-6 text-center text-muted-foreground">No portal logins.</li>
+                </ul>
+                <Form v-bind="PortalUserController.store.form(account.id)" reset-on-success class="grid gap-2 sm:grid-cols-[1fr_1fr_auto] sm:items-start" v-slot="{ errors, processing }">
+                    <div class="grid gap-1">
+                        <Input name="name" placeholder="Name" required aria-label="Name" />
+                        <InputError :message="errors.name" />
+                    </div>
+                    <div class="grid gap-1">
+                        <Input name="email" type="email" placeholder="Email" required aria-label="Email" />
+                        <InputError :message="errors.email" />
+                    </div>
+                    <Button variant="outline" :disabled="processing">Add login</Button>
+                </Form>
             </section>
 
             <!-- Invoices -->

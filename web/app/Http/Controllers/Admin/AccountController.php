@@ -11,6 +11,7 @@ use App\Models\Invoice;
 use App\Models\RateDeck;
 use App\Models\RoutingPlan;
 use App\Models\Trunk;
+use App\Models\User;
 use App\Services\Router;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -92,6 +93,9 @@ class AccountController extends Controller
             'trunks' => $account->trunks->map->only(['id', 'name', 'enabled', 'gateways_count']),
             'ledger' => $account->ledgerEntries()->latest('id')->limit(50)
                 ->get(['id', 'type', 'amount', 'balance_after', 'description', 'created_at', 'effective_at']),
+            'portalUsers' => $account->is_customer
+                ? User::query()->where('account_id', $account->id)->orderBy('name')->get(['id', 'name', 'email', 'created_at'])
+                : [],
             'timezones' => $account->is_vendor ? timezone_identifiers_list() : [],
             'vendorLedger' => $account->is_vendor
                 ? $account->vendorLedgerEntries()->latest('id')->limit(50)->get(['id', 'type', 'amount', 'balance_after', 'description', 'effective_at'])

@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\CdrController;
 use App\Http\Controllers\Admin\GatewayController;
 use App\Http\Controllers\Admin\InvoiceController;
 use App\Http\Controllers\Admin\LedgerEntryController;
+use App\Http\Controllers\Admin\PortalUserController;
 use App\Http\Controllers\Admin\RateDeckController;
 use App\Http\Controllers\Admin\RateImportController;
 use App\Http\Controllers\Admin\RoutingPlanController;
@@ -14,10 +15,10 @@ use App\Http\Controllers\Admin\VendorBillingController;
 use Illuminate\Support\Facades\Route;
 
 /*
- * Softswitch administration. Every admin user can manage everything for now;
- * customer-portal users (scoped to one account) come with the API phase.
+ * Softswitch administration: admin users only (the "admin" middleware sends
+ * customer portal users to /portal). Every admin can manage everything.
  */
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'admin'])->group(function () {
     Route::resource('accounts', AccountController::class)->except(['destroy']);
 
     Route::scopeBindings()->group(function () {
@@ -25,6 +26,9 @@ Route::middleware(['auth'])->group(function () {
         Route::patch('accounts/{account}/ips/{ip}', [AccountIpController::class, 'update'])->name('accounts.ips.update');
         Route::delete('accounts/{account}/ips/{ip}', [AccountIpController::class, 'destroy'])->name('accounts.ips.destroy');
     });
+
+    Route::post('accounts/{account}/portal-users', [PortalUserController::class, 'store'])->middleware('throttle:20,1')->name('accounts.portal-users.store');
+    Route::delete('accounts/{account}/portal-users/{user}', [PortalUserController::class, 'destroy'])->name('accounts.portal-users.destroy');
 
     Route::get('accounts/{account}/route-test', [AccountController::class, 'routeTest'])
         ->middleware('throttle:60,1')

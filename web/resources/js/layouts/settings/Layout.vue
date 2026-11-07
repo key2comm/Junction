@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import Heading from '@/components/Heading.vue';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -13,7 +14,7 @@ import { edit as editProfile } from '@/routes/profile';
 import { edit as editSecurity } from '@/routes/security';
 import type { NavItem } from '@/types';
 
-const sidebarNavItems: NavItem[] = [
+const allNavItems: (NavItem & { adminOnly?: boolean })[] = [
     {
         title: 'Profile',
         href: editProfile(),
@@ -28,17 +29,25 @@ const sidebarNavItems: NavItem[] = [
     },
     {
         title: 'API tokens',
+        adminOnly: true,
         href: apiTokens(),
     },
     {
         title: 'Email',
+        adminOnly: true,
         href: editEmail(),
     },
     {
         title: 'SSL certificate',
+        adminOnly: true,
         href: editCertificate(),
     },
 ];
+
+const page = usePage();
+// Portal (customer) users only see their own profile settings here.
+const isAdmin = computed(() => !(page.props.auth as { user?: { account_id?: number | null } }).user?.account_id);
+const sidebarNavItems = computed(() => allNavItems.filter((item) => isAdmin.value || !item.adminOnly));
 
 const { isCurrentOrParentUrl } = useCurrentUrl();
 </script>
