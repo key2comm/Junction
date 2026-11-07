@@ -6,7 +6,7 @@ After=network-online.target
 
 [Service]
 Type=forking
-PIDFile=@SS_FS_PREFIX@/run/freeswitch.pid
+PIDFile=@SS_FS_RUN@/freeswitch.pid
 ExecStart=@SS_FS_PREFIX@/bin/freeswitch -u freeswitch -g freeswitch -ncwait -nonat
 TimeoutStartSec=90
 Restart=on-failure

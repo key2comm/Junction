@@ -38,6 +38,10 @@ resolve_defaults() {
 	: "${SS_WEB_ROOT:=/var/www/html}"
 	: "${SS_BUILD_DIR:=/usr/local/src/softswitch}"
 	: "${SS_FS_PREFIX:=/usr/local/freeswitch}"
+	# FreeSWITCH uses an FHS layout under its prefix.
+	SS_FS_CONF="$SS_FS_PREFIX/etc/freeswitch"
+	SS_FS_LOG="$SS_FS_PREFIX/var/log/freeswitch"
+	SS_FS_RUN="$SS_FS_PREFIX/var/run/freeswitch"
 	for v in $(compgen -v SS_); do export "${v?}"; done
 }
 

@@ -4,7 +4,7 @@ pkg_install fail2ban-server
 # The EL "fail2ban" meta-package would pull in firewalld actions; we use nftables.
 rm -f /etc/fail2ban/jail.d/00-firewalld.conf
 
-if [ -f "$SS_FS_PREFIX/log/freeswitch.log" ]; then
+if [ -f "$SS_FS_LOG/freeswitch.log" ]; then
 	SS_F2B_FREESWITCH=true
 else
 	SS_F2B_FREESWITCH=false

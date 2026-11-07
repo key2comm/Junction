@@ -17,6 +17,6 @@ port = @SS_SSH_PORT@
 [freeswitch]
 enabled = @SS_F2B_FREESWITCH@
 filter = freeswitch
-logpath = @SS_FS_PREFIX@/log/freeswitch.log
+logpath = @SS_FS_LOG@/freeswitch.log
 banaction = %(banaction_allports)s
 maxretry = 5

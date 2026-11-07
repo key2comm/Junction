@@ -1,7 +1,7 @@
 # Interim FreeSWITCH config: secures the stock sample config so it is safe to
 # start. Replaced by the Softswitch Class 4 config in a later phase.
 
-conf="$SS_FS_PREFIX/conf"
+conf="$SS_FS_CONF"
 [ -f "$conf/vars.xml" ] || die "no FreeSWITCH config at $conf (run step 50 first)"
 
 # Sample extensions ship with password 1234: replace with a random secret.
@@ -41,7 +41,7 @@ for _ in $(seq 1 30); do
 	fs_cli -x status >/dev/null 2>&1 && break
 	sleep 2
 done
-fs_cli -x status >/dev/null 2>&1 || die "FreeSWITCH did not start; check journalctl -u freeswitch and $SS_FS_PREFIX/log/freeswitch.log"
+fs_cli -x status >/dev/null 2>&1 || die "FreeSWITCH did not start; check journalctl -u freeswitch and $SS_FS_LOG/freeswitch.log"
 info "FreeSWITCH running: $(fs_cli -x version | awk 'NR==1')"
 
 # Now that FreeSWITCH logs exist, turn on its fail2ban jail.
