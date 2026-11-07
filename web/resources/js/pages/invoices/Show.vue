@@ -35,12 +35,15 @@ type Invoice = {
     due_at: string | null;
     void_reason: string | null;
     voided_at: string | null;
+    emailed_at: string | null;
+    emailed_to: string | null;
 };
 
 const props = defineProps<{
     invoice: Invoice;
     lines: { position: number; prefix: string | null; destination: string | null; calls: number; billsec: number; rate: string | null; amount: string }[];
     issuer: { name: string; host: string | null };
+    mailConfigured: boolean;
 }>();
 
 defineOptions({
@@ -172,6 +175,27 @@ const print = () => window.print();
                 <p v-if="invoice.billing_type === 'prepaid'" class="mt-2 text-xs text-muted-foreground">Prepaid account: usage is deducted from your balance; nothing is due.</p>
             </section>
         </article>
+
+        <!-- Email (not printed) -->
+        <section class="mx-auto max-w-3xl print:hidden">
+            <div class="flex flex-wrap items-start gap-2 rounded-lg border p-4 text-sm">
+                <div class="grow">
+                    <p class="font-medium">Email this {{ invoice.billing_type === 'postpaid' ? 'invoice' : 'statement' }}</p>
+                    <p class="text-muted-foreground">
+                        <span v-if="invoice.emailed_at">Last sent to {{ invoice.emailed_to }} on {{ date(invoice.emailed_at) }}.</span>
+                        <span v-else-if="!mailConfigured">Set up email in Settings → Email first.</span>
+                        <span v-else>Not sent yet. Includes the summary and the destination CSV.</span>
+                    </p>
+                </div>
+                <Form v-bind="InvoiceController.email.form(invoice.id)" class="flex flex-wrap items-start gap-2" v-slot="{ errors, processing }">
+                    <div class="grid gap-1">
+                        <Input name="to" type="email" :default-value="invoice.billing_email ?? ''" placeholder="billing@customer.example" class="w-64" aria-label="Send to" />
+                        <InputError :message="errors.to" />
+                    </div>
+                    <Button variant="outline" :disabled="processing || !mailConfigured">Send</Button>
+                </Form>
+            </div>
+        </section>
 
         <!-- Void (not printed) -->
         <section v-if="invoice.status === 'issued'" class="mx-auto max-w-3xl space-y-2 print:hidden">

@@ -21,3 +21,6 @@ Schedule::job(new \App\Jobs\SyncSwitchConfig)->everyFifteenMinutes();
 // Monthly invoices: hourly, so each customer is invoiced two hours after the
 // month ends in their own time zone (issueDue skips anyone not due yet).
 Schedule::command('softswitch:invoices')->hourlyAt(5)->withoutOverlapping();
+
+// Low-balance alerts (one email per dip below a customer's threshold).
+Schedule::command('softswitch:check-balances')->everyFiveMinutes()->withoutOverlapping();

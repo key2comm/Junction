@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
 
 /**
  * A company we exchange traffic with: a customer (sends us calls), a vendor
@@ -20,7 +21,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 #[Fillable([
     'name', 'code', 'is_customer', 'is_vendor', 'status', 'currency', 'billing_type',
-    'credit_limit', 'timezone', 'billing_email', 'noc_email', 'sell_rate_deck_id',
+    'credit_limit', 'low_balance_threshold', 'timezone', 'billing_email', 'noc_email', 'sell_rate_deck_id',
     'routing_plan_id', 'max_channels', 'max_cps', 'notes',
 ])]
 class Account extends Model
@@ -41,6 +42,8 @@ class Account extends Model
             'status' => AccountStatus::class,
             'billing_type' => BillingType::class,
             'credit_limit' => 'decimal:4',
+            'low_balance_threshold' => 'decimal:4',
+            'low_balance_alerted_at' => 'datetime',
             'balance' => 'decimal:6',
             'vendor_balance' => 'decimal:6',
             'max_channels' => 'integer',
@@ -96,6 +99,19 @@ class Account extends Model
     public function availableFunds(): string
     {
         return bcadd((string) $this->balance, (string) $this->credit_limit, 6);
+    }
+
+    /**
+     * Funds the routing engine would see right now: balance + credit, less
+     * calls in progress (reservations) and rated usage not yet posted. Mirrors
+     * softswitch_route() in PostgreSQL.
+     */
+    public function availableFundsNow(): string
+    {
+        $reserved = (string) DB::table('active_calls')->where('account_id', $this->id)->sum('reserved');
+        $unposted = (string) DB::table('cdrs')->where('customer_account_id', $this->id)->whereNull('posted_at')->whereNotNull('sell_cost')->sum('sell_cost');
+
+        return bcsub(bcsub($this->availableFunds(), $reserved, 6), $unposted, 6);
     }
 
     public function scopeCustomers(Builder $query): void

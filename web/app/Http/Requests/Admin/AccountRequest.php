@@ -33,6 +33,7 @@ class AccountRequest extends FormRequest
             'currency' => ['required', 'string', 'size:3', 'regex:/^[A-Z]{3}$/'],
             'billing_type' => ['required', Rule::enum(BillingType::class)],
             'credit_limit' => ['required', 'numeric', 'min:0', 'max:9999999999'],
+            'low_balance_threshold' => ['nullable', 'numeric', 'min:0', 'max:9999999999'],
             'timezone' => ['required', 'timezone:all'],
             'billing_email' => ['nullable', 'email', 'max:255'],
             'noc_email' => ['nullable', 'email', 'max:255'],

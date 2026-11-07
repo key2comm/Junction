@@ -42,6 +42,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('invoices/{invoice}', [InvoiceController::class, 'show'])->name('invoices.show');
     Route::get('invoices/{invoice}/csv', [InvoiceController::class, 'csv'])->name('invoices.csv');
     Route::post('invoices/{invoice}/void', [InvoiceController::class, 'void'])->name('invoices.void');
+    Route::post('invoices/{invoice}/email', [InvoiceController::class, 'email'])->middleware('throttle:10,1')->name('invoices.email');
     Route::post('accounts/{account}/invoices', [InvoiceController::class, 'store'])->middleware('throttle:20,1')->name('accounts.invoices.store');
 
     // Vendor payables and vendor invoice reconciliation

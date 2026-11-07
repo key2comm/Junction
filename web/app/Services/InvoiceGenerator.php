@@ -3,8 +3,10 @@
 namespace App\Services;
 
 use App\Enums\BillingType;
+use App\Jobs\EmailInvoice;
 use App\Models\Account;
 use App\Models\Invoice;
+use App\Support\Settings;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -114,6 +116,11 @@ class InvoiceGenerator
                     'rate' => $l->rate,
                     'amount' => $l->amount,
                 ]);
+            }
+
+            // Sent after the transaction commits (setting in Settings → Email).
+            if (Settings::get('mail.auto_invoices') && $invoice->billing_email) {
+                EmailInvoice::dispatch($invoice)->afterCommit();
             }
 
             return $invoice;

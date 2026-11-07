@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable([
     'number', 'account_id', 'status', 'period_start', 'period_end', 'timezone', 'currency', 'account_name', 'account_code',
     'billing_email', 'billing_type', 'opening_balance', 'usage_total', 'payments_total', 'adjustments_total',
-    'closing_balance', 'amount_due', 'calls', 'billsec', 'issued_at', 'due_at', 'void_reason', 'voided_at',
+    'closing_balance', 'amount_due', 'calls', 'billsec', 'issued_at', 'due_at', 'void_reason', 'voided_at', 'emailed_at', 'emailed_to',
 ])]
 class Invoice extends Model
 {
@@ -26,6 +26,7 @@ class Invoice extends Model
             'issued_at' => 'datetime',
             'due_at' => 'datetime',
             'voided_at' => 'datetime',
+            'emailed_at' => 'datetime',
             'opening_balance' => 'decimal:6',
             'usage_total' => 'decimal:6',
             'payments_total' => 'decimal:6',

@@ -24,6 +24,7 @@ export type AccountFormValues = {
     currency: string;
     billing_type: string;
     credit_limit: string;
+    low_balance_threshold: string | null;
     timezone: string;
     billing_email: string | null;
     noc_email: string | null;
@@ -112,6 +113,13 @@ const select =
                 <Input id="credit_limit" name="credit_limit" type="number" step="0.01" min="0" :default-value="v.credit_limit" required />
                 <p class="text-xs text-muted-foreground">How far below zero the balance may go before calls are refused.</p>
                 <InputError :message="errors.credit_limit" />
+            </div>
+
+            <div class="grid gap-2">
+                <Label for="low_balance_threshold">Low-balance alert below</Label>
+                <Input id="low_balance_threshold" name="low_balance_threshold" type="number" step="0.01" min="0" :default-value="v.low_balance_threshold ?? ''" placeholder="No alerts" />
+                <p class="text-xs text-muted-foreground">Emails the customer (and you) once when funds available for calls drop below this.</p>
+                <InputError :message="errors.low_balance_threshold" />
             </div>
 
             <div class="grid gap-2">

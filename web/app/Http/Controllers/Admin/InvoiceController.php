@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\EmailInvoice;
 use App\Models\Account;
 use App\Models\Invoice;
 use App\Services\InvoiceGenerator;
+use App\Services\MailSettings;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -42,7 +44,9 @@ class InvoiceController extends Controller
         return Inertia::render('invoices/Show', [
             'invoice' => $invoice->only(['id', 'number', 'account_id', 'account_code', 'account_name', 'billing_email', 'billing_type',
                 'status', 'period_start', 'period_end', 'timezone', 'currency', 'opening_balance', 'usage_total', 'payments_total',
-                'adjustments_total', 'closing_balance', 'amount_due', 'calls', 'billsec', 'issued_at', 'due_at', 'void_reason', 'voided_at']),
+                'adjustments_total', 'closing_balance', 'amount_due', 'calls', 'billsec', 'issued_at', 'due_at', 'void_reason', 'voided_at',
+                'emailed_at', 'emailed_to']),
+            'mailConfigured' => MailSettings::configured(),
             'lines' => $invoice->lines()->get(['position', 'prefix', 'destination', 'calls', 'billsec', 'rate', 'amount']),
             'issuer' => ['name' => config('app.name'), 'host' => parse_url((string) config('app.url'), PHP_URL_HOST)],
         ]);
@@ -72,6 +76,22 @@ class InvoiceController extends Controller
         }
         $invoice->update(['status' => 'void', 'void_reason' => $data['reason'], 'voided_at' => now()]);
         Inertia::flash('toast', ['type' => 'success', 'message' => "{$invoice->number} voided. You can issue a new one for this period."]);
+
+        return to_route('invoices.show', $invoice);
+    }
+
+    public function email(Request $request, Invoice $invoice): RedirectResponse
+    {
+        $data = $request->validate(['to' => ['nullable', 'email', 'max:255']]);
+        $to = $data['to'] ?? $invoice->billing_email;
+        if (! MailSettings::configured()) {
+            throw ValidationException::withMessages(['to' => 'Set up email in Settings → Email first.']);
+        }
+        if (! $to) {
+            throw ValidationException::withMessages(['to' => 'This customer has no billing email; enter an address.']);
+        }
+        EmailInvoice::dispatch($invoice, $to);
+        Inertia::flash('toast', ['type' => 'success', 'message' => "Sending {$invoice->number} to {$to}…"]);
 
         return to_route('invoices.show', $invoice);
     }

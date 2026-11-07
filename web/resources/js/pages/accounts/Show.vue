@@ -30,6 +30,9 @@ type Account = {
     balance: string;
     vendor_balance: string;
     available: string;
+    available_now: string;
+    low_balance_threshold: string | null;
+    low_balance_alerted_at: string | null;
     timezone: string;
     billing_email: string | null;
     noc_email: string | null;
@@ -103,9 +106,14 @@ const select =
                 <p class="text-xs text-muted-foreground">Credit limit</p>
                 <p class="text-2xl font-semibold tabular-nums">{{ money(account.credit_limit, account.currency) }}</p>
             </div>
-            <div class="rounded-lg border p-4">
-                <p class="text-xs text-muted-foreground">Available for calls</p>
-                <p class="text-2xl font-semibold tabular-nums">{{ money(account.available, account.currency) }}</p>
+            <div class="rounded-lg border p-4" :class="{ 'border-destructive': account.low_balance_alerted_at }">
+                <p class="text-xs text-muted-foreground">Available for calls now</p>
+                <p class="text-2xl font-semibold tabular-nums">{{ money(account.available_now, account.currency) }}</p>
+                <p class="text-xs text-muted-foreground">
+                    <span v-if="account.low_balance_alerted_at" class="text-destructive">Below the alert level of {{ money(account.low_balance_threshold, account.currency) }}</span>
+                    <span v-else-if="account.low_balance_threshold">Alert below {{ money(account.low_balance_threshold, account.currency) }}</span>
+                    <span v-else>Includes calls in progress and usage not yet posted</span>
+                </p>
             </div>
         </div>
 

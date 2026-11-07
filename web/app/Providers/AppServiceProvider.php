@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Services\Freeswitch\EventSocket;
+use App\Services\MailSettings;
 use App\Services\Freeswitch\GatewaySync;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
@@ -34,6 +35,9 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+
+        // SMTP settings come from Settings → Email, applied only when mail is sent.
+        $this->app->afterResolving('mail.manager', fn () => MailSettings::apply());
     }
 
     /**

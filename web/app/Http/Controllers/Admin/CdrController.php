@@ -40,7 +40,7 @@ class CdrController extends Controller
 
         return Inertia::render('cdrs/Index', [
             'cdrs' => $cdrs,
-            'summary' => $this->summary($filters),
+            'summary' => self::summary($filters),
             'filters' => $filters->query(),
             // Totals assume one billing currency: show the one most accounts use.
             'currency' => Account::query()->groupBy('currency')->orderByRaw('count(*) desc')->value('currency') ?? 'USD',
@@ -125,7 +125,7 @@ class CdrController extends Controller
         return in_array($value[0], ['=', '+', '-', '@', "\t", "\r"], true) ? "'".$value : $value;
     }
 
-    private function summary(CdrFilters $filters): array
+    public static function summary(CdrFilters $filters): array
     {
         $row = $filters->apply(Cdr::query())->toBase()->selectRaw(
             'count(*) AS calls,

@@ -82,6 +82,9 @@ class AccountController extends Controller
                 'status' => $account->status->value,
                 'billing_type' => $account->billing_type->value,
                 'available' => $account->availableFunds(),
+                'available_now' => $account->availableFundsNow(),
+                'low_balance_threshold' => $account->low_balance_threshold,
+                'low_balance_alerted_at' => $account->low_balance_alerted_at,
                 'sell_rate_deck' => $account->sellRateDeck?->only(['id', 'name']),
                 'routing_plan' => $account->routingPlan?->only(['id', 'name']),
             ],
@@ -110,7 +113,7 @@ class AccountController extends Controller
         return Inertia::render('accounts/Edit', [
             ...$this->formOptions(),
             'account' => [
-                ...$account->only(['id', 'name', 'code', 'is_customer', 'is_vendor', 'currency', 'credit_limit',
+                ...$account->only(['id', 'name', 'code', 'is_customer', 'is_vendor', 'currency', 'credit_limit', 'low_balance_threshold',
                     'timezone', 'billing_email', 'noc_email', 'sell_rate_deck_id', 'routing_plan_id',
                     'max_channels', 'max_cps', 'notes']),
                 'status' => $account->status->value,

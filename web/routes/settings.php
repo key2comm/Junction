@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Settings\CertificateController;
+use App\Http\Controllers\Settings\EmailController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\SecurityController;
 use Illuminate\Auth\Middleware\RequirePassword;
@@ -31,6 +32,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('settings/certificate', [CertificateController::class, 'store'])
         ->middleware([RequirePassword::class, 'throttle:6,1'])
         ->name('certificate.store');
+    // Outgoing email (SMTP) for invoices and alerts. Changing it requires a recent password confirmation.
+    Route::get('settings/email', [EmailController::class, 'edit'])->name('email.edit');
+    Route::put('settings/email', [EmailController::class, 'update'])->middleware(RequirePassword::class)->name('email.update');
+    Route::post('settings/email/test', [EmailController::class, 'test'])->middleware('throttle:6,1')->name('email.test');
+
     Route::delete('settings/certificate', [CertificateController::class, 'destroy'])
         ->middleware(RequirePassword::class)
         ->name('certificate.destroy');
