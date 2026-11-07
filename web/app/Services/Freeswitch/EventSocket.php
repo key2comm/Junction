@@ -64,7 +64,8 @@ class EventSocket
                 break;
             }
             [$name, $value] = array_pad(explode(':', $line, 2), 2, '');
-            $headers[trim($name)] = urldecode(trim($value));
+            // rawurldecode: urldecode would turn the '+' of "+OK accepted" into a space.
+            $headers[trim($name)] = rawurldecode(trim($value));
         }
         if ($headers === []) {
             throw new RuntimeException('Event socket closed unexpectedly.');
