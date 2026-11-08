@@ -109,13 +109,16 @@ class EndpointTest extends TestCase
         $e = Endpoint::create($this->pbx(['codecs' => ['PCMU']]));
         $other = Endpoint::create($this->pbx(['account_id' => Account::factory()->create(['is_customer' => true])->id]));
 
-        $store = fn (array $dest) => $this->actingAs($this->admin)->post(route('accounts.pbx.dids.store', $this->customer), ['number' => '14165550100', 'destination' => $dest]);
+        $provider = Account::factory()->vendor()->create();
+        $store = fn (array $dest) => $this->actingAs($this->admin)->post(route('dids.store'), ['number' => '14165550100', 'account_id' => $this->customer->id,
+            'provider_account_id' => $provider->id, 'language' => 'en', 'status' => 'active', 'destination' => $dest]);
         $store(['type' => 'endpoint', 'target' => (string) $other->id])->assertSessionHasErrors('destination.type');
         $store(['type' => 'endpoint', 'target' => (string) $e->id])->assertSessionHasNoErrors();
         $this->assertSame(['type' => 'endpoint', 'target' => (string) $e->id], PbxDid::query()->sole()->destination);
 
-        $this->actingAs($this->admin)->get(route('accounts.pbx.show', $this->customer))->assertInertia(fn (Assert $p) => $p
-            ->where('endpoints.0', ['id' => $e->id, 'label' => 'PBX: Head office'])->where('dids.0.label', 'PBX: Head office'));
+        $this->actingAs($this->admin)->get(route('accounts.pbx.show', $this->customer))->assertInertia(fn (Assert $p) => $p->where('dids.0.label', 'PBX: Head office'));
+        $this->actingAs($this->admin)->get(route('dids.create', ['account' => $this->customer->id]))->assertInertia(fn (Assert $p) => $p
+            ->where('defaults.account_id', $this->customer->id)->where('targets.'.$this->customer->id.'.endpoints.0', ['id' => $e->id, 'label' => 'PBX: Head office']));
 
         // Can't delete it while a DID still uses it.
         $this->actingAs($this->admin)->delete(route('endpoints.destroy', $e), ['confirm' => 'Head office'])->assertSessionHasErrors('confirm');

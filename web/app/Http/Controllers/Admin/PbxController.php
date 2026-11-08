@@ -12,7 +12,6 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -60,11 +59,10 @@ class PbxController extends Controller
                 'default' => $this->pbx->describe($account, $i->default_destination),
             ]),
             'dids' => $account->pbxDids()->orderBy('number')->get()->map(fn (PbxDid $d) => [
-                ...$d->only(['id', 'number', 'description', 'enabled', 'destination']),
+                ...$d->only(['id', 'number', 'description', 'status']),
                 'label' => $this->pbx->describe($account, $d->destination),
             ]),
             'numbers' => $this->pbx->numbers($account),
-            'endpoints' => $this->pbx->endpoints($account),
             'connection' => self::connection(),
         ]);
     }
@@ -296,47 +294,6 @@ class PbxController extends Controller
 
         return in_array($fmt['format'], [1, 3], true) && $fmt['channels'] >= 1 && $fmt['channels'] <= 2
             && $fmt['rate'] >= 8000 && $fmt['rate'] <= 48000;
-    }
-
-    // --- DIDs --------------------------------------------------------------
-
-    public function storeDid(Request $request, Account $account): RedirectResponse
-    {
-        $this->ensureCustomer($account);
-        $request->merge(['number' => preg_replace('/\D/', '', (string) $request->input('number'))]);
-        $data = $request->validate([
-            'number' => ['required', 'string', 'regex:/^[0-9]{7,20}$/', Rule::unique('pbx_dids', 'number')],
-            'description' => ['nullable', 'string', 'max:255'],
-        ], ['number.regex' => 'Enter the full number as carriers deliver it, in international format (7-20 digits).', 'number.unique' => 'That number is already assigned.']);
-        $destination = $this->pbx->destination($account, $request->input('destination'), 'destination.type');
-        $did = $account->pbxDids()->create([...$data, 'destination' => $destination, 'enabled' => true]);
-        Inertia::flash('toast', ['type' => 'success', 'message' => "DID {$did->number} added."]);
-
-        return to_route('accounts.pbx.show', $account);
-    }
-
-    public function updateDid(Request $request, Account $account, PbxDid $pbxDid): RedirectResponse
-    {
-        $data = $request->validate([
-            'description' => ['nullable', 'string', 'max:255'],
-            'enabled' => ['sometimes', 'boolean'],
-        ]);
-        if ($request->has('destination')) {
-            $data['destination'] = $this->pbx->destination($account, $request->input('destination'), 'destination.type');
-        }
-        // Only the fields sent are changed (validate() returns just those).
-        $pbxDid->update($data);
-        Inertia::flash('toast', ['type' => 'success', 'message' => "DID {$pbxDid->number} updated."]);
-
-        return to_route('accounts.pbx.show', $account);
-    }
-
-    public function destroyDid(Account $account, PbxDid $pbxDid): RedirectResponse
-    {
-        $pbxDid->delete();
-        Inertia::flash('toast', ['type' => 'success', 'message' => "DID {$pbxDid->number} removed."]);
-
-        return to_route('accounts.pbx.show', $account);
     }
 
     // --- web phone -----------------------------------------------------------

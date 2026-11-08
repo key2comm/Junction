@@ -5,8 +5,7 @@ import { Eye, EyeOff, Headphones, Pencil, Trash2 } from '@lucide/vue';
 import PbxController from '@/actions/App/Http/Controllers/Admin/PbxController';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
-import DestinationPicker from '@/components/pbx/DestinationPicker.vue';
-import type { Destination, PbxEndpoint, PbxNumber } from '@/components/pbx/DestinationPicker.vue';
+import type { PbxNumber } from '@/components/pbx/DestinationPicker.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,6 +14,7 @@ import { show as showAccount } from '@/routes/accounts';
 import { phone, show } from '@/routes/accounts/pbx';
 import { edit as editExtension } from '@/routes/accounts/pbx/extensions';
 import { edit as editIvr } from '@/routes/accounts/pbx/ivrs';
+import { create as didsCreate, edit as didsEdit, index as didsIndex } from '@/routes/dids';
 import { index } from '@/routes/pbx';
 
 const props = defineProps<{
@@ -33,9 +33,8 @@ const props = defineProps<{
         enabled: boolean;
     }[];
     ivrs: { id: number; extension: string; name: string; timeout_seconds: number; has_greeting: boolean; options: { key: string; label: string }[]; default: string }[];
-    dids: { id: number; number: string; description: string | null; enabled: boolean; destination: Destination; label: string }[];
+    dids: { id: number; number: string; description: string | null; status: string; label: string }[];
     numbers: PbxNumber[];
-    endpoints: PbxEndpoint[];
     connection: { host: string; sip: string; wss: string; domain: string };
 }>();
 
@@ -49,7 +48,6 @@ defineOptions({
 });
 
 const revealed = ref<Record<number, boolean>>({});
-const editingDid = ref<number | null>(null);
 </script>
 
 <template>
@@ -244,69 +242,40 @@ const editingDid = ref<number | null>(null);
             </Form>
         </section>
 
-        <!-- DIDs -->
+        <!-- DIDs (managed under Routing -> DIDs) -->
         <section class="ss-stack-3">
-            <Heading variant="small" title="DIDs" description="Numbers that carriers deliver to this switch. Inbound calls to them are free and go straight to the PBX." />
+            <div class="d-flex flex-wrap align-items-start justify-content-between gap-2">
+                <Heading variant="small" title="DIDs" description="Numbers providers deliver to this switch for this customer. Inbound calls to them are free." />
+                <div class="d-flex gap-2">
+                    <Button variant="outline" size="sm" as-child><Link :href="didsIndex({ query: { account: account.id } })">Manage DIDs</Link></Button>
+                    <Button size="sm" as-child><Link :href="didsCreate({ query: { account: account.id } })">Add DID</Link></Button>
+                </div>
+            </div>
             <div class="card table-responsive">
                 <table class="table table-vcenter card-table table-tight">
                     <thead>
                         <tr>
                             <th>Number</th>
                             <th>Goes to</th>
-                            <th>Description</th>
-                            <th></th>
+                            <th>Status</th>
+                            <th>Comment</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <template v-for="d in dids" :key="d.id">
-                            <tr :class="{ 'opacity-50': !d.enabled }">
-                                <td class="font-monospace fw-medium">{{ d.number }}</td>
-                                <td>{{ d.label }}</td>
-                                <td>{{ d.description }}</td>
-                                <td class="text-end text-nowrap">
-                                    <Button size="sm" variant="ghost" :aria-label="`Edit ${d.number}`" @click="editingDid = editingDid === d.id ? null : d.id"><Pencil class="icon" /></Button>
-                                    <Form v-bind="PbxController.updateDid.form([account.id, d.id])" class="d-inline" v-slot="{ processing }">
-                                        <input type="hidden" name="enabled" :value="d.enabled ? 0 : 1" />
-                                        <Button size="sm" variant="ghost" :disabled="processing">{{ d.enabled ? 'Disable' : 'Enable' }}</Button>
-                                    </Form>
-                                    <Form v-bind="PbxController.destroyDid.form([account.id, d.id])" class="d-inline" v-slot="{ processing }">
-                                        <Button size="sm" variant="ghost" :disabled="processing" :aria-label="`Remove ${d.number}`"><Trash2 class="icon" /></Button>
-                                    </Form>
-                                </td>
-                            </tr>
-                            <tr v-if="editingDid === d.id" class="bg-body-tertiary">
-                                <td colspan="4">
-                                    <Form v-bind="PbxController.updateDid.form([account.id, d.id])" class="d-flex flex-wrap align-items-start gap-2" @success="editingDid = null" v-slot="{ errors, processing }">
-                                        <div class="ss-grid gap-1">
-                                            <DestinationPicker name="destination" :numbers="numbers" :endpoints="endpoints" :value="d.destination" />
-                                            <InputError :message="errors['destination.type']" />
-                                        </div>
-                                        <Input name="description" :default-value="d.description ?? ''" placeholder="Description" aria-label="Description" class="ss-w-56" />
-                                        <Button size="sm" :disabled="processing">Save</Button>
-                                    </Form>
-                                </td>
-                            </tr>
-                        </template>
+                        <tr v-for="d in dids" :key="d.id" :class="{ 'opacity-50': d.status !== 'active' }">
+                            <td class="font-monospace fw-medium"><Link :href="didsEdit(d.id)">{{ d.number }}</Link></td>
+                            <td>{{ d.label }}</td>
+                            <td>
+                                <Badge :variant="d.status === 'banned' ? 'destructive' : d.status === 'active' ? 'default' : 'secondary'">{{ d.status }}</Badge>
+                            </td>
+                            <td>{{ d.description }}</td>
+                        </tr>
                         <tr v-if="dids.length === 0">
                             <td colspan="4" class="text-center text-secondary">No DIDs.</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
-            <Form v-if="numbers.length || endpoints.length" v-bind="PbxController.storeDid.form(account.id)" reset-on-success class="d-flex flex-wrap align-items-start gap-2" v-slot="{ errors, processing }">
-                <div class="ss-grid gap-1">
-                    <Input name="number" required inputmode="numeric" placeholder="DID, e.g. 15145550100" aria-label="DID number" class="ss-w-52 font-monospace" />
-                    <InputError :message="errors.number" />
-                </div>
-                <div class="ss-grid gap-1">
-                    <DestinationPicker name="destination" :numbers="numbers" :endpoints="endpoints" />
-                    <InputError :message="errors['destination.type']" />
-                </div>
-                <Input name="description" placeholder="Description" aria-label="Description" class="ss-w-48" />
-                <Button variant="outline" :disabled="processing">Add DID</Button>
-            </Form>
-            <p v-else class="text-secondary">Add an extension, IVR or PBX/Device first: a DID needs somewhere to go.</p>
-            <p class="small text-secondary">Carriers must send these calls from an allowed IP (a customer IP or carrier gateway) to the carrier port.</p>
         </section>
     </div>
 </template>

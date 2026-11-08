@@ -7,22 +7,30 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * A number carriers deliver to us, routed to a PBX destination of its account.
- * Read live by the call path (softswitch_pbx_did), so no switch sync is needed.
+ * A DID (Routing -> DIDs): a number a provider (carrier) delivers to us, sent
+ * to a destination of the customer that owns it (a PBX/Device, or something
+ * on the built-in PBX). Read live by the call path (softswitch_did), so no
+ * switch sync is needed.
  */
-#[Fillable(['account_id', 'number', 'destination', 'description', 'enabled'])]
+#[Fillable(['account_id', 'provider_account_id', 'number', 'destination', 'language', 'status', 'status_reason', 'description'])]
 class PbxDid extends Model
 {
+    public const STATUSES = ['active' => 'Active', 'deactivated' => 'Deactivated', 'banned' => 'Banned'];
+
     protected function casts(): array
     {
         return [
             'destination' => 'array',
-            'enabled' => 'boolean',
         ];
     }
 
     public function account(): BelongsTo
     {
         return $this->belongsTo(Account::class);
+    }
+
+    public function provider(): BelongsTo
+    {
+        return $this->belongsTo(Account::class, 'provider_account_id');
     }
 }

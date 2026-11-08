@@ -37,14 +37,18 @@ if not dbh then
 end
 
 -- 0. One of our DIDs? Only allowlisted carriers reach this profile (nftables),
--- and inbound PBX calls are free, so no customer identification is needed.
+-- and inbound DID calls are free, so no customer identification is needed.
 local did
-dbh:query(string.format("SELECT * FROM softswitch_pbx_did(%s)", lit(dialled)), function(row) did = did or row end)
+dbh:query(string.format("SELECT * FROM softswitch_did(%s)", lit(dialled)), function(row) did = did or row end)
 if did then
   dbh:release()
   setvar("softswitch_direction", "pbx_in")
   setvar("softswitch_account_id", did.account_id)
   setvar("softswitch_destination", did.number)
+  setvar("softswitch_language", did.language)
+  if did.status == "banned" then return u.reject("did_banned") end
+  if did.status ~= "active" then return u.reject("did_deactivated") end
+  if did.account_active ~= "t" then return u.reject("account_inactive") end
   local pbx = require "softswitch.pbx"
   return pbx.inbound(session, u, tonumber(did.account_id), did.dest_type, did.dest_target)
 end

@@ -179,24 +179,45 @@ class PbxTest extends TestCase
     public function test_dids_route_to_a_destination_of_their_account(): void
     {
         $this->extension();
-        $this->actingAs($this->admin)->post(route('accounts.pbx.dids.store', $this->customer), ['number' => '+1 (514) 555-0199', 'destination' => ['type' => 'number', 'target' => '9999']])
-            ->assertSessionHasErrors('destination.type');
-        $this->post(route('accounts.pbx.dids.store', $this->customer), ['number' => '+1 (514) 555-0199', 'destination' => ['type' => 'number', 'target' => '1001']])
-            ->assertSessionHasNoErrors();
-        $did = PbxDid::query()->sole();
-        $this->assertSame('15145550199', $did->number);
+        $provider = Account::factory()->vendor()->create();
+        $did = fn (array $over = []) => ['number' => '+1 (514) 555-0199', 'account_id' => $this->customer->id, 'provider_account_id' => $provider->id,
+            'language' => 'EN', 'status' => 'active', 'destination' => ['type' => 'number', 'target' => '1001'], ...$over];
+
+        $this->actingAs($this->admin)->post(route('dids.store'), $did(['destination' => ['type' => 'number', 'target' => '9999']]))->assertSessionHasErrors('destination.type');
+        $this->post(route('dids.store'), $did(['provider_account_id' => null]))->assertSessionHasErrors('provider_account_id');
+        $this->post(route('dids.store'), $did(['provider_account_id' => $this->customer->id]))->assertSessionHasErrors('provider_account_id');
+        $this->post(route('dids.store'), $did(['language' => 'xx']))->assertSessionHasErrors('language');
+        $this->post(route('dids.store'), $did(['status' => 'banned']))->assertSessionHasErrors('status_reason');
+        $this->post(route('dids.store'), $did(['description' => 'Main line']))->assertSessionHasNoErrors()->assertRedirect(route('dids.index'));
+        $row = PbxDid::query()->sole();
+        $this->assertSame(['15145550199', 'en', 'active', 'Main line', $provider->id], [$row->number, $row->language, $row->status, $row->description, $row->provider_account_id]);
 
         $other = Account::factory()->create();
-        $this->post(route('accounts.pbx.dids.store', $other), ['number' => '15145550199', 'destination' => ['type' => 'hangup']])->assertSessionHasErrors('number');
+        $this->post(route('dids.store'), $did(['account_id' => $other->id, 'destination' => ['type' => 'hangup']]))->assertSessionHasErrors('number');
 
-        // Any format of the number finds it; disabled DIDs and inactive accounts don't.
-        $row = DB::selectOne('SELECT * FROM softswitch_pbx_did(?)', ['+15145550199']);
-        $this->assertSame([(int) $this->customer->id, '15145550199', 'number', '1001'], [(int) $row->account_id, $row->number, $row->dest_type, $row->dest_target]);
-        $this->patch(route('accounts.pbx.dids.update', [$this->customer, $did]), ['enabled' => '0'])->assertSessionHasNoErrors();
-        $this->assertNull(DB::selectOne('SELECT * FROM softswitch_pbx_did(?)', ['15145550199']));
-        $did->update(['enabled' => true]);
+        // Lists and the PBX page.
+        $this->get(route('dids.index', ['status' => 'active', 'q' => '555-0199']))->assertInertia(fn (Assert $p) => $p
+            ->component('dids/Index')->has('dids.data', 1)->where('dids.data.0.destination', '1001 Reception')->where('counts.active', 1));
+        $this->get(route('dids.index', ['status' => 'banned']))->assertInertia(fn (Assert $p) => $p->has('dids.data', 0));
+        $this->get(route('dids.edit', $row))->assertInertia(fn (Assert $p) => $p->component('dids/Form')->where('did.number', '15145550199')
+            ->where('languages.0.code', 'en')->has('targets.'.$this->customer->id.'.numbers', 1));
+        $this->get(route('accounts.pbx.show', $this->customer))->assertInertia(fn (Assert $p) => $p->where('dids.0.status', 'active'));
+
+        // Any format of the number finds it, with its status for the call path.
+        $q = fn () => DB::selectOne('SELECT * FROM softswitch_did(?)', ['+15145550199']);
+        $this->assertSame([(int) $this->customer->id, '15145550199', 'number', '1001', 'active', 'en', true],
+            [(int) $q()->account_id, $q()->number, $q()->dest_type, $q()->dest_target, $q()->status, $q()->language, $q()->account_active]);
+
+        $this->put(route('dids.update', $row), $did(['status' => 'banned', 'status_reason' => 'Unpaid invoice', 'language' => 'fr']))->assertSessionHasNoErrors();
+        $this->assertSame(['banned', 'Unpaid invoice', 'fr'], [$q()->status, $row->fresh()->status_reason, $q()->language]);
+        // Back to active clears the reason.
+        $this->put(route('dids.update', $row), $did(['status' => 'active', 'status_reason' => 'old']))->assertSessionHasNoErrors();
+        $this->assertNull($row->fresh()->status_reason);
         $this->customer->update(['status' => 'suspended']);
-        $this->assertNull(DB::selectOne('SELECT * FROM softswitch_pbx_did(?)', ['15145550199']));
+        $this->assertFalse($q()->account_active);
+
+        $this->delete(route('dids.destroy', $row))->assertRedirect(route('dids.index'));
+        $this->assertNull($row->fresh());
     }
 
     public function test_the_caller_function_identifies_the_phone(): void

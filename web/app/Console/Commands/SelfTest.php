@@ -65,6 +65,8 @@ class SelfTest extends Command
 
     private const BUSY_DEVICE_DID = '84860990022';
 
+    private const BANNED_DID = '99099900013';    // banned DID: refused with 403
+
     protected $signature = 'softswitch:selftest {--keep : Leave the test data in place afterwards}';
 
     protected $description = 'Place real test calls through the switch and check routing, failover, limits and billing';
@@ -105,6 +107,7 @@ class SelfTest extends Command
                 'PBX: extension calls out through LCR' => fn () => $this->pbxOutbound($esl, $ip),
                 'PBX: unanswered extension goes to voicemail' => fn () => $this->pbxVoicemail($esl, $ip),
                 'PBX: DID reaches the IVR, key press followed' => fn () => $this->pbxDidIvr($esl, $ip),
+                'DID: a banned DID is refused (403)' => fn () => $this->bannedDid($esl, $ip),
                 'PBX/Device: DID delivered to a device' => fn () => $this->deviceDid($esl, $ip),
                 'PBX/Device: busy device forwards through LCR' => fn () => $this->deviceBusyForward($esl, $ip),
             ];
@@ -317,6 +320,16 @@ class SelfTest extends Command
         return 'IVR answered the DID and hung up on key 9';
     }
 
+    private function bannedDid(EventSocket $esl, string $ip): string
+    {
+        $cdr = $this->placeCall($esl, $ip, self::BANNED_DID, hold: 1, expectAnswer: false);
+
+        $this->check($cdr->sip_code === 403, "SIP {$cdr->sip_code}, expected 403");
+        $this->check($cdr->hangup_cause === 'did_banned', "reason {$cdr->hangup_cause}, expected did_banned");
+
+        return '403, reason did_banned';
+    }
+
     private function deviceDid(EventSocket $esl, string $ip): string
     {
         $cdr = $this->placeCall($esl, $ip, self::DEVICE_DID, hold: 3, expectAnswer: true);
@@ -508,7 +521,9 @@ class SelfTest extends Command
         }
         PbxIvr::create(['account_id' => $customer->id, 'extension' => '5000', 'name' => 'Selftest IVR', 'timeout_seconds' => 2,
             'options' => (object) ['9' => ['type' => 'hangup'], '1' => ['type' => 'voicemail', 'target' => '1002']]]);
-        PbxDid::create(['account_id' => $customer->id, 'number' => self::DID, 'destination' => ['type' => 'number', 'target' => '5000'], 'enabled' => true]);
+        PbxDid::create(['account_id' => $customer->id, 'provider_account_id' => $vendor->id, 'number' => self::DID, 'destination' => ['type' => 'number', 'target' => '5000']]);
+        PbxDid::create(['account_id' => $customer->id, 'provider_account_id' => $vendor->id, 'number' => self::BANNED_DID, 'destination' => ['type' => 'number', 'target' => '5000'],
+            'status' => 'banned', 'status_reason' => 'Self-test: unpaid']);
 
         // PBX/Devices on the fake carrier. Inbound only: calls from this IP must
         // keep being identified by the customer's tech prefix.
@@ -521,8 +536,8 @@ class SelfTest extends Command
             'device' => $device('device', ['delivery' => 'sip']),
             'busy' => $device('busy', ['delivery' => 'flow', 'flow' => 'busy', 'forward_number' => self::DEST]),
         ];
-        PbxDid::create(['account_id' => $customer->id, 'number' => self::DEVICE_DID, 'destination' => ['type' => 'endpoint', 'target' => (string) $endpoints['device']->id], 'enabled' => true]);
-        PbxDid::create(['account_id' => $customer->id, 'number' => self::BUSY_DEVICE_DID, 'destination' => ['type' => 'endpoint', 'target' => (string) $endpoints['busy']->id], 'enabled' => true]);
+        PbxDid::create(['account_id' => $customer->id, 'number' => self::DEVICE_DID, 'destination' => ['type' => 'endpoint', 'target' => (string) $endpoints['device']->id]]);
+        PbxDid::create(['account_id' => $customer->id, 'number' => self::BUSY_DEVICE_DID, 'destination' => ['type' => 'endpoint', 'target' => (string) $endpoints['busy']->id]]);
 
         $this->f = compact('customer', 'vendor', 'trunks', 'routes', 'plan', 'extensions', 'endpoints');
     }

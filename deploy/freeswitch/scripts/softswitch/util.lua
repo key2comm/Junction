@@ -38,8 +38,10 @@ function M.new(session)
     channel_limit        = "503 Service Unavailable",
     cps_limit            = "503 Service Unavailable",
     database_unavailable = "503 Service Unavailable",
-    -- PBX
+    -- PBX and DIDs
     unknown_extension    = "404 Not Found",
+    did_deactivated      = "404 Not Found",
+    did_banned           = "403 Forbidden",
     outbound_not_allowed = "403 Forbidden",
   }
 
