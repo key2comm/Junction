@@ -15,7 +15,9 @@
   <!-- Carrier calls offer the caller's own codecs to the vendor (no transcoding);
        this list is what FreeSWITCH accepts from carriers. -->
   <X-PRE-PROCESS cmd="set" data="carrier_codecs=PCMU,PCMA,G729,G723,AMR,OPUS,G722,G726-32"/>
-  <X-PRE-PROCESS cmd="set" data="internal_codecs=OPUS,G722,PCMU,PCMA"/>
+  <!-- PBX port (phones, device trunks, carriers on 5060): PCMU preferred;
+       Opus/G.722 still accepted for phones that only do those (WebRTC). -->
+  <X-PRE-PROCESS cmd="set" data="internal_codecs=PCMU,PCMA,OPUS,G722"/>
 
   <!-- Routing behaviour, read by scripts/softswitch/route.lua -->
   <X-PRE-PROCESS cmd="set" data="softswitch_max_call_duration=@SS_MAX_CALL_DURATION@"/>

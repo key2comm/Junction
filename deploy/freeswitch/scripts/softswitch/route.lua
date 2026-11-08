@@ -99,4 +99,8 @@ lcr.run(session, u, {
   number = customer.number,
   max_channels = customer.max_channels,
   max_cps = customer.max_cps,
+  -- Calls on the PBX port (internal profile) already settled on a codec from
+  -- the PBX codec list (often Opus/G.722), which carriers rarely take:
+  -- offer the vendor carrier codecs and transcode, like device trunk calls.
+  transcode = var("sofia_profile_name") == "internal",
 })
