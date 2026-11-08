@@ -187,4 +187,59 @@ class RateImportTest extends TestCase
         $this->assertSame('failed', $import->fresh()->status);
         $this->assertStringContainsString('Line 2: interval "sixty"', $import->fresh()->errors[0]);
     }
+
+    public function test_a_file_bigger_than_one_chunk_with_first_and_next_intervals(): void
+    {
+        $deck = RateDeck::factory()->create();
+        $csv = "\u{FEFF}prefix,npa,nxx,interval_1,rate_1,interval_n,rate_n,date_effective\n1201,201,,6,0.02,6,0.02,7/29/2020\n";
+        for ($i = 0; $i < 2500; $i++) {
+            $csv .= sprintf("1%03d%03d,%03d,%03d,30,0.0053,6,0.0053,4/3/2017\n", 300 + intdiv($i, 1000), $i % 1000, 300 + intdiv($i, 1000), $i % 1000);
+        }
+        $path = 'rate-imports/test-big.csv';
+        \Illuminate\Support\Facades\Storage::disk('local')->put($path, $csv);
+        $import = RateImport::create(['rate_deck_id' => $deck->id, 'filename' => 'big.csv', 'path' => $path, 'mode' => 'update',
+            'effective_from' => now(), 'status' => 'queued',
+            'mapping' => ['has_header' => true, 'npa_country' => '1',
+                'columns' => ['prefix' => 0, 'npa' => 1, 'nxx' => 2, 'interval' => 3, 'rate' => 4, 'increment' => 5, 'effective_from' => 7]]]);
+
+        app(RateImporter::class)->run($import);
+        $import->refresh();
+        $this->assertSame('done', $import->status, json_encode($import->errors));
+        $this->assertSame(2501, $import->stats['rows']);
+        $this->assertSame(2501, $deck->rates()->count());
+        $r = $deck->rates()->where('prefix', '1302499')->sole();
+        $this->assertSame([30, 6], [$r->initial_increment, $r->increment]);
+        $this->assertSame('2017-04-03', $r->effective_from->utc()->format('Y-m-d'));
+        $this->assertSame('2020-07-29', $deck->rates()->where('prefix', '1201')->sole()->effective_from->utc()->format('Y-m-d'));
+    }
+
+    public function test_duplicate_prefixes_across_chunks_are_reported(): void
+    {
+        $deck = RateDeck::factory()->create();
+        $csv = "prefix,rate\n";
+        for ($i = 0; $i < 1500; $i++) {
+            $csv .= (44000 + $i).",0.01\n";
+        }
+        $csv .= "44005,0.02\n";
+        $path = 'rate-imports/test-dupe.csv';
+        \Illuminate\Support\Facades\Storage::disk('local')->put($path, $csv);
+        $import = RateImport::create(['rate_deck_id' => $deck->id, 'filename' => 'dupe.csv', 'path' => $path, 'mode' => 'update',
+            'effective_from' => now(), 'status' => 'queued']);
+
+        app(RateImporter::class)->run($import);
+        $import->refresh();
+        $this->assertSame('failed', $import->status);
+        $this->assertSame(['Line 1502: prefix 44005 is already on line 7.'], $import->errors);
+        $this->assertSame(0, $deck->rates()->count());
+    }
+
+    public function test_an_import_whose_worker_died_is_marked_failed(): void
+    {
+        $deck = RateDeck::factory()->create();
+        $import = RateImport::create(['rate_deck_id' => $deck->id, 'filename' => 'x.csv', 'path' => 'rate-imports/none.csv', 'mode' => 'update',
+            'effective_from' => now(), 'status' => 'running']);
+        (new \App\Jobs\ImportRates($import))->failed(new \RuntimeException('Allowed memory size exhausted'));
+        $this->assertSame('failed', $import->fresh()->status);
+        $this->assertStringContainsString('stopped unexpectedly', $import->fresh()->errors[0]);
+    }
 }

@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { selectClass } from '@/lib/ui';
 
-type Field = 'prefix' | 'npa' | 'nxx' | 'interval' | 'rate' | 'effective_from' | 'destination' | 'connect_fee';
+type Field = 'prefix' | 'npa' | 'nxx' | 'interval' | 'increment' | 'rate' | 'effective_from' | 'destination' | 'connect_fee';
 
 const props = defineProps<{
     deckId: number;
@@ -27,7 +27,7 @@ const props = defineProps<{
 }>();
 
 const fields = Object.entries(props.mapping.fields) as [Field, string][];
-const required: Partial<Record<Field, string>> = { rate: 'required', prefix: 'or NPA', npa: 'or Prefix' };
+const required: Partial<Record<Field, string>> = { rate: 'required', prefix: 'or NPA', npa: 'or Prefix', increment: 'if separate' };
 
 const form = useForm({
     columns: Object.fromEntries(fields.map(([f]) => [f, props.mapping.preview.suggested[f] ?? null])) as Record<Field, number | null>,
@@ -63,8 +63,9 @@ function intervalOf(row: string[]) {
     const v = cell(row, 'interval');
     if (v === '') return '60/60';
     const [a, b] = v.split(/\s*[/\-:x]\s*/i);
+    const next = cell(row, 'increment');
 
-    return `${a}/${b ?? a}`;
+    return `${a}/${b ?? (next || a)}`;
 }
 const preview = computed(() =>
     dataRows.value.map((row) => ({

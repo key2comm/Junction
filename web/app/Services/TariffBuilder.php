@@ -17,23 +17,29 @@ use Illuminate\Support\Facades\DB;
  * from that same carrier rate; the destination name from an exact-prefix
  * match when there is one (the dearest such carrier's name).
  *
- * The rows are applied by RateImporter in "build" (replace) mode, like a CSV import.
+ * The rows are written straight into RateImporter's temp table (no PHP arrays,
+ * so big decks don't use memory) and applied in "build" (replace) mode.
  */
 class TariffBuilder
 {
-    /** @return list<array<string, mixed>> rows in RateImporter's format */
-    public function rows(RateDeck $tariff, CarbonImmutable $at): array
+    /**
+     * Fill rate_import_rows (see RateImporter::apply()) with the tariff's rates.
+     *
+     * @return int rows
+     */
+    public function load(RateDeck $tariff, CarbonImmutable $at): int
     {
         $sources = $tariff->sources()->pluck('rate_decks.id')->all();
         if ($sources === []) {
-            return [];
+            return 0;
         }
         $at = $at->utc()->format('Y-m-d H:i:sP');
         $ids = '{'.implode(',', array_map('intval', $sources)).'}';
         $value = (string) $tariff->markup_value;
         $percent = $tariff->markup_type === 'percent' ? 'true' : 'false';
 
-        $rows = DB::select(<<<'SQL'
+        return DB::affectingStatement(<<<'SQL'
+            INSERT INTO rate_import_rows (prefix, destination, rate, connect_fee, initial_increment, increment, effective_from)
             WITH src AS (
                 SELECT DISTINCT r.prefix FROM rates r
                 WHERE r.rate_deck_id = ANY (?::bigint[]) AND r.effective_from <= ?::timestamptz
@@ -58,19 +64,9 @@ class TariffBuilder
             )
             SELECT DISTINCT ON (prefix) prefix, name AS destination,
                    round(CASE WHEN ?::boolean THEN rate * (1 + ?::numeric / 100) ELSE rate + ?::numeric END, 6) AS rate,
-                   connect_fee, initial_increment, increment
+                   connect_fee, initial_increment, increment, ?::timestamptz
             FROM named
             ORDER BY prefix, rate DESC, connect_fee DESC
-        SQL, [$ids, $at, $at, $ids, $at, $at, $percent, $value, $value]);
-
-        return array_map(fn ($r) => [
-            'prefix' => (string) $r->prefix,
-            'destination' => $r->destination,
-            'rate' => (string) $r->rate,
-            'connect_fee' => (string) $r->connect_fee,
-            'initial_increment' => (int) $r->initial_increment,
-            'increment' => (int) $r->increment,
-            'effective_from' => $at,
-        ], $rows);
+        SQL, [$ids, $at, $at, $ids, $at, $at, $percent, $value, $value, $at]);
     }
 }

@@ -24,7 +24,9 @@ use Throwable;
  *    prefix: prefix = prefix + NPA + NXX, with the country code (default 1)
  *    in front when the prefix cell is empty. A prefix already ending in its
  *    NPA+NXX is used as it is.
- *  - "Interval" is the billing increments, e.g. 60/60, 6/6 or 60 (= 60/60).
+ *  - "Interval" is the billing increments, e.g. 60/60, 6/6 or 60 (= 60/60);
+ *    a separate "Next interval" column gives the second number.
+ *  - The file is streamed into a temp table, so memory use doesn't grow with it.
  *
  * The apply step is set-based SQL in one transaction (PostgreSQL), so decks of
  * hundreds of thousands of prefixes import in seconds.
@@ -37,17 +39,17 @@ class RateImporter
         'npa' => ['npa', 'area_code', 'npa_code'],
         'nxx' => ['nxx', 'exchange', 'nxx_code', 'co_code'],
         'destination' => ['destination', 'description', 'name', 'country', 'dest'],
-        'rate' => ['rate', 'price', 'rate_per_min', 'rate_per_minute', 'per_minute', 'cost'],
+        'rate' => ['rate', 'rate_1', 'price', 'rate_per_min', 'rate_per_minute', 'per_minute', 'cost'],
         'connect_fee' => ['connect_fee', 'connection_fee', 'setup_fee'],
-        'interval' => ['interval', 'billing_interval', 'increments', 'billing_increments', 'billing'],
+        'interval' => ['interval', 'interval_1', 'first_interval', 'billing_interval', 'increments', 'billing_increments', 'billing'],
         'initial_increment' => ['initial_increment', 'min_duration', 'first_increment', 'initial'],
-        'increment' => ['increment', 'billing_increment', 'next_increment'],
+        'increment' => ['increment', 'billing_increment', 'next_increment', 'interval_n', 'next_interval'],
         'effective_from' => ['effective_from', 'date_effective', 'effective_date', 'effective', 'valid_from', 'start_date'],
     ];
 
     /** The fields an admin can match to file columns on the upload screen (in this order). */
     public const FIELDS = [
-        'prefix' => 'Prefix', 'npa' => 'NPA', 'nxx' => 'NXX', 'interval' => 'Interval', 'rate' => 'Rate',
+        'prefix' => 'Prefix', 'npa' => 'NPA', 'nxx' => 'NXX', 'interval' => 'Interval', 'increment' => 'Next interval', 'rate' => 'Rate',
         'effective_from' => 'Date effective', 'destination' => 'Destination', 'connect_fee' => 'Connect fee',
     ];
 
@@ -57,26 +59,19 @@ class RateImporter
 
     public const NOTICE_DAYS = 7;
 
+    /** @var array<string, string|null> date cell => parsed (null = not a date) */
+    private array $dates = [];
+
     public function run(RateImport $import): void
     {
         $import->update(['status' => 'running', 'started_at' => now(), 'errors' => null, 'stats' => null]);
 
         try {
-            [$rows, $errors] = $this->parse(Storage::disk('local')->path($import->path), CarbonImmutable::parse($import->effective_from), $import->mapping);
-
-            if ($errors !== []) {
-                $import->update(['status' => 'failed', 'errors' => $errors, 'stats' => ['rows' => count($rows)], 'finished_at' => now()]);
-
-                return;
-            }
-            if ($rows === []) {
-                $import->update(['status' => 'failed', 'errors' => ['The file has no rate rows.'], 'finished_at' => now()]);
-
-                return;
-            }
-
-            $stats = $this->apply($import, $rows);
+            $file = Storage::disk('local')->path($import->path);
+            $stats = $this->apply($import, fn () => $this->load($file, CarbonImmutable::parse($import->effective_from), $import->mapping));
             $import->update(['status' => 'done', 'stats' => $stats, 'finished_at' => now()]);
+        } catch (RateImportRejected $e) {
+            $import->update(['status' => 'failed', 'errors' => $e->errors, 'stats' => ['rows' => $e->rows], 'finished_at' => now()]);
         } catch (Throwable $e) {
             $import->update(['status' => 'failed', 'errors' => [$e->getMessage()], 'finished_at' => now()]);
         }
@@ -117,10 +112,16 @@ class RateImporter
     }
 
     /**
+     * Read the file into rate_import_rows (created by apply()), 1000 rows at a
+     * time so memory stays flat however big the file is. Any bad or duplicate
+     * row rejects the whole import.
+     *
      * @param  array{has_header?: bool, columns?: array<string, int|null>, npa_country?: string}|null  $mapping  the admin's column choices
-     * @return array{0: list<array<string, mixed>>, 1: list<string>}
+     * @return int rows loaded
+     *
+     * @throws RateImportRejected
      */
-    public function parse(string $file, CarbonImmutable $defaultEffective, ?array $mapping = null): array
+    public function load(string $file, CarbonImmutable $defaultEffective, ?array $mapping = null): int
     {
         $handle = @fopen($file, 'r');
         if ($handle === false) {
@@ -147,10 +148,17 @@ class RateImporter
             }
             $country = preg_replace('/\D/', '', (string) ($mapping['npa_country'] ?? '1'));
 
-            $rows = [];
+            $count = 0;
+            $chunk = [];
             $errors = [];
-            $seen = [];
             $line = 1;
+            // Rows are loaded even after an error, so duplicates are reported too (the transaction rolls back).
+            $flush = function () use (&$chunk) {
+                if ($chunk !== []) {
+                    DB::table('rate_import_rows')->insert($chunk);
+                }
+                $chunk = [];
+            };
             while (($cells = fgetcsv($handle, null, $delimiter, '"', '')) !== false) {
                 $line++;
                 if ($cells === [null] || implode('', $cells) === '') {
@@ -159,25 +167,46 @@ class RateImporter
                 $row = $this->row($cells, $map, $defaultEffective, $country, $error);
                 if ($error !== null) {
                     $errors[] = "Line {$line}: {$error}";
-                } else {
-                    $key = $row['prefix'].'|'.$row['effective_from'];
-                    if (isset($seen[$key])) {
-                        $errors[] = "Line {$line}: prefix {$row['prefix']} is already on line {$seen[$key]}.";
-                    } else {
-                        $seen[$key] = $line;
-                        $rows[] = $row;
+                    if (count($errors) >= self::MAX_ERRORS) {
+                        $errors[] = 'Stopped after '.self::MAX_ERRORS.' errors.';
+                        break;
                     }
+
+                    continue;
                 }
-                if (count($errors) >= self::MAX_ERRORS) {
-                    $errors[] = 'Stopped after '.self::MAX_ERRORS.' errors.';
-                    break;
+                $count++;
+                $chunk[] = $row + ['line' => $line];
+                if (count($chunk) >= 1000) {
+                    $flush();
                 }
             }
-
-            return [$rows, $errors];
+            $flush();
         } finally {
             fclose($handle);
         }
+
+        if (count($errors) <= self::MAX_ERRORS) {
+            // The same prefix twice (for the same start time) is a mistake in the file.
+            $dupes = DB::select(
+                'SELECT prefix, min(line) AS first, (array_agg(line ORDER BY line))[2:] AS others
+                 FROM rate_import_rows GROUP BY prefix, effective_from HAVING count(*) > 1
+                 ORDER BY min(line) LIMIT ?',
+                [self::MAX_ERRORS],
+            );
+            foreach ($dupes as $d) {
+                foreach (array_slice(str_getcsv(trim($d->others, '{}'), ',', '"', ''), 0, 5) as $other) {
+                    $errors[] = "Line {$other}: prefix {$d->prefix} is already on line {$d->first}.";
+                }
+            }
+        }
+        if ($errors !== []) {
+            throw new RateImportRejected($errors, $count);
+        }
+        if ($count === 0) {
+            throw new RateImportRejected(['The file has no rate rows.'], 0);
+        }
+
+        return $count;
     }
 
     private function detectDelimiter(string $line): string
@@ -271,7 +300,8 @@ class RateImporter
         // "Interval" (60/60, 6/6, 60) sets both increments; otherwise the two columns, default 60/60.
         $interval = $get('interval');
         $parts = $interval === '' ? [] : preg_split('/\s*[\/\-:x]\s*/i', $interval);
-        $given = $parts === [] ? [] : ['initial_increment' => $parts[0], 'increment' => $parts[1] ?? $parts[0]];
+        // A single value is both increments, unless a separate "next interval" column is given (6 + 6).
+        $given = $parts === [] ? [] : ['initial_increment' => $parts[0], 'increment' => $parts[1] ?? ($get('increment') !== '' ? $get('increment') : $parts[0])];
         $increments = [];
         foreach (['initial_increment' => 60, 'increment' => 60] as $column => $default) {
             $value = $given[$column] ?? ($get($column) === '' ? (string) $default : $get($column));
@@ -286,11 +316,21 @@ class RateImporter
         }
 
         $effective = $defaultEffective;
-        if ($get('effective_from') !== '') {
-            try {
-                $effective = CarbonImmutable::parse($get('effective_from'), 'UTC');
-            } catch (Throwable) {
-                $error = "effective_from \"{$get('effective_from')}\" is not a date.";
+        $date = $get('effective_from');
+        if ($date !== '') {
+            // Files repeat the same few dates; parse each once.
+            if (! array_key_exists($date, $this->dates)) {
+                if (count($this->dates) > 1000) {
+                    $this->dates = [];
+                }
+                try {
+                    $this->dates[$date] = CarbonImmutable::parse($date, 'UTC')->utc()->format('Y-m-d H:i:sP');
+                } catch (Throwable) {
+                    $this->dates[$date] = null;
+                }
+            }
+            if ($this->dates[$date] === null) {
+                $error = "effective_from \"{$date}\" is not a date.";
 
                 return [];
             }
@@ -305,23 +345,25 @@ class RateImporter
             'connect_fee' => $numbers['connect_fee'],
             'initial_increment' => $increments['initial_increment'],
             'increment' => $increments['increment'],
-            'effective_from' => $effective->utc()->format('Y-m-d H:i:sP'),
+            'effective_from' => $date !== '' ? $this->dates[$date] : $effective->utc()->format('Y-m-d H:i:sP'),
         ];
     }
 
     /**
-     * Apply validated rows (also used by App\Jobs\BuildTariff). Mode "build"
-     * behaves like "replace": the rows are the whole deck.
+     * Load rows into the temp table rate_import_rows with $load (it returns the
+     * row count; see load() and TariffBuilder::load()), then apply them in one
+     * transaction. Mode "build" behaves like "replace": the rows are the whole deck.
      *
+     * @param  callable(): int  $load
      * @return array<string, int>
      */
-    public function apply(RateImport $import, array $rows): array
+    public function apply(RateImport $import, callable $load): array
     {
         $deck = $import->rate_deck_id;
         $effective = CarbonImmutable::parse($import->effective_from)->utc()->format('Y-m-d H:i:sP');
         $noticeCutoff = now()->addDays(self::NOTICE_DAYS)->utc()->format('Y-m-d H:i:sP');
 
-        return DB::transaction(function () use ($import, $rows, $deck, $effective, $noticeCutoff) {
+        return DB::transaction(function () use ($import, $load, $deck, $effective, $noticeCutoff) {
             // ON COMMIT DROP only fires on a real commit; inside an enclosing
             // transaction (or savepoint) a previous import's table may remain.
             DB::statement('DROP TABLE IF EXISTS pg_temp.rate_import_rows');
@@ -334,13 +376,12 @@ class RateImporter
                     initial_increment smallint NOT NULL,
                     increment smallint NOT NULL,
                     effective_from timestamptz NOT NULL,
+                    line integer,
                     prev_rate numeric(12, 6),
                     unchanged boolean NOT NULL DEFAULT false
                 ) ON COMMIT DROP
             SQL);
-            foreach (array_chunk($rows, 1000) as $chunk) {
-                DB::table('rate_import_rows')->insert($chunk);
-            }
+            $rows = $load();
             DB::statement('CREATE INDEX ON rate_import_rows (prefix)');
             DB::statement('ANALYZE rate_import_rows');
 
@@ -411,7 +452,7 @@ class RateImporter
             );
 
             return [
-                'rows' => count($rows),
+                'rows' => $rows,
                 'added' => (int) $counts->added,
                 'changed' => (int) $counts->changed,
                 'unchanged' => (int) $counts->unchanged,

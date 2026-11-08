@@ -78,7 +78,7 @@ class RoutingSetupTest extends TestCase
         Storage::disk('local')->assertExists($import->path);
         Queue::assertNothingPushed();
         // (jsonb doesn't keep key order, so compare without it.)
-        $this->assertEquals(['prefix' => 0, 'npa' => 1, 'nxx' => 2, 'interval' => 3, 'rate' => 4, 'effective_from' => 5, 'destination' => null, 'connect_fee' => null],
+        $this->assertEquals(['prefix' => 0, 'npa' => 1, 'nxx' => 2, 'interval' => 3, 'increment' => null, 'rate' => 4, 'effective_from' => 5, 'destination' => null, 'connect_fee' => null],
             $import->preview['suggested']);
         $this->actingAs($this->admin)->get(route('rate-decks.show', $deck))->assertInertia(fn (Assert $p) => $p
             ->where('mapping.id', $import->id)->where('mapping.preview.header', ['Prefix', 'NPA', 'NXX', 'Interval', 'Rate', 'date_effective'])
@@ -97,7 +97,7 @@ class RoutingSetupTest extends TestCase
         $this->assertSame('queued', $import->status);
         $this->assertSame('replace', $import->mode);
         $this->assertSame('2026-12-01 00:00:00', $import->effective_from->utc()->format('Y-m-d H:i:s'));
-        $this->assertEquals(['has_header' => true, 'columns' => [...$columns, 'destination' => null, 'connect_fee' => null], 'npa_country' => '1'], $import->mapping);
+        $this->assertEquals(['has_header' => true, 'columns' => [...$columns, 'increment' => null, 'destination' => null, 'connect_fee' => null], 'npa_country' => '1'], $import->mapping);
         Queue::assertPushed(ImportRates::class);
 
         // Only one import per deck at a time.
