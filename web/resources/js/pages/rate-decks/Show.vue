@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { Form, Head, Link, router, usePoll } from '@inertiajs/vue3';
-import { Pencil } from '@lucide/vue';
+import { Pencil, Trash2 } from '@lucide/vue';
 import { reactive, ref, watch } from 'vue';
+import RateDeckController from '@/actions/App/Http/Controllers/Admin/RateDeckController';
 import RateImportController from '@/actions/App/Http/Controllers/Admin/RateImportController';
 import TariffController from '@/actions/App/Http/Controllers/Admin/TariffController';
 import Heading from '@/components/Heading.vue';
@@ -10,6 +11,7 @@ import Pagination from '@/components/Pagination.vue';
 import RateImportMapping from '@/components/rate-decks/RateImportMapping.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
@@ -93,6 +95,11 @@ const increments = (r: Rate) => `${r.initial_increment}/${r.increment}`;
 // Tariffs: markup choice on the build form.
 const markupType = ref<'percent' | 'fixed'>(props.build?.markup_type ?? 'percent');
 // Returning false cancels the visit.
+const clearOpen = ref(false);
+const clearConfirm = ref('');
+watch(clearOpen, (open) => {
+    if (!open) clearConfirm.value = '';
+});
 const rebuildOk = () => !props.build?.built_at || confirm('Rebuild this tariff? Every rate is replaced, including any you changed by hand.');
 
 // Changing one prefix's rate by hand (tariffs).
@@ -126,7 +133,46 @@ function saveEdit(r: Rate) {
     <div class="ss-stack-4">
         <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
             <Heading :title="deck.name" :description="deck.description ?? `Rates in ${deck.currency} per minute`" />
-            <Button variant="outline" as-child><Link :href="edit(deck.id)"><Pencil class="icon" /> Edit</Link></Button>
+            <div class="d-flex gap-2">
+                <Button variant="outline" as-child><Link :href="edit(deck.id)"><Pencil class="icon" /> Edit</Link></Button>
+                <Dialog v-model:open="clearOpen">
+                    <DialogTrigger as-child>
+                        <Button variant="outline" class="text-danger" :disabled="importing || rates.total === 0"><Trash2 class="icon" /> Delete all rates</Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                        <Form
+                            v-bind="RateDeckController.clearRates.form(deck.id)"
+                            :options="{ preserveScroll: true }"
+                            @success="clearOpen = false"
+                            v-slot="{ errors, processing }"
+                        >
+                            <DialogHeader>
+                                <DialogTitle>Delete all {{ rates.total.toLocaleString() }} rates from {{ deck.name }}?</DialogTitle>
+                                <DialogDescription>
+                                    Every rate in this list is deleted, including past and scheduled ones. This cannot be undone. The list itself stays, so you can
+                                    import a new file afterwards.
+                                </DialogDescription>
+                            </DialogHeader>
+                            <div v-if="deck.kind === 'carrier' && usage.trunks.length" class="alert alert-warning">
+                                Until new rates are imported, calls can't be sent to
+                                {{ usage.trunks.map((t) => t.name).join(', ') }}: a carrier with no rate for a number is skipped.
+                            </div>
+                            <div v-if="deck.kind === 'tariff' && usage.customers.length" class="alert alert-warning">
+                                Until new rates are added, calls from {{ usage.customers.map((c) => c.name).join(', ') }} will be rejected: there is no price for them.
+                            </div>
+                            <div class="ss-grid gap-1">
+                                <Label for="clear_confirm">Type <strong class="user-select-all">{{ deck.name }}</strong> to confirm</Label>
+                                <Input id="clear_confirm" v-model="clearConfirm" name="confirm" autocomplete="off" />
+                                <InputError :message="errors.confirm" />
+                            </div>
+                            <DialogFooter>
+                                <DialogClose as-child><Button variant="outline">Cancel</Button></DialogClose>
+                                <Button type="submit" variant="destructive" :disabled="processing || clearConfirm.trim() !== deck.name.trim()">Delete all rates</Button>
+                            </DialogFooter>
+                        </Form>
+                    </DialogContent>
+                </Dialog>
+            </div>
         </div>
 
         <!-- Tariffs: build from Carrier Rates plus a markup -->

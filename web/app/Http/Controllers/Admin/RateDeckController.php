@@ -150,4 +150,24 @@ class RateDeckController extends Controller
 
         return $data;
     }
+
+    /**
+     * Delete every rate in the list (the list itself, its settings and the
+     * trunks/customers using it stay). The admin confirms by typing its name.
+     */
+    public function clearRates(Request $request, RateDeck $rateDeck): RedirectResponse
+    {
+        $request->validate(['confirm' => ['required', 'string']]);
+        if (trim($request->string('confirm')) !== trim($rateDeck->name)) {
+            throw ValidationException::withMessages(['confirm' => 'Type the name exactly as shown to confirm.']);
+        }
+        if ($rateDeck->imports()->whereIn('status', ['queued', 'running'])->exists()) {
+            throw ValidationException::withMessages(['confirm' => 'An import is running for this list. Wait for it to finish.']);
+        }
+
+        $deleted = $rateDeck->rates()->delete();
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Deleted '.number_format($deleted).' rate(s) from '.$rateDeck->name.'.']);
+
+        return to_route('rate-decks.show', $rateDeck);
+    }
 }

@@ -113,6 +113,28 @@ class RoutingSetupTest extends TestCase
         Storage::disk('local')->assertMissing($waiting->path);
     }
 
+    public function test_all_rates_can_be_deleted_after_typing_the_name(): void
+    {
+        $deck = RateDeck::factory()->create(['name' => 'Carrier A']);
+        $other = RateDeck::factory()->create();
+        foreach ([$deck, $deck, $other] as $n => $d) {
+            $d->rates()->create(['prefix' => '44'.$n, 'rate' => '0.01', 'effective_from' => now()]);
+        }
+        $url = route('rate-decks.rates.clear', $deck);
+
+        $this->actingAs($this->admin)->delete($url, ['confirm' => 'carrier a'])->assertSessionHasErrors('confirm');
+        $this->assertSame(2, $deck->rates()->count());
+
+        RateImport::create(['rate_deck_id' => $deck->id, 'filename' => 'x.csv', 'path' => 'x', 'mode' => 'update', 'effective_from' => now(), 'status' => 'running']);
+        $this->actingAs($this->admin)->delete($url, ['confirm' => 'Carrier A'])->assertSessionHasErrors('confirm');
+        RateImport::query()->update(['status' => 'done']);
+
+        $this->actingAs($this->admin)->delete($url, ['confirm' => 'Carrier A'])->assertSessionHasNoErrors()->assertRedirect(route('rate-decks.show', $deck));
+        $this->assertSame(0, $deck->rates()->count());
+        $this->assertSame(1, $other->rates()->count());
+        $this->assertNotNull($deck->fresh());
+    }
+
     public function test_tariffs_and_carrier_rates_are_kept_apart(): void
     {
         $tariff = RateDeck::factory()->tariff()->create(['name' => 'Retail']);
