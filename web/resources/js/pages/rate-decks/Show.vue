@@ -130,13 +130,13 @@ function saveEdit(r: Rate) {
                 :description="
                     build.built_at
                         ? `Last built ${dateTime(build.built_at)}. Rebuild after carrier rates change; this replaces every rate here, including ones you changed by hand.`
-                        : 'Pick the Carrier Rates this tariff covers and your markup. For each prefix the most expensive of them is marked up, so every carrier stays profitable.'
+                        : 'Work out this tariff\'s prices from your Carrier Rates plus a markup. They are only used to calculate prices: the tariff isn\'t tied to any carrier, and calls still go out through the customer\'s LCR group, cheapest carrier first. Each prefix is priced from the most expensive carrier rate, so every carrier in the group stays profitable.'
                 "
             />
             <p v-if="build.carrier_rates.length === 0" class="text-secondary">There are no Carrier Rates yet. Create them under Routing → Carrier Rates first.</p>
             <Form v-else v-bind="TariffController.build.form(deck.id)" class="ss-grid gap-3 ss-cols-md-2" v-slot="{ errors, processing }" :on-before="rebuildOk">
                 <fieldset class="ss-grid gap-1">
-                    <legend class="fw-medium fs-5 mb-1">Carrier Rates</legend>
+                    <legend class="fw-medium fs-5 mb-1">Price from these Carrier Rates</legend>
                     <label v-for="c in build.carrier_rates" :key="c.id" class="d-flex align-items-center gap-2" :class="{ 'text-secondary': c.currency !== deck.currency }">
                         <input type="checkbox" name="sources[]" :value="c.id" :checked="build.sources.includes(c.id)" :disabled="c.currency !== deck.currency" class="form-check-input m-0" />
                         {{ c.name }} <span class="small text-secondary">{{ c.currency }}</span>
