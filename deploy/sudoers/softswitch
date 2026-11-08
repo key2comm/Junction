@@ -2,4 +2,11 @@
 # The app's queue worker may run these helpers as root, nothing else.
 # Each helper validates all of its input.
 Defaults:@SS_APP_USER@ !requiretty
-@SS_APP_USER@ ALL=(root) NOPASSWD: /usr/local/sbin/softswitch-cert, /usr/local/sbin/softswitch-firewall apply
+Cmnd_Alias SOFTSWITCH_FIREWALL = /usr/local/sbin/softswitch-firewall apply, \
+	/usr/local/sbin/softswitch-firewall policy, \
+	/usr/local/sbin/softswitch-firewall policy --confirm-within *, \
+	/usr/local/sbin/softswitch-firewall confirm, \
+	/usr/local/sbin/softswitch-firewall rollback, \
+	/usr/local/sbin/softswitch-firewall status, \
+	/usr/local/sbin/softswitch-firewall unban *
+@SS_APP_USER@ ALL=(root) NOPASSWD: /usr/local/sbin/softswitch-cert, SOFTSWITCH_FIREWALL

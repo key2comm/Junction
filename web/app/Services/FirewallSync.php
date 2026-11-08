@@ -3,18 +3,32 @@
 namespace App\Services;
 
 use App\Models\AccountIp;
+use App\Models\FirewallEntry;
 use App\Models\Gateway;
+use App\Support\Dns;
+use App\Support\IpNet;
+use App\Support\Settings;
 use Illuminate\Support\Facades\Process;
 use RuntimeException;
 
 /**
- * Keeps the firewall's carrier allowlist (nftables sets used for the carrier
- * SIP port) equal to: enabled customer IPs + every enabled carrier gateway host
- * (hostnames resolved) + static IPs from the installer config. The root helper
- * softswitch-firewall validates the list and swaps the sets atomically.
+ * Talks to the root helper softswitch-firewall (through sudo, from the queue
+ * worker only):
+ *
+ *  - apply(): the carrier allowlist (nftables sets for the carrier SIP port) =
+ *    enabled customer IPs + every enabled carrier gateway host (hostnames
+ *    resolved) + static IPs from the installer config.
+ *  - applyPolicy(): Settings -> Firewall (whitelist, blacklist, lockdown); see
+ *    FirewallPolicy.
+ *  - status(), confirm(), rollback(), unban().
  */
 class FirewallSync
 {
+    /** Helper exit codes. */
+    public const WAITING = 3;
+
+    public const NOTHING_PENDING = 4;
+
     /** @var callable(string): list<string> */
     private $resolver;
 
@@ -51,21 +65,130 @@ class FirewallSync
     public function apply(): array
     {
         $list = $this->allowlist();
-        $result = Process::timeout(30)->input(implode("\n", $list)."\n")
-            ->run(['sudo', '-n', config('softswitch.firewall.helper'), 'apply']);
+        $result = $this->helper(['apply'], implode("\n", $list)."\n");
 
         if (! $result->successful()) {
-            throw new RuntimeException('Firewall update failed: '.trim($result->errorOutput() ?: $result->output()));
+            throw new RuntimeException('Firewall update failed: '.$this->error($result));
         }
 
         return ['count' => count($list)];
     }
 
+    /**
+     * Push the whitelist, blacklist and lockdown. With $confirmWithin the
+     * helper rolls it back unless confirm() runs in time. Skipped while a change
+     * waits for confirmation (the pending one stays as it is).
+     *
+     * @return array<string, mixed>
+     */
+    public function applyPolicy(?int $confirmWithin = null, bool $rollbackFirst = false): array
+    {
+        if ($rollbackFirst) {
+            $this->rollback();
+        }
+        if ($confirmWithin === null && Settings::get(FirewallPolicy::PENDING) !== null && FirewallPolicy::pending() !== null) {
+            return ['skipped' => 'a change is waiting for confirmation'];
+        }
+        $this->resolveHostnames();
+
+        $args = $confirmWithin === null ? ['policy'] : ['policy', '--confirm-within', (string) $confirmWithin];
+        $result = $this->helper($args, FirewallPolicy::helperInput());
+        if ($result->exitCode() === self::WAITING && $confirmWithin === null) {
+            return ['skipped' => 'a change is waiting for confirmation'];
+        }
+        if (! $result->successful()) {
+            throw new RuntimeException('Firewall update failed: '.$this->error($result));
+        }
+
+        return ['policy' => trim($result->output())];
+    }
+
+    /** Keep the policy waiting for confirmation. False if there was none (already rolled back). */
+    public function confirm(): bool
+    {
+        $result = $this->helper(['confirm']);
+        if ($result->exitCode() === self::NOTHING_PENDING) {
+            return false;
+        }
+        if (! $result->successful()) {
+            throw new RuntimeException('Firewall confirm failed: '.$this->error($result));
+        }
+
+        return true;
+    }
+
+    public function rollback(): void
+    {
+        $result = $this->helper(['rollback']);
+        if (! $result->successful()) {
+            throw new RuntimeException('Firewall rollback failed: '.$this->error($result));
+        }
+    }
+
+    /** @return array{pending: bool, bans: list<array>, ssh_clients: list<string>, utc_offset?: string} */
+    public function status(): array
+    {
+        $result = $this->helper(['status']);
+        $data = json_decode($result->output(), true);
+        if (! $result->successful() || ! is_array($data)) {
+            throw new RuntimeException('Firewall status failed: '.$this->error($result));
+        }
+
+        return $data;
+    }
+
+    public function unban(string $ip): void
+    {
+        if (IpNet::normalize($ip) === null || str_contains($ip, '/')) {
+            throw new RuntimeException("Not an IP address: {$ip}");
+        }
+        $result = $this->helper(['unban', $ip]);
+        if (! $result->successful()) {
+            throw new RuntimeException('Unban failed: '.$this->error($result));
+        }
+    }
+
+    /** Look up whitelist/blacklist hostnames again (their IPs may change). */
+    public function resolveHostnames(): void
+    {
+        $changed = false;
+        foreach (FirewallEntry::query()->get() as $entry) {
+            if (! $entry->isHostname()) {
+                continue;
+            }
+            $ips = array_values(array_filter(array_map(fn ($ip) => IpNet::normalize($ip), ($this->resolver)($entry->value))));
+            sort($ips);
+            // A failed lookup keeps the last known addresses rather than dropping them.
+            if ($ips !== [] && $ips !== ($entry->resolved ?? [])) {
+                $entry->forceFill(['resolved' => $ips, 'resolved_at' => now()])->save();
+                $changed = true;
+            } elseif ($ips !== []) {
+                $entry->forceFill(['resolved_at' => now()])->save();
+            }
+        }
+        if ($changed) {
+            FirewallPolicy::forgetTrusted();
+        }
+    }
+
     /** @return list<string> */
     public static function resolve(string $host): array
     {
-        $records = @dns_get_record($host, DNS_A | DNS_AAAA) ?: [];
+        return Dns::resolve($host);
+    }
 
-        return array_values(array_filter(array_map(fn ($r) => $r['ip'] ?? $r['ipv6'] ?? null, $records)));
+    private function helper(array $args, ?string $input = null): \Illuminate\Contracts\Process\ProcessResult
+    {
+        $process = Process::timeout(60);
+        if ($input !== null) {
+            $process = $process->input($input);
+        }
+
+        return $process->run(['sudo', '-n', config('softswitch.firewall.helper'), ...$args]);
+    }
+
+    private function error(\Illuminate\Contracts\Process\ProcessResult $result): string
+    {
+        return trim($result->errorOutput() ?: $result->output()) ?: 'exit code '.$result->exitCode();
     }
 }

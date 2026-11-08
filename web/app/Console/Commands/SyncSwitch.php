@@ -36,6 +36,8 @@ class SyncSwitch extends Command
         if (! $only || isset($only['firewall'])) {
             try {
                 $this->info('Firewall: '.$firewall->apply()['count'].' allowed carrier address(es).');
+                $policy = $firewall->applyPolicy();
+                $this->info('Firewall policy: '.($policy['policy'] ?? $policy['skipped'] ?? 'applied').'.');
             } catch (Throwable $e) {
                 $this->error('Firewall: '.$e->getMessage());
                 $failed = true;

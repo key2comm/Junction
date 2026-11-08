@@ -31,7 +31,7 @@ class SyncSwitchConfig implements ShouldBeUniqueUntilProcessing, ShouldQueue
     public function handle(GatewaySync $gateways, FirewallSync $firewall, PbxSync $pbx): void
     {
         $errors = [];
-        foreach (['gateways' => fn () => $gateways->sync(), 'firewall' => fn () => $firewall->apply(), 'pbx' => fn () => $pbx->sync()] as $name => $sync) {
+        foreach (['gateways' => fn () => $gateways->sync(), 'firewall' => fn () => $firewall->apply(), 'firewall policy' => fn () => $firewall->applyPolicy(), 'pbx' => fn () => $pbx->sync()] as $name => $sync) {
             try {
                 Log::info("Switch config sync: {$name}", $sync());
             } catch (Throwable $e) {

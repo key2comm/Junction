@@ -1,23 +1,53 @@
 #!/usr/bin/env bash
-# Softswitch carrier allowlist helper. Installed to /usr/local/sbin/softswitch-firewall.
+# Softswitch firewall helper. Rendered by install.sh to /usr/local/sbin/softswitch-firewall.
 #
-#   softswitch-firewall apply < list     # one IP or CIDR per line (IPv4 and/or IPv6)
+#   softswitch-firewall apply < list
+#       Carrier allowlist: one IP or CIDR per line. Replaces the sets that may
+#       reach the carrier SIP port (inet softswitch carriers / carriers6).
+#   softswitch-firewall policy [--confirm-within SECONDS] < input
+#       The admin's whitelist, blacklist and service lockdown. Input lines:
+#         trust <ip|cidr>   always allowed (and never banned by fail2ban)
+#         block <ip|cidr>   always dropped
+#         lock ssh|pbx      that service is closed to everyone not trusted
+#       With --confirm-within the new policy is loaded but NOT saved, and it is
+#       rolled back automatically unless "confirm" runs in time (so a mistake
+#       can't lock anyone out, even across a reboot).
+#   softswitch-firewall confirm      keep the policy waiting for confirmation
+#   softswitch-firewall rollback     drop it and load the saved policy again
+#   softswitch-firewall status       JSON: fail2ban bans, SSH clients, pending
+#   softswitch-firewall unban <ip>   lift a fail2ban ban (every jail)
 #
-# Replaces the contents of the nftables sets that may reach the carrier SIP
-# port (inet softswitch carriers / carriers6) -- never the rules themselves.
-# The app's queue worker runs this through sudo; every entry is validated here.
+# The app's queue worker runs this through sudo; every input is validated here.
+# Exit codes: 3 = a change is waiting for confirmation, 4 = nothing to confirm.
 set -euo pipefail
 umask 077
 
-[ "${1:-}" = apply ] || { echo "usage: softswitch-firewall apply < list" >&2; exit 2; }
+SSH_PORT='@SS_SSH_PORT@'
+PBX_UDP='@SS_PBX_PORT@'
+PBX_TCP='@SS_PBX_PORT@ @SS_PBX_TLS_PORT@'
 
-out=/etc/nftables/softswitch-carriers.nft
-input="$(mktemp)"
-tmp="$(mktemp /etc/nftables/.softswitch-carriers.XXXXXX)"
-trap 'rm -f "$input" "$tmp"' EXIT
-head -c 2000000 > "$input"
+dir=/etc/nftables
+carriers_out=$dir/softswitch-carriers.nft
+policy=$dir/softswitch-policy.nft
+pending=$dir/softswitch-policy.pending
+f2b_trusted=/etc/fail2ban/jail.d/zz-softswitch-trusted.local
+timer=softswitch-fw-policy-rollback
+self=/usr/local/sbin/softswitch-firewall
 
-read -r -d '' PY <<'EOF' || true
+die() { echo "$*" >&2; exit 1; }
+
+# One change at a time (the rollback timer runs this script too).
+exec 9>/run/softswitch-firewall.lock
+flock -w 60 9 || die "another firewall change is in progress"
+
+cmd_apply() {
+	local input tmp
+	input="$(mktemp)"
+	tmp="$(mktemp $dir/.softswitch-carriers.XXXXXX)"
+	trap 'rm -f "$input" "$tmp"' EXIT
+	head -c 2000000 > "$input"
+
+	read -r -d '' PY <<'EOF' || true
 import ipaddress, sys
 src, dst = sys.argv[1], sys.argv[2]
 nets = {4: [], 6: []}
@@ -47,8 +77,212 @@ with open(dst, "w") as f:
 print(f"{len(nets[4])} IPv4 and {len(nets[6])} IPv6 entries")
 EOF
 
-python3 -I -c "$PY" "$input" "$tmp"
-nft -c -f "$tmp"
-nft -f "$tmp"
-chmod 0600 "$tmp"
-mv -f "$tmp" "$out"   # loaded again at boot by /etc/nftables/softswitch.nft
+	python3 -I -c "$PY" "$input" "$tmp"
+	nft -c -f "$tmp"
+	nft -f "$tmp"
+	chmod 0600 "$tmp"
+	mv -f "$tmp" "$carriers_out" # loaded again at boot by /etc/nftables/softswitch.nft
+}
+
+stop_timer() {
+	systemctl stop "$timer.timer" 2>/dev/null || true
+	systemctl reset-failed "$timer.timer" "$timer.service" 2>/dev/null || true
+}
+
+cmd_policy() {
+	local within=0 input tmp ign
+	if [ "${1:-}" = --confirm-within ]; then
+		within="${2:-}"
+		[[ "$within" =~ ^[0-9]+$ ]] && [ "$within" -ge 30 ] && [ "$within" -le 900 ] || die "--confirm-within takes 30-900 seconds"
+	elif [ -n "${1:-}" ]; then
+		die "usage: softswitch-firewall policy [--confirm-within SECONDS] < input"
+	fi
+	if [ -e "$pending" ]; then
+		echo "a firewall change is waiting for confirmation" >&2
+		exit 3
+	fi
+
+	input="$(mktemp)"
+	ign="$(mktemp)"
+	tmp="$(mktemp $dir/.softswitch-policy.XXXXXX)"
+	trap 'rm -f "$input" "$tmp" "$ign"' EXIT
+	head -c 2000000 > "$input"
+
+	read -r -d '' PY <<'EOF' || true
+import ipaddress, re, sys
+src, dst, ign, ssh_port, pbx_udp, pbx_tcp = sys.argv[1:7]
+lists = {"trust": {4: [], 6: []}, "block": {4: [], 6: []}}
+lock = set()
+with open(src) as f:
+    for n, line in enumerate(f, 1):
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        parts = line.split()
+        if len(parts) != 2:
+            sys.exit(f"line {n}: expected 'trust|block <address>' or 'lock ssh|pbx': {line!r}")
+        kind, value = parts
+        if kind == "lock":
+            if value not in ("ssh", "pbx"):
+                sys.exit(f"line {n}: unknown service {value!r}")
+            lock.add(value)
+            continue
+        if kind not in lists:
+            sys.exit(f"line {n}: unknown list {kind!r}")
+        try:
+            net = ipaddress.ip_network(value, strict=True)
+        except ValueError:
+            sys.exit(f"line {n}: not an IP address or network: {value!r}")
+        if (net.version == 4 and net.prefixlen < 8) or (net.version == 6 and net.prefixlen < 32):
+            sys.exit(f"line {n}: {value} is too broad")
+        lists[kind][net.version].append(net)
+total = sum(len(v) for l in lists.values() for v in l.values())
+if total > 50000:
+    sys.exit(f"refusing {total} entries (limit 50000)")
+if lock and not (lists["trust"][4] or lists["trust"][6]):
+    sys.exit("refusing to lock a service with an empty whitelist (nobody could reach it)")
+
+ports = lambda s: sorted({int(p) for p in re.split(r"[\s,]+", s) if p})
+tcp, udp = set(), set()
+if "ssh" in lock:
+    tcp.update(ports(ssh_port))
+if "pbx" in lock:
+    tcp.update(ports(pbx_tcp))
+    udp.update(ports(pbx_udp))
+
+with open(dst, "w") as f:
+    f.write("# Generated by softswitch-firewall from the Softswitch database. Do not edit.\n")
+    for name, kind, version in (("trusted", "trust", 4), ("trusted6", "trust", 6), ("blocked", "block", 4), ("blocked6", "block", 6)):
+        f.write(f"flush set inet softswitch {name}\n")
+        items = [str(n) for n in ipaddress.collapse_addresses(lists[kind][version])]
+        for i in range(0, len(items), 500):
+            f.write(f"add element inet softswitch {name} {{ {', '.join(items[i:i + 500])} }}\n")
+    for name, items in (("locked_tcp", tcp), ("locked_udp", udp)):
+        f.write(f"flush set inet softswitch {name}\n")
+        if items:
+            f.write(f"add element inet softswitch {name} {{ {', '.join(str(p) for p in sorted(items))} }}\n")
+
+trusted = [str(n) for v in (4, 6) for n in ipaddress.collapse_addresses(lists["trust"][v])]
+with open(ign, "w") as f:
+    f.write("# Generated by softswitch-firewall: the Softswitch whitelist is never banned.\n")
+    f.write("[DEFAULT]\nignoreip = 127.0.0.1/8 ::1 " + " ".join(trusted) + "\n")
+print(f"{len(trusted)} trusted, {sum(len(v) for v in lists['block'].values())} blocked, locked: {', '.join(sorted(lock)) or 'none'}")
+EOF
+
+	python3 -I -c "$PY" "$input" "$tmp" "$ign" "$SSH_PORT" "$PBX_UDP" "$PBX_TCP"
+	nft -c -f "$tmp"
+	chmod 0600 "$tmp"
+	if [ "$within" -gt 0 ]; then
+		stop_timer
+		systemd-run -q --unit="$timer" --on-active="$within" "$self" rollback
+		if ! nft -f "$tmp"; then
+			stop_timer
+			die "the new firewall policy could not be loaded"
+		fi
+		mv -f "$tmp" "$pending" # saved only on confirm
+	else
+		nft -f "$tmp"
+		mv -f "$tmp" "$policy" # loaded again at boot by /etc/nftables/softswitch.nft
+	fi
+
+	# fail2ban never bans the whitelist; lift bans already on it.
+	if command -v fail2ban-client >/dev/null 2>&1; then
+		if ! cmp -s "$ign" "$f2b_trusted"; then
+			install -m 0644 "$ign" "$f2b_trusted"
+			fail2ban-client reload >/dev/null 2>&1 || echo "warning: fail2ban reload failed" >&2
+		fi
+		unban_trusted "$input"
+	fi
+}
+
+unban_trusted() {
+	read -r -d '' PY <<'EOF' || true
+import ipaddress, subprocess, sys
+nets = []
+for line in open(sys.argv[1]):
+    parts = line.split()
+    if len(parts) == 2 and parts[0] == "trust":
+        nets.append(ipaddress.ip_network(parts[1], strict=True))
+if not nets:
+    sys.exit(0)
+out = subprocess.run(["fail2ban-client", "status"], capture_output=True, text=True).stdout
+jails = [j.strip() for l in out.splitlines() if "Jail list:" in l for j in l.split(":", 1)[1].split(",") if j.strip()]
+for jail in jails:
+    banned = subprocess.run(["fail2ban-client", "get", jail, "banip"], capture_output=True, text=True).stdout.split()
+    for ip in banned:
+        try:
+            addr = ipaddress.ip_address(ip)
+        except ValueError:
+            continue
+        if any(addr in n for n in nets if n.version == addr.version):
+            subprocess.run(["fail2ban-client", "set", jail, "unbanip", ip], capture_output=True)
+EOF
+	python3 -I -c "$PY" "$1" || true
+}
+
+cmd_confirm() {
+	if [ ! -e "$pending" ]; then
+		echo "nothing is waiting for confirmation (it may already have been rolled back)" >&2
+		exit 4
+	fi
+	stop_timer
+	mv -f "$pending" "$policy"
+	echo "confirmed"
+}
+
+cmd_rollback() {
+	stop_timer
+	if [ -e "$pending" ]; then
+		rm -f "$pending"
+		nft -f "$policy"
+		echo "rolled back"
+	fi
+}
+
+cmd_status() {
+	read -r -d '' PY <<'EOF' || true
+import ipaddress, json, re, subprocess, sys
+ssh_port, has_pending = sys.argv[1], sys.argv[2] == "1"
+run = lambda *a: subprocess.run(list(a), capture_output=True, text=True).stdout
+bans = []
+out = run("fail2ban-client", "status")
+jails = [j.strip() for l in out.splitlines() if "Jail list:" in l for j in l.split(":", 1)[1].split(",") if j.strip()]
+for jail in jails:
+    for line in run("fail2ban-client", "get", jail, "banip", "--with-time").splitlines():
+        # "1.2.3.4 \t2026-11-08 03:00:00 + 3600 = 2026-11-08 04:00:00"
+        m = re.match(r"^\s*(\S+)\s+(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d)\s*\+\s*(-?\d+)\s*=\s*(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d)", line)
+        if m:
+            bans.append({"jail": jail, "ip": m.group(1), "banned_at": m.group(2), "seconds": int(m.group(3)), "until": m.group(4)})
+clients = set()
+for line in run("ss", "-Htn", "state", "established", f"( sport = :{ssh_port} )").splitlines():
+    cols = line.split()
+    if len(cols) >= 4:
+        peer = cols[-1].rsplit(":", 1)[0].strip("[]")
+        if peer.startswith("::ffff:"):
+            peer = peer[7:]
+        try:
+            clients.add(str(ipaddress.ip_address(peer)))
+        except ValueError:
+            pass
+tz = run("date", "+%z").strip()
+print(json.dumps({"pending": has_pending, "bans": bans, "ssh_clients": sorted(clients), "utc_offset": tz}))
+EOF
+	python3 -I -c "$PY" "$SSH_PORT" "$([ -e "$pending" ] && echo 1 || echo 0)"
+}
+
+cmd_unban() {
+	local ip="${1:-}"
+	python3 -I -c 'import ipaddress, sys; ipaddress.ip_address(sys.argv[1])' "$ip" 2>/dev/null || die "not an IP address: $ip"
+	fail2ban-client unban "$ip" >/dev/null
+	echo "unbanned $ip"
+}
+
+case "${1:-}" in
+	apply) cmd_apply ;;
+	policy) shift; cmd_policy "$@" ;;
+	confirm) cmd_confirm ;;
+	rollback) cmd_rollback ;;
+	status) cmd_status ;;
+	unban) cmd_unban "${2:-}" ;;
+	*) die "usage: softswitch-firewall apply|policy [--confirm-within N]|confirm|rollback|status|unban <ip>" ;;
+esac

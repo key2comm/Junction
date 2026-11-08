@@ -5,6 +5,7 @@ use App\Http\Controllers\Settings\BillingController;
 use App\Http\Controllers\Settings\CertificateController;
 use App\Http\Controllers\Settings\ClientDefaultsController;
 use App\Http\Controllers\Settings\EmailController;
+use App\Http\Controllers\Settings\FirewallController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\SecurityController;
 use Illuminate\Auth\Middleware\RequirePassword;
@@ -48,6 +49,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Built-in billing on/off and invoice options. Changing them requires a recent password confirmation.
     Route::get('settings/billing', [BillingController::class, 'edit'])->middleware('admin')->name('billing.edit');
     Route::put('settings/billing', [BillingController::class, 'update'])->middleware(RequirePassword::class)->middleware('admin')->name('billing.update');
+
+    // Firewall: whitelist, blacklist, service lockdown, fail2ban bans. Changes need a
+    // recent password confirmation; keeping a pending change does not (it is timed).
+    Route::middleware('admin')->group(function () {
+        Route::get('settings/firewall', [FirewallController::class, 'index'])->middleware(RequirePassword::class)->name('firewall.index');
+        Route::post('settings/firewall/entries', [FirewallController::class, 'store'])->middleware(RequirePassword::class)->name('firewall.entries.store');
+        Route::delete('settings/firewall/entries/{entry}', [FirewallController::class, 'destroy'])->middleware(RequirePassword::class)->name('firewall.entries.destroy');
+        Route::put('settings/firewall/lockdown', [FirewallController::class, 'lockdown'])->middleware(RequirePassword::class)->name('firewall.lockdown');
+        Route::post('settings/firewall/confirm', [FirewallController::class, 'confirm'])->name('firewall.confirm');
+        Route::post('settings/firewall/undo', [FirewallController::class, 'undo'])->name('firewall.undo');
+        Route::post('settings/firewall/refresh', [FirewallController::class, 'refresh'])->middleware('throttle:12,1')->name('firewall.refresh');
+        Route::post('settings/firewall/unban', [FirewallController::class, 'unban'])->middleware(RequirePassword::class)->name('firewall.unban');
+        Route::post('settings/firewall/bans/blacklist', [FirewallController::class, 'blacklistBan'])->middleware(RequirePassword::class)->name('firewall.bans.blacklist');
+    });
 
     // What new customer accounts start with.
     Route::get('settings/client-defaults', [ClientDefaultsController::class, 'edit'])->middleware('admin')->name('client-defaults.edit');

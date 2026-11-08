@@ -9,6 +9,7 @@ import {
     Activity,
     AudioLines,
     BellRing,
+    BrickWall,
     Building2,
     Cable,
     ChevronDown,
@@ -49,6 +50,7 @@ import { index as carrierRates } from '@/routes/carrier-rates';
 import { index as carriers } from '@/routes/carriers';
 import { index as cdrs } from '@/routes/cdrs';
 import { edit as email } from '@/routes/email';
+import { index as firewall } from '@/routes/firewall';
 import { index as invoices } from '@/routes/invoices';
 import { index as live } from '@/routes/live';
 import { index as pbx } from '@/routes/pbx';
@@ -115,6 +117,7 @@ const adminNav = computed((): NavEntry[] => [
         icon: Settings,
         items: [
             { title: 'SSL certificate', href: certificate(), icon: ShieldCheck },
+            { title: 'Firewall', href: firewall(), icon: BrickWall },
             { title: 'Billing', href: billingSettings(), icon: Receipt },
             { title: 'Client defaults', href: clientDefaults(), icon: UserCog },
             { title: 'Email (SMTP)', href: email(), icon: Mail },

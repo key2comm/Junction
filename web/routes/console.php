@@ -1,5 +1,6 @@
 <?php
 
+use App\Jobs\RefreshFirewallStatus;
 use App\Jobs\SyncSwitchConfig;
 use App\Models\RateImport;
 use App\Services\LiveCalls;
@@ -23,6 +24,10 @@ Schedule::call(function () {
 
 // Follow vendor hostnames whose IPs change, and repair any drift.
 Schedule::job(new SyncSwitchConfig)->everyFifteenMinutes();
+
+// Settings -> Firewall: fail2ban bans for the page, expired blacklist entries,
+// and undoing firewall changes nobody confirmed.
+Schedule::job(new RefreshFirewallStatus)->everyMinute();
 
 // Monthly invoices: hourly, so each customer is invoiced two hours after the
 // month ends in their own time zone (issueDue skips anyone not due yet).
