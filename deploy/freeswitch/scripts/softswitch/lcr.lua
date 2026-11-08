@@ -94,9 +94,13 @@ function M.run(session, u, ctx)
   session:setVariable("progress_timeout", freeswitch.getGlobalVariable("softswitch_progress_timeout") or "10")
   -- Offer the vendor exactly the codecs the caller offered (no transcoding).
   -- PBX phones (WebRTC: Opus only) are transcoded instead: carriers rarely take Opus.
+  -- Transcoded calls are offered the full carrier list (PCMU first): without an
+  -- explicit list FreeSWITCH offers only the A-leg's codec, e.g. G.722 (488).
   if not ctx.transcode then
     local offered = var("ep_codec_string")
     if offered then session:setVariable("absolute_codec_string", offered) end
+  else
+    session:setVariable("absolute_codec_string", freeswitch.getGlobalVariable("carrier_codecs") or "PCMU,PCMA")
   end
   -- The customer can't talk longer than they can pay for.
   session:setVariable("execute_on_answer", "sched_hangup +" .. max_duration .. " ALLOTTED_TIMEOUT")

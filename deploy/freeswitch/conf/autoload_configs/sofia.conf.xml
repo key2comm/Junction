@@ -103,6 +103,8 @@
         <param name="nat-options-ping" value="true"/>
         <param name="NDLB-received-in-nat-reg-contact" value="true"/>
 
+        <!-- Our order wins (PCMU first), not the caller's: "greedy". -->
+        <param name="inbound-codec-negotiation" value="greedy"/>
         <param name="inbound-codec-prefs" value="$${internal_codecs}"/>
         <param name="outbound-codec-prefs" value="$${internal_codecs}"/>
         <param name="dtmf-type" value="rfc2833"/>
