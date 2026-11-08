@@ -220,7 +220,7 @@ class RateImportTest extends TestCase
         for ($i = 0; $i < 1500; $i++) {
             $csv .= (44000 + $i).",0.01\n";
         }
-        $csv .= "44005,0.02\n";
+        $csv .= "44005,0.02\n44007,0.01\n"; // 44005 conflicts; 44007 is an exact copy (fine)
         $path = 'rate-imports/test-dupe.csv';
         \Illuminate\Support\Facades\Storage::disk('local')->put($path, $csv);
         $import = RateImport::create(['rate_deck_id' => $deck->id, 'filename' => 'dupe.csv', 'path' => $path, 'mode' => 'update',
@@ -231,6 +231,16 @@ class RateImportTest extends TestCase
         $this->assertSame('failed', $import->status);
         $this->assertSame(['Line 1502: prefix 44005 is already on line 7.'], $import->errors);
         $this->assertSame(0, $deck->rates()->count());
+
+        // Exact copies alone are skipped and counted.
+        \Illuminate\Support\Facades\Storage::disk('local')->put($path, "prefix,rate\n44,0.01\n33,0.02\n44,0.01\n");
+        $import->update(['status' => 'queued']);
+        app(RateImporter::class)->run($import);
+        $import->refresh();
+        $this->assertSame('done', $import->status, json_encode($import->errors));
+        $this->assertSame(2, $import->stats['rows']);
+        $this->assertSame(1, $import->stats['duplicates_skipped']);
+        $this->assertSame(2, $deck->rates()->count());
     }
 
     public function test_an_import_whose_worker_died_is_marked_failed(): void

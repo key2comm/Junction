@@ -62,6 +62,9 @@ class RateImporter
     /** @var array<string, string|null> date cell => parsed (null = not a date) */
     private array $dates = [];
 
+    /** Exact duplicate rows dropped by the last load(). */
+    private int $copies = 0;
+
     public function run(RateImport $import): void
     {
         $import->update(['status' => 'running', 'started_at' => now(), 'errors' => null, 'stats' => null]);
@@ -185,8 +188,16 @@ class RateImporter
             fclose($handle);
         }
 
+        $copies = 0;
         if (count($errors) <= self::MAX_ERRORS) {
-            // The same prefix twice (for the same start time) is a mistake in the file.
+            // Exact copies of a row (carrier files often have a few) are dropped;
+            // the same prefix with a different rate is a mistake in the file.
+            $copies = DB::delete(
+                'DELETE FROM rate_import_rows t USING rate_import_rows k
+                 WHERE k.prefix = t.prefix AND k.effective_from = t.effective_from AND k.line < t.line
+                   AND k.rate = t.rate AND k.connect_fee = t.connect_fee AND k.initial_increment = t.initial_increment
+                   AND k.increment = t.increment AND k.destination IS NOT DISTINCT FROM t.destination',
+            );
             $dupes = DB::select(
                 'SELECT prefix, min(line) AS first, (array_agg(line ORDER BY line))[2:] AS others
                  FROM rate_import_rows GROUP BY prefix, effective_from HAVING count(*) > 1
@@ -205,8 +216,9 @@ class RateImporter
         if ($count === 0) {
             throw new RateImportRejected(['The file has no rate rows.'], 0);
         }
+        $this->copies = $copies;
 
-        return $count;
+        return $count - $copies;
     }
 
     private function detectDelimiter(string $line): string
@@ -363,6 +375,8 @@ class RateImporter
         $effective = CarbonImmutable::parse($import->effective_from)->utc()->format('Y-m-d H:i:sP');
         $noticeCutoff = now()->addDays(self::NOTICE_DAYS)->utc()->format('Y-m-d H:i:sP');
 
+        $this->copies = 0;
+
         return DB::transaction(function () use ($import, $load, $deck, $effective, $noticeCutoff) {
             // ON COMMIT DROP only fires on a real commit; inside an enclosing
             // transaction (or savepoint) a previous import's table may remain.
@@ -453,6 +467,7 @@ class RateImporter
 
             return [
                 'rows' => $rows,
+                'duplicates_skipped' => $this->copies,
                 'added' => (int) $counts->added,
                 'changed' => (int) $counts->changed,
                 'unchanged' => (int) $counts->unchanged,

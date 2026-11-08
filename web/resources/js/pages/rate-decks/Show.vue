@@ -222,7 +222,8 @@ function saveEdit(r: Rate) {
                             <span class="text-secondary">{{ i.mode === 'build' ? 'built' : i.mode }}, effective {{ dateTime(i.effective_from) }}, by {{ i.user ?? 'unknown' }}</span>
                         </div>
                         <p v-if="i.status === 'done' && i.stats" class="text-secondary">
-                            {{ i.stats.added }} added · {{ i.stats.changed }} changed · {{ i.stats.unchanged }} unchanged<span v-if="i.mode !== 'update'"> · {{ i.stats.ended }} ended</span>
+                            {{ i.stats.added }} added · {{ i.stats.changed }} changed · {{ i.stats.unchanged }} unchanged<span v-if="i.mode !== 'update'"> · {{ i.stats.ended }} ended</span
+                            ><span v-if="i.stats.duplicates_skipped"> · {{ i.stats.duplicates_skipped }} duplicate row(s) skipped</span>
                             <span v-if="i.stats.increases_within_notice" class="text-danger">
                                 · {{ i.stats.increases_within_notice }} increase(s) take effect in under 7 days
                             </span>
