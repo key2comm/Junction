@@ -3,6 +3,7 @@
 use App\Http\Controllers\Settings\ApiTokenController;
 use App\Http\Controllers\Settings\BillingController;
 use App\Http\Controllers\Settings\CertificateController;
+use App\Http\Controllers\Settings\ClientDefaultsController;
 use App\Http\Controllers\Settings\EmailController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\SecurityController;
@@ -47,6 +48,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Built-in billing on/off and invoice options. Changing them requires a recent password confirmation.
     Route::get('settings/billing', [BillingController::class, 'edit'])->middleware('admin')->name('billing.edit');
     Route::put('settings/billing', [BillingController::class, 'update'])->middleware(RequirePassword::class)->middleware('admin')->name('billing.update');
+
+    // What new customer accounts start with.
+    Route::get('settings/client-defaults', [ClientDefaultsController::class, 'edit'])->middleware('admin')->name('client-defaults.edit');
+    Route::put('settings/client-defaults', [ClientDefaultsController::class, 'update'])->middleware('admin')->name('client-defaults.update');
 
     Route::delete('settings/certificate', [CertificateController::class, 'destroy'])
         ->middleware(RequirePassword::class)

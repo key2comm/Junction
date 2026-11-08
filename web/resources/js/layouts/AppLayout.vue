@@ -28,6 +28,7 @@ import {
     ShieldCheck,
     Sun,
     Tags,
+    UserCog,
     UserRound,
 } from '@lucide/vue';
 import { onClickOutside } from '@vueuse/core';
@@ -43,6 +44,7 @@ import { index as alerts } from '@/routes/alerts';
 import { index as apiTokens } from '@/routes/api-tokens';
 import { edit as billingSettings } from '@/routes/billing';
 import { edit as certificate } from '@/routes/certificate';
+import { edit as clientDefaults } from '@/routes/client-defaults';
 import { index as carrierRates } from '@/routes/carrier-rates';
 import { index as carriers } from '@/routes/carriers';
 import { index as cdrs } from '@/routes/cdrs';
@@ -114,6 +116,7 @@ const adminNav = computed((): NavEntry[] => [
         items: [
             { title: 'SSL certificate', href: certificate(), icon: ShieldCheck },
             { title: 'Billing', href: billingSettings(), icon: Receipt },
+            { title: 'Client defaults', href: clientDefaults(), icon: UserCog },
             { title: 'Email (SMTP)', href: email(), icon: Mail },
             { title: 'API tokens', href: apiTokens(), icon: KeyRound },
         ],

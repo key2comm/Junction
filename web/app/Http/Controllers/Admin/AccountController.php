@@ -13,6 +13,7 @@ use App\Models\RoutingPlan;
 use App\Models\Trunk;
 use App\Models\User;
 use App\Services\Router;
+use App\Support\ClientDefaults;
 use App\Support\Currencies;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -78,7 +79,14 @@ class AccountController extends Controller
     /** New customer (Billing → Accounts) or, at /carriers/create, new carrier. */
     public function create(Request $request): Response
     {
-        return Inertia::render('accounts/Create', [...$this->formOptions(), 'role' => self::carrierScope($request) ? 'carrier' : 'customer']);
+        $carrier = self::carrierScope($request);
+
+        return Inertia::render('accounts/Create', [
+            ...$this->formOptions(),
+            'role' => $carrier ? 'carrier' : 'customer',
+            // Settings → Client defaults pre-fill a new customer (carriers keep the built-in values).
+            'defaults' => $carrier ? null : ClientDefaults::get(),
+        ]);
     }
 
     public function store(AccountRequest $request): RedirectResponse
