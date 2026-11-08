@@ -21,6 +21,7 @@
 # Exit codes: 3 = a change is waiting for confirmation, 4 = nothing to confirm.
 set -euo pipefail
 umask 077
+input='' tmp='' ign=''
 
 SSH_PORT='@SS_SSH_PORT@'
 PBX_UDP='@SS_PBX_PORT@'
@@ -41,10 +42,9 @@ exec 9>/run/softswitch-firewall.lock
 flock -w 60 9 || die "another firewall change is in progress"
 
 cmd_apply() {
-	local input tmp
 	input="$(mktemp)"
 	tmp="$(mktemp $dir/.softswitch-carriers.XXXXXX)"
-	trap 'rm -f "$input" "$tmp"' EXIT
+	trap 'rm -f "${input:-}" "${tmp:-}"' EXIT
 	head -c 2000000 > "$input"
 
 	read -r -d '' PY <<'EOF' || true
@@ -90,7 +90,7 @@ stop_timer() {
 }
 
 cmd_policy() {
-	local within=0 input tmp ign
+	local within=0
 	if [ "${1:-}" = --confirm-within ]; then
 		within="${2:-}"
 		[[ "$within" =~ ^[0-9]+$ ]] && [ "$within" -ge 30 ] && [ "$within" -le 900 ] || die "--confirm-within takes 30-900 seconds"
@@ -105,7 +105,7 @@ cmd_policy() {
 	input="$(mktemp)"
 	ign="$(mktemp)"
 	tmp="$(mktemp $dir/.softswitch-policy.XXXXXX)"
-	trap 'rm -f "$input" "$tmp" "$ign"' EXIT
+	trap 'rm -f "${input:-}" "${tmp:-}" "${ign:-}"' EXIT
 	head -c 2000000 > "$input"
 
 	read -r -d '' PY <<'EOF' || true
