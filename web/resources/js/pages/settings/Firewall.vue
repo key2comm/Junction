@@ -90,7 +90,7 @@ const expiry = (e: Entry) => (e.expires_at ? `until ${dateTime(e.expires_at)}` :
 
     <h1 class="visually-hidden">Firewall</h1>
 
-    <div class="ss-stack-4 ss-maxw-5xl">
+    <div class="ss-stack-4">
         <Heading
             variant="small"
             title="Firewall"
