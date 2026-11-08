@@ -58,8 +58,10 @@
     </profile>
 
     <!--
-      internal: PBX phones, digest auth only (users in directory/pbx/, written
-      by the app). Authenticated calls run the "pbx" dialplan context; fail2ban
+      internal: PBX phones and device SIP trunks, digest auth (users in
+      directory/pbx/, written by the app). Authenticated calls run the "pbx" or
+      "device" dialplan context. Carriers in the "carriers" ACL may send calls
+      here without auth (context "internal": routed like carrier traffic); fail2ban
       bans repeated auth failures. WebRTC phones arrive through nginx, so they
       come from 127.0.0.1 (fail2ban ignores it); nginx rate-limits /ws instead.
     -->
@@ -83,6 +85,8 @@
         <param name="user-agent-string" value="Softswitch"/>
 
         <param name="auth-calls" value="true"/>
+        <!-- Carriers that send DIDs to this port instead of the carrier port skip auth (context "internal"). -->
+        <param name="apply-inbound-acl" value="carriers"/>
         <param name="auth-all-packets" value="false"/>
         <param name="accept-blind-reg" value="false"/>
         <param name="accept-blind-auth" value="false"/>

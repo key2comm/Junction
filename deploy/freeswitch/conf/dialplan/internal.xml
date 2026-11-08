@@ -1,7 +1,16 @@
 <include>
-  <!-- Unauthenticated calls on the internal profile are challenged (auth-calls);
-       anything that still lands here is refused. Phones run context "pbx". -->
+  <!-- Unauthenticated calls on the internal profile are challenged (auth-calls),
+       except from carriers in the "carriers" ACL (apply-inbound-acl): those
+       land here and are routed exactly like carrier traffic (route.lua: DIDs,
+       customers by source IP). Anything else that lands here is refused.
+       Phones run context "pbx", device SIP trunks "device". -->
   <context name="internal">
+    <extension name="carrier-on-pbx-port">
+      <condition field="${acl(${network_addr} carriers)}" expression="^true$"/>
+      <condition field="destination_number" expression="^.+$">
+        <action application="lua" data="softswitch/route.lua"/>
+      </condition>
+    </extension>
     <extension name="refuse">
       <condition field="destination_number" expression="^.*$">
         <action application="respond" data="403 Forbidden"/>

@@ -3,6 +3,12 @@
     <!-- Carrier access is enforced by the nftables allowlist and by customer
          identification in the routing engine. Built-in lists (loopback.auto,
          localnet.auto) are always available. -->
+    <!-- Carriers (the app's carrier allowlist, acl/carriers.xml): may send
+         calls to the PBX port without digest auth; they are routed like
+         carrier traffic (dialplan/internal.xml). -->
+    <list name="carriers" default="deny">
+      <X-PRE-PROCESS cmd="include" data="../acl/*.xml"/>
+    </list>
     <!-- Only the switch itself may reach the self-test profile. -->
     <list name="selftest" default="deny">
       <node type="allow" cidr="$${softswitch_public_ip}/32"/>

@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Services\FirewallSync;
+use App\Services\Freeswitch\CarrierAcl;
 use App\Services\Freeswitch\GatewaySync;
 use App\Services\Freeswitch\PbxSync;
 use Illuminate\Console\Command;
@@ -18,7 +19,7 @@ class SyncSwitch extends Command
 
     protected $description = 'Sync FreeSWITCH gateways, the firewall carrier allowlist and PBX users from the database';
 
-    public function handle(GatewaySync $gateways, FirewallSync $firewall, PbxSync $pbx): int
+    public function handle(GatewaySync $gateways, FirewallSync $firewall, CarrierAcl $acl, PbxSync $pbx): int
     {
         $only = array_filter(['gateways' => $this->option('gateways'), 'firewall' => $this->option('firewall'), 'pbx' => $this->option('pbx')]);
         $failed = false;
@@ -38,6 +39,7 @@ class SyncSwitch extends Command
                 $this->info('Firewall: '.$firewall->apply()['count'].' allowed carrier address(es).');
                 $policy = $firewall->applyPolicy();
                 $this->info('Firewall policy: '.($policy['policy'] ?? $policy['skipped'] ?? 'applied').'.');
+                $this->info('Carrier ACL (carriers on the PBX port): '.$acl->sync()['count'].' address(es).');
             } catch (Throwable $e) {
                 $this->error('Firewall: '.$e->getMessage());
                 $failed = true;

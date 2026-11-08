@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Services\EndpointSync;
 use App\Services\FirewallSync;
+use App\Services\Freeswitch\CarrierAcl;
 use App\Services\Freeswitch\GatewaySync;
 use App\Services\Freeswitch\PbxSync;
 use Illuminate\Contracts\Queue\ShouldBeUniqueUntilProcessing;
@@ -29,10 +30,10 @@ class SyncSwitchConfig implements ShouldBeUniqueUntilProcessing, ShouldQueue
 
     public int $uniqueFor = 60;
 
-    public function handle(GatewaySync $gateways, EndpointSync $endpoints, FirewallSync $firewall, PbxSync $pbx): void
+    public function handle(GatewaySync $gateways, EndpointSync $endpoints, FirewallSync $firewall, CarrierAcl $acl, PbxSync $pbx): void
     {
         $errors = [];
-        foreach (['gateways' => fn () => $gateways->sync(), 'endpoints' => fn () => $endpoints->sync(), 'firewall' => fn () => $firewall->apply(), 'firewall policy' => fn () => $firewall->applyPolicy(), 'pbx' => fn () => $pbx->sync()] as $name => $sync) {
+        foreach (['gateways' => fn () => $gateways->sync(), 'endpoints' => fn () => $endpoints->sync(), 'firewall' => fn () => $firewall->apply(), 'firewall policy' => fn () => $firewall->applyPolicy(), 'carrier acl' => fn () => $acl->sync(), 'pbx' => fn () => $pbx->sync()] as $name => $sync) {
             try {
                 Log::info("Switch config sync: {$name}", $sync());
             } catch (Throwable $e) {

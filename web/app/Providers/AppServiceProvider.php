@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Services\Freeswitch\EventSocket;
 use App\Services\MailSettings;
+use App\Services\FirewallSync;
+use App\Services\Freeswitch\CarrierAcl;
 use App\Services\Freeswitch\GatewaySync;
 use App\Services\Freeswitch\PbxSync;
 use Carbon\CarbonImmutable;
@@ -30,6 +32,11 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(GatewaySync::class, fn ($app) => new GatewaySync(
             $app->make(EventSocket::class),
             config('softswitch.freeswitch.gateway_dir'),
+        ));
+        $this->app->bind(CarrierAcl::class, fn ($app) => new CarrierAcl(
+            $app->make(EventSocket::class),
+            $app->make(FirewallSync::class),
+            config('softswitch.freeswitch.acl_dir'),
         ));
         $this->app->bind(PbxSync::class, fn ($app) => new PbxSync(
             $app->make(EventSocket::class),

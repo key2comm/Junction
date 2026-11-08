@@ -38,6 +38,8 @@ return [
         'gateway_dir' => env('SOFTSWITCH_FS_GATEWAY_DIR', '/usr/local/freeswitch/etc/freeswitch/sip_profiles/carrier'),
         // PBX SIP users and IVR greetings written by App\Services\Freeswitch\PbxSync.
         'directory_dir' => env('SOFTSWITCH_FS_DIRECTORY_DIR', '/usr/local/freeswitch/etc/freeswitch/directory/pbx'),
+        // The "carriers" ACL (carriers sending to the PBX port), written by App\Services\Freeswitch\CarrierAcl.
+        'acl_dir' => env('SOFTSWITCH_FS_ACL_DIR', '/usr/local/freeswitch/etc/freeswitch/acl'),
         'greeting_dir' => env('SOFTSWITCH_FS_GREETING_DIR', '/usr/local/freeswitch/var/lib/freeswitch/greetings'),
     ],
 
