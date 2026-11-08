@@ -13,11 +13,21 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * One customer call. Vendor attempts (failover) are in cdr_attempts; the
  * buy-side columns describe the attempt that carried the call.
  */
-#[Fillable(['uuid', 'direction', 'customer_account_id', 'endpoint_id', 'source_ip', 'caller', 'callee', 'destination', 'started_at', 'answered_at', 'ended_at', 'billsec', 'pdd_ms', 'sip_code', 'hangup_cause', 'attempts', 'sell_prefix', 'sell_destination', 'sell_rate', 'sell_cost', 'vendor_account_id', 'trunk_id', 'gateway_id', 'buy_prefix', 'buy_rate', 'buy_cost', 'rated_at', 'posted_at', 'vendor_posted_at'])]
+#[Fillable(['uuid', 'direction', 'did', 'customer_account_id', 'endpoint_id', 'source_ip', 'caller', 'callee', 'destination', 'started_at', 'answered_at', 'ended_at', 'billsec', 'pdd_ms', 'sip_code', 'hangup_cause', 'attempts', 'sell_prefix', 'sell_destination', 'sell_rate', 'sell_cost', 'vendor_account_id', 'trunk_id', 'gateway_id', 'buy_prefix', 'buy_rate', 'buy_cost', 'rated_at', 'posted_at', 'vendor_posted_at'])]
 class Cdr extends Model
 {
     /** carrier traffic, or a PBX call: to an outside number, from a DID, or between extensions. */
     public const DIRECTIONS = ['carrier', 'pbx_out', 'pbx_in', 'pbx_local'];
+
+    /** Incoming (a DID call, also when forwarded out again), outgoing or internal. */
+    public function flow(): string
+    {
+        return match (true) {
+            $this->did !== null => $this->direction === 'pbx_in' ? 'incoming' : 'incoming_forwarded',
+            $this->direction === 'pbx_local' => 'internal',
+            default => 'outgoing',
+        };
+    }
 
     /** @use HasFactory<CdrFactory> */
     use HasFactory;

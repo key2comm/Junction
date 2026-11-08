@@ -45,6 +45,7 @@ if did then
   setvar("softswitch_direction", "pbx_in")
   setvar("softswitch_account_id", did.account_id)
   setvar("softswitch_destination", did.number)
+  setvar("softswitch_did", did.number) -- the CDR shows the DID's provider as the carrier
   setvar("softswitch_language", did.language)
   if did.status == "banned" then return u.reject("did_banned") end
   if did.status ~= "active" then return u.reject("did_deactivated") end

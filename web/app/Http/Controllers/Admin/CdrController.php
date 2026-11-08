@@ -32,6 +32,8 @@ class CdrController extends Controller
                 ...$c->only(['id', 'started_at', 'caller', 'callee', 'destination', 'billsec', 'sip_code', 'hangup_cause',
                     'attempts', 'sell_cost', 'buy_cost']),
                 'answered' => $c->answered_at !== null,
+                'flow' => $c->flow(),
+                'did' => $c->did,
                 'customer' => $c->customer?->code,
                 'vendor' => $c->vendor?->code,
                 'trunk' => $c->trunk?->name,
@@ -69,6 +71,8 @@ class CdrController extends Controller
                 'currency' => $cdr->customer?->currency ?? 'USD',
                 'customer' => $cdr->customer?->only(['id', 'code', 'name']),
                 'vendor' => $cdr->vendor?->only(['id', 'code', 'name']),
+                'flow' => $cdr->flow(),
+                'did' => $cdr->did,
                 'trunk' => $cdr->trunk?->only(['id', 'name']),
                 'gateway' => $cdr->gateway?->name,
                 'reason' => Router::REASONS[$cdr->hangup_cause] ?? null,
@@ -92,7 +96,7 @@ class CdrController extends Controller
             $out = fopen('php://output', 'w');
             fputcsv($out, ['started_at_utc', 'answered_at_utc', 'ended_at_utc', 'customer', 'source_ip', 'caller', 'callee',
                 'destination', 'billsec', 'sip_code', 'hangup_cause', 'attempts', 'sell_prefix', 'sell_rate', 'sell_cost',
-                'vendor', 'trunk', 'buy_prefix', 'buy_rate', 'buy_cost', 'margin', 'uuid'], escape: '');
+                'vendor', 'trunk', 'buy_prefix', 'buy_rate', 'buy_cost', 'margin', 'uuid', 'direction', 'did'], escape: '');
 
             $filters->apply(Cdr::query())
                 ->with(['customer:id,code', 'vendor:id,code', 'trunk:id,name'])
@@ -103,7 +107,7 @@ class CdrController extends Controller
                             $c->ended_at?->utc()->toIso8601String(), $c->customer?->code, $c->source_ip, $c->caller, $c->callee,
                             $c->destination, $c->billsec, $c->sip_code, $c->hangup_cause, $c->attempts, $c->sell_prefix,
                             $c->sell_rate, $c->sell_cost, $c->vendor?->code, $c->trunk?->name, $c->buy_prefix, $c->buy_rate,
-                            $c->buy_cost, $c->margin(), $c->uuid,
+                            $c->buy_cost, $c->margin(), $c->uuid, $c->flow(), $c->did,
                         ]), escape: '');
                     }
                     flush();

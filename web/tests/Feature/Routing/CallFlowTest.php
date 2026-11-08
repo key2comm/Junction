@@ -6,6 +6,7 @@ use App\Jobs\SyncSwitchConfig;
 use App\Models\Account;
 use App\Models\AccountIp;
 use App\Models\Cdr;
+use App\Models\PbxDid;
 use App\Models\Gateway;
 use App\Models\LedgerEntry;
 use App\Models\Rate;
@@ -156,6 +157,18 @@ class CallFlowTest extends TestCase
             'softswitch_gateway_id' => '', 'softswitch_buy_rate_id' => '', 'softswitch_attempts' => '[]']))->assertOk();
         $cdr = Cdr::query()->where('uuid', $local)->sole();
         $this->assertSame(['pbx_local', null, 0], [$cdr->direction, $cdr->sell_cost, $cdr->attempts]);
+
+        // An inbound DID call shows the DID's provider as its carrier.
+        $provider = Account::factory()->vendor()->create();
+        $customer = Account::factory()->create(['is_customer' => true]);
+        PbxDid::create(['account_id' => $customer->id, 'provider_account_id' => $provider->id, 'number' => '14163246990', 'destination' => ['type' => 'hangup']]);
+        $this->postCdr($this->xml($in = (string) Str::uuid(), ['softswitch_direction' => 'pbx_in', 'softswitch_did' => '14163246990', 'softswitch_destination' => '14163246990',
+            'softswitch_sell_rate_id' => '', 'softswitch_trunk_id' => '', 'softswitch_gateway_id' => '', 'softswitch_buy_rate_id' => '', 'softswitch_attempts' => '[]']))->assertOk();
+        $cdr = Cdr::query()->where('uuid', $in)->sole();
+        $this->assertSame(['pbx_in', $provider->id, null, null, '14163246990', 'incoming'], [$cdr->direction, $cdr->vendor_account_id, $cdr->buy_cost, $cdr->trunk_id, $cdr->did, $cdr->flow()]);
+        $this->assertSame('outgoing', Cdr::query()->where('uuid', $out)->sole()->flow());
+        $this->assertSame('internal', Cdr::query()->where('uuid', $local)->sole()->flow());
+        $this->assertSame('incoming_forwarded', (new Cdr(['direction' => 'pbx_out', 'did' => '14163246990']))->flow());
 
         // The ringing extension's own leg, and anything unknown.
         $this->postCdr($this->xml($leg = (string) Str::uuid(), ['softswitch_pbx_leg' => 'true']))->assertOk();

@@ -11,6 +11,8 @@ type Cdr = {
     id: number;
     uuid: string;
     direction: string;
+    flow: 'incoming' | 'incoming_forwarded' | 'outgoing' | 'internal';
+    did: string | null;
     caller: string | null;
     callee: string;
     destination: string | null;
@@ -77,7 +79,9 @@ const outcome = c.answered_at ? 'Answered' : c.attempts === 0 ? 'Rejected before
             <Heading :title="`${cdr.caller ?? 'Unknown'} → ${cdr.destination ?? cdr.callee}`" :description="dateTime(cdr.started_at)" />
             <div class="d-flex flex-wrap align-items-center gap-2">
                 <Badge :variant="cdr.answered_at ? 'default' : cdr.attempts === 0 ? 'destructive' : 'secondary'">{{ outcome }}</Badge>
-                <Badge v-if="cdr.direction !== 'carrier'" variant="outline">{{ { pbx_out: 'PBX outbound', pbx_in: 'PBX inbound (DID)', pbx_local: 'PBX internal' }[cdr.direction] ?? cdr.direction }}</Badge>
+                <Badge>{{ { incoming: 'Incoming', incoming_forwarded: 'Incoming (forwarded)', outgoing: 'Outgoing', internal: 'Internal' }[cdr.flow] }}</Badge>
+                <Badge v-if="cdr.did" variant="outline">DID {{ cdr.did }}</Badge>
+                <Badge v-if="cdr.direction !== 'carrier'" variant="outline">{{ { pbx_out: 'via PBX/device', pbx_in: 'to PBX/device', pbx_local: 'PBX' }[cdr.direction] ?? cdr.direction }}</Badge>
                 <span v-if="cdr.sip_code" class="font-monospace">SIP {{ cdr.sip_code }}</span>
                 <span class="text-secondary">{{ cdr.hangup_cause }}</span>
             </div>

@@ -32,6 +32,7 @@ final class CdrFilters
             'number' => ['nullable', 'string', 'max:32', 'regex:/^[0-9+\s\-]*$/'],
             'caller' => ['nullable', 'string', 'max:32', 'regex:/^[0-9+\s\-]*$/'],
             'status' => ['nullable', 'in:answered,failed,rejected'],
+            'direction' => ['nullable', 'in:incoming,outgoing,internal'],
             'sip' => ['nullable', 'integer', 'between:100,699'],
             'reason' => ['nullable', 'string', 'max:64', 'regex:/^[A-Za-z_]+$/'],
         ]);
@@ -53,6 +54,7 @@ final class CdrFilters
             'number' => $digits($data['number'] ?? null),
             'caller' => $digits($data['caller'] ?? null),
             'status' => $data['status'] ?? null,
+            'direction' => $data['direction'] ?? null,
             'sip' => $data['sip'] ?? null,
             'reason' => $data['reason'] ?? null,
         ], fn ($v) => $v !== null && $v !== '');
@@ -76,6 +78,9 @@ final class CdrFilters
             ->when(($v['status'] ?? null) === 'failed', fn ($q) => $q->whereNull('answered_at')->where('attempts', '>', 0))
             // Rejected = refused before any vendor was tried (no funds, blocked, unknown...).
             ->when(($v['status'] ?? null) === 'rejected', fn ($q) => $q->whereNull('answered_at')->where('attempts', 0))
+            ->when(($v['direction'] ?? null) === 'incoming', fn ($q) => $q->whereNotNull('did'))
+            ->when(($v['direction'] ?? null) === 'outgoing', fn ($q) => $q->whereNull('did')->where('direction', '!=', 'pbx_local'))
+            ->when(($v['direction'] ?? null) === 'internal', fn ($q) => $q->where('direction', 'pbx_local'))
             ->when($v['sip'] ?? null, fn ($q, $code) => $q->where('sip_code', $code))
             ->when($v['reason'] ?? null, fn ($q, $r) => $q->where('hangup_cause', $r));
     }

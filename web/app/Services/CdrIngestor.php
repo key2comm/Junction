@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Cdr;
 use App\Models\Endpoint;
+use App\Models\PbxDid;
 use App\Models\Gateway;
 use App\Models\Rate;
 use App\Models\Trunk;
@@ -99,6 +100,7 @@ class CdrIngestor
                 'caller' => mb_substr((string) ($profile->caller_id_number ?? $var('caller_id_number') ?? ''), 0, 64) ?: null,
                 'callee' => mb_substr((string) ($profile->destination_number ?? $var('destination_number') ?? ''), 0, 64),
                 'destination' => $var('softswitch_destination'),
+                'did' => ($did = $var('softswitch_did')) && preg_match('/^\d{1,32}$/', $did) ? $did : null,
                 'started_at' => $started,
                 'answered_at' => $answered,
                 'ended_at' => $ended,
@@ -112,7 +114,10 @@ class CdrIngestor
                 'sell_destination' => $sellRate?->destination,
                 'sell_rate' => $sellRate?->rate,
                 'sell_cost' => $sellRate ? $sellRate->costFor($billsec) : null,
-                'vendor_account_id' => $trunkId && $answered ? Trunk::query()->whereKey($trunkId)->value('account_id') : null,
+                // The carrier: the one that carried an outbound call, or the DID's provider for an inbound DID call.
+                'vendor_account_id' => $trunkId && $answered
+                    ? Trunk::query()->whereKey($trunkId)->value('account_id')
+                    : ($direction === 'pbx_in' && $did ? PbxDid::query()->where('number', $did)->value('provider_account_id') : null),
                 'trunk_id' => $answered ? $trunkId : null,
                 'gateway_id' => $answered ? $known($int($var('softswitch_gateway_id')), $gatewayIds) : null,
                 'buy_prefix' => $answered ? $buyRate?->prefix : null,

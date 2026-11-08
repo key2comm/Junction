@@ -107,6 +107,25 @@ class CdrsTest extends TestCase
         $this->assertSame(0, $count(['from' => now()->subMinutes(10)->toIso8601String()]));
     }
 
+    public function test_direction_is_shown_and_filtered(): void
+    {
+        $out = $this->answered();
+        $in = $this->cdr(['direction' => 'pbx_in', 'did' => '14163246990', 'destination' => '14163246990', 'vendor_account_id' => $this->vendor->id]);
+        $fwd = $this->cdr(['direction' => 'pbx_out', 'did' => '14163246990', 'destination' => '14165551234']);
+        $local = $this->cdr(['direction' => 'pbx_local', 'destination' => '1002']);
+        $ids = fn (string $direction) => fn (Assert $p) => $p->where('cdrs.data', fn ($rows) => collect($rows)->pluck('id')->sort()->values()->all()
+            === collect(match ($direction) { 'incoming' => [$in, $fwd], 'outgoing' => [$out], 'internal' => [$local] })->pluck('id')->sort()->values()->all());
+
+        $this->actingAs($this->admin)->get(route('cdrs.index'))->assertInertia(fn (Assert $p) => $p
+            ->where('cdrs.data', fn ($rows) => collect($rows)->pluck('flow', 'id')->all() === [
+                $local->id => 'internal', $fwd->id => 'incoming_forwarded', $in->id => 'incoming', $out->id => 'outgoing']));
+        foreach (['incoming', 'outgoing', 'internal'] as $direction) {
+            $this->actingAs($this->admin)->get(route('cdrs.index', ['direction' => $direction]))->assertInertia($ids($direction));
+        }
+        $this->actingAs($this->admin)->get(route('cdrs.index', ['direction' => 'sideways']))->assertSessionHasErrors('direction');
+        $this->actingAs($this->admin)->get(route('cdrs.show', $in))->assertInertia(fn (Assert $p) => $p->where('cdr.flow', 'incoming')->where('cdr.vendor.code', 'VEND'));
+    }
+
     public function test_range_is_validated(): void
     {
         $this->actingAs($this->admin)->get(route('cdrs.index', ['from' => now()->subDays(40)->toIso8601String()]))->assertSessionHasErrors('from');

@@ -11,6 +11,8 @@ import { dateTime, money } from '@/lib/format';
 import { selectClass } from '@/lib/ui';
 import { download as exportCsv, index, show } from '@/routes/cdrs';
 
+type Flow = 'incoming' | 'incoming_forwarded' | 'outgoing' | 'internal';
+
 type Row = {
     id: number;
     started_at: string;
@@ -25,6 +27,8 @@ type Row = {
     buy_cost: string | null;
     margin: string | null;
     answered: boolean;
+    flow: Flow;
+    did: string | null;
     customer: string | null;
     vendor: string | null;
     trunk: string | null;
@@ -59,6 +63,7 @@ const f = reactive({
     vendor: String(props.filters.vendor ?? ''),
     trunk: String(props.filters.trunk ?? ''),
     status: String(props.filters.status ?? ''),
+    direction: String(props.filters.direction ?? ''),
     number: String(props.filters.number ?? ''),
     caller: String(props.filters.caller ?? ''),
     sip: String(props.filters.sip ?? ''),
@@ -87,6 +92,12 @@ function preset(hours: number) {
 const currency = props.currency;
 const outcome = (r: Row) => (r.answered ? 'answered' : r.attempts === 0 ? 'rejected' : 'failed');
 const variant = (r: Row) => (r.answered ? 'default' : r.attempts === 0 ? 'destructive' : 'secondary');
+const flows: Record<Flow, { label: string; variant: 'default' | 'secondary' | 'outline' }> = {
+    incoming: { label: 'Incoming', variant: 'default' },
+    incoming_forwarded: { label: 'Incoming (forwarded)', variant: 'default' },
+    outgoing: { label: 'Outgoing', variant: 'outline' },
+    internal: { label: 'Internal', variant: 'secondary' },
+};
 const duration = (s: number) => (s >= 60 ? `${Math.floor(s / 60)}m ${s % 60}s` : `${s}s`);
 </script>
 
@@ -129,6 +140,15 @@ const duration = (s: number) => (s >= 60 ? `${Math.floor(s / 60)}m ${s % 60}s` :
                 <select id="trunk" v-model="f.trunk" :class="selectClass">
                     <option value="">Any</option>
                     <option v-for="t in options.trunks" :key="t.id" :value="String(t.id)">{{ t.label }}</option>
+                </select>
+            </div>
+            <div class="ss-grid gap-1">
+                <Label for="direction">Direction</Label>
+                <select id="direction" v-model="f.direction" :class="selectClass">
+                    <option value="">Any</option>
+                    <option value="incoming">Incoming (DIDs)</option>
+                    <option value="outgoing">Outgoing</option>
+                    <option value="internal">Internal (PBX)</option>
                 </select>
             </div>
             <div class="ss-grid gap-1">
@@ -195,6 +215,7 @@ const duration = (s: number) => (s >= 60 ? `${Math.floor(s / 60)}m ${s % 60}s` :
                 <thead>
                     <tr>
                         <th>Started</th>
+                        <th>Direction</th>
                         <th>Customer</th>
                         <th>From → To</th>
                         <th>Outcome</th>
@@ -209,14 +230,17 @@ const duration = (s: number) => (s >= 60 ? `${Math.floor(s / 60)}m ${s % 60}s` :
                         <td class="text-nowrap">
                             <Link :href="show(r.id)">{{ dateTime(r.started_at) }}</Link>
                         </td>
+                        <td class="text-nowrap"><Badge :variant="flows[r.flow].variant">{{ flows[r.flow].label }}</Badge></td>
                         <td>{{ r.customer ?? '—' }}</td>
-                        <td class="font-monospace small">{{ r.caller ?? '?' }} → {{ r.destination ?? r.callee }}</td>
+                        <td class="font-monospace small">
+                            {{ r.caller ?? '?' }} → {{ r.flow === 'incoming_forwarded' ? `${r.did} → ${r.destination}` : (r.destination ?? r.callee) }}
+                        </td>
                         <td class="text-nowrap">
                             <Badge :variant="variant(r)">{{ outcome(r) }}</Badge>
                             <span class="ms-1 small text-secondary">{{ r.sip_code ?? '' }} {{ r.answered ? '' : r.hangup_cause }}</span>
                         </td>
                         <td class="small">
-                            <span v-if="r.vendor">{{ r.vendor }} / {{ r.trunk }}</span>
+                            <span v-if="r.vendor">{{ r.vendor }}<template v-if="r.trunk"> / {{ r.trunk }}</template></span>
                             <span v-else class="text-secondary">{{ r.attempts ? `${r.attempts} tried` : '—' }}</span>
                         </td>
                         <td class="text-end tabular-nums">{{ r.answered ? duration(r.billsec) : '—' }}</td>
@@ -224,7 +248,7 @@ const duration = (s: number) => (s >= 60 ? `${Math.floor(s / 60)}m ${s % 60}s` :
                         <td class="text-end tabular-nums" :class="{ 'text-danger': Number(r.margin) < 0 }">{{ r.margin !== null ? money(r.margin, currency) : '—' }}</td>
                     </tr>
                     <tr v-if="cdrs.data.length === 0">
-                        <td colspan="8" class="text-center text-secondary">No calls in this range.</td>
+                        <td colspan="9" class="text-center text-secondary">No calls in this range.</td>
                     </tr>
                 </tbody>
             </table>
