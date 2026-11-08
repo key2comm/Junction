@@ -84,7 +84,14 @@ class RateDeckController extends Controller
             ->withQueryString()
             ->through(fn ($r) => $r->only(['id', 'prefix', 'destination', 'rate', 'connect_fee', 'initial_increment', 'increment', 'effective_from', 'effective_to']));
 
-        $imports = $rateDeck->imports()->where('status', '!=', 'mapping')->with('user:id,name')->latest('id')->limit(10)->get();
+        // Only imports still running are listed, plus the latest one if it failed (its
+        // errors say what to fix). Finished ones aren't kept on the page; the admin
+        // gets a message with the result instead (see last_finished).
+        $latest = $rateDeck->imports()->where('status', '!=', 'mapping')->with('user:id,name')->latest('id')->first();
+        $imports = $rateDeck->imports()->whereIn('status', ['queued', 'running'])->with('user:id,name')->latest('id')->get();
+        if ($latest?->status === 'failed') {
+            $imports->prepend($latest);
+        }
         $waiting = $rateDeck->imports()->where('status', 'mapping')->latest('id')->first();
 
         return Inertia::render('rate-decks/Show', [
@@ -96,6 +103,7 @@ class RateDeckController extends Controller
                 'user' => $i->user?->name,
             ]),
             'importing' => $imports->contains(fn (RateImport $i) => $i->isPending()),
+            'last_finished' => $latest && ! $latest->isPending() ? $latest->only(['id', 'filename', 'mode', 'status', 'stats']) : null,
             // An uploaded file waiting for its columns to be matched (step 2 of an import).
             'mapping' => $waiting ? [...$waiting->only(['id', 'filename', 'preview']), 'fields' => RateImporter::FIELDS] : null,
             // Tariffs: built from Carrier Rates plus a markup.

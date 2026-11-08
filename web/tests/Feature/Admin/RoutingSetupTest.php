@@ -113,6 +113,24 @@ class RoutingSetupTest extends TestCase
         Storage::disk('local')->assertMissing($waiting->path);
     }
 
+    public function test_only_running_or_failed_imports_are_listed(): void
+    {
+        $deck = RateDeck::factory()->create();
+        $make = fn (string $status) => RateImport::create(['rate_deck_id' => $deck->id, 'filename' => "{$status}.csv", 'path' => 'x', 'mode' => 'update',
+            'effective_from' => now(), 'status' => $status, 'stats' => ['added' => 1, 'changed' => 0, 'unchanged' => 0, 'ended' => 0]]);
+        $page = fn () => $this->actingAs($this->admin)->get(route('rate-decks.show', $deck));
+
+        $make('failed');
+        $make('done');
+        $page()->assertInertia(fn (Assert $p) => $p->has('imports', 0)->where('importing', false)->where('last_finished.status', 'done'));
+
+        $running = $make('running');
+        $page()->assertInertia(fn (Assert $p) => $p->has('imports', 1)->where('imports.0.id', $running->id)->where('importing', true)->where('last_finished', null));
+
+        $running->update(['status' => 'failed', 'errors' => ['Line 2: bad']]);
+        $page()->assertInertia(fn (Assert $p) => $p->has('imports', 1)->where('imports.0.errors', ['Line 2: bad'])->where('last_finished.status', 'failed'));
+    }
+
     public function test_a_rate_can_be_added_by_hand(): void
     {
         $deck = RateDeck::factory()->create();

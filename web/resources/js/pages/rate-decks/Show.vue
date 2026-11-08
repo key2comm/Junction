@@ -2,6 +2,7 @@
 import { Form, Head, Link, router, usePoll } from '@inertiajs/vue3';
 import { Pencil, Plus, Trash2 } from '@lucide/vue';
 import { reactive, ref, watch } from 'vue';
+import { toast } from 'vue-sonner';
 import RateController from '@/actions/App/Http/Controllers/Admin/RateController';
 import RateDeckController from '@/actions/App/Http/Controllers/Admin/RateDeckController';
 import RateImportController from '@/actions/App/Http/Controllers/Admin/RateImportController';
@@ -54,6 +55,7 @@ const props = defineProps<{
     filters: { q: string; when: string };
     imports: Import[];
     importing: boolean;
+    last_finished: { id: number; filename: string; mode: string; status: string; stats: Record<string, number> | null } | null;
     usage: { customers: { id: number; name: string; code: string }[]; trunks: { id: number; name: string; account: { code: string } }[] };
     mapping: {
         id: number;
@@ -79,8 +81,35 @@ defineOptions({
     }),
 });
 
-const { start, stop } = usePoll(2000, { only: ['imports', 'importing', 'rates'] }, { autoStart: false });
-watch(() => props.importing, (busy) => (busy ? start() : stop()), { immediate: true });
+const { start, stop } = usePoll(2000, { only: ['imports', 'importing', 'last_finished', 'rates'] }, { autoStart: false });
+watch(
+    () => props.importing,
+    (busy, wasBusy) => {
+        if (busy) {
+            start();
+
+            return;
+        }
+        stop();
+        // An import just finished: say how it went (finished imports aren't listed).
+        const last = props.last_finished;
+        if (wasBusy && last) {
+            if (last.status === 'done' && last.stats) {
+                const s = last.stats;
+                const parts = [`${s.added} added`, `${s.changed} changed`, `${s.unchanged} unchanged`];
+                if (last.mode !== 'update') parts.push(`${s.ended} ended`);
+                if (s.duplicates_skipped) parts.push(`${s.duplicates_skipped} duplicate row(s) skipped`);
+                toast.success(`${last.mode === 'build' ? 'Tariff built' : `${last.filename} imported`}: ${parts.join(' · ')}`, { duration: 10000 });
+                if (s.increases_within_notice) {
+                    toast.warning(`${s.increases_within_notice} rate increase(s) take effect in under 7 days.`, { duration: 10000 });
+                }
+            } else if (last.status === 'failed') {
+                toast.error(`${last.filename} was not imported. See the errors under Import rates.`);
+            }
+        }
+    },
+    { immediate: true },
+);
 
 const filters = reactive({ ...props.filters });
 let timer: ReturnType<typeof setTimeout> | undefined;
@@ -271,13 +300,6 @@ function saveEdit(r: Rate) {
                             <span class="fw-medium">{{ i.filename }}</span>
                             <span class="text-secondary">{{ i.mode === 'build' ? 'built' : i.mode }}, effective {{ dateTime(i.effective_from) }}, by {{ i.user ?? 'unknown' }}</span>
                         </div>
-                        <p v-if="i.status === 'done' && i.stats" class="text-secondary">
-                            {{ i.stats.added }} added · {{ i.stats.changed }} changed · {{ i.stats.unchanged }} unchanged<span v-if="i.mode !== 'update'"> · {{ i.stats.ended }} ended</span
-                            ><span v-if="i.stats.duplicates_skipped"> · {{ i.stats.duplicates_skipped }} duplicate row(s) skipped</span>
-                            <span v-if="i.stats.increases_within_notice" class="text-danger">
-                                · {{ i.stats.increases_within_notice }} increase(s) take effect in under 7 days
-                            </span>
-                        </p>
                         <ul v-if="i.status === 'failed' && i.errors" class="text-danger">
                             <li v-for="(e, n) in i.errors" :key="n">{{ e }}</li>
                         </ul>
