@@ -48,7 +48,7 @@ class Pbx
      */
     public function endpoints(Account $account): Collection
     {
-        return Endpoint::query()->where(fn ($q) => $q->where('kind', 'pbx')->orWhere(fn ($d) => $d->where('kind', 'device')->where('account_id', $account->id)))
+        return Endpoint::query()->where(fn ($q) => $q->where('kind', 'pbx')->orWhere(fn ($d) => $d->where('kind', 'device')->where('mode', 'sending')->where('account_id', $account->id)))
             ->orderBy('kind')->orderBy('name')->get(['id', 'kind', 'name'])
             ->map(fn (Endpoint $e) => ['id' => $e->id, 'label' => Endpoint::KINDS[$e->kind].': '.$e->name]);
     }

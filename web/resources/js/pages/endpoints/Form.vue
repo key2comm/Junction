@@ -14,12 +14,14 @@ import { index as didsIndex } from '@/routes/dids';
 import { index } from '@/routes/endpoints';
 
 type Kind = 'pbx' | 'device';
+type Mode = 'sending' | 'receiving';
 type Flow = 'always' | 'no_answer' | 'busy' | 'failed' | 'pbx';
 type RuleType = 'domain' | 'ip' | 'number';
 type Endpoint = {
     id: number;
     account_id: number | null;
     kind: Kind;
+    mode: Mode;
     name: string;
     enabled: boolean;
     hosts: string[];
@@ -49,6 +51,7 @@ const props = defineProps<{
     defaults: { account_id?: number | null; kind?: Kind; sip_password?: string };
     customers: { id: number; name: string; code: string }[];
     kinds: Record<Kind, string>;
+    modes: Record<Mode, string>;
     transports: Record<string, string>;
     codecs: Record<string, string>;
     flows: Record<Flow, string>;
@@ -73,6 +76,7 @@ while (hosts.length < 3) hosts.push('');
 const form = useForm({
     account_id: e?.account_id ?? props.defaults.account_id ?? '',
     kind: (e?.kind ?? props.defaults.kind ?? 'pbx') as Kind,
+    mode: (e?.mode ?? 'sending') as Mode,
     name: e?.name ?? '',
     enabled: e?.enabled ?? true,
     hosts,
@@ -97,12 +101,12 @@ const form = useForm({
     rules: (e?.rules ?? []).map((r) => ({ ...r })),
 });
 
-const tab = ref<'sending' | 'receiving'>('sending');
 const isDevice = computed(() => form.kind === 'device');
+const receiving = computed(() => isDevice.value && form.mode === 'receiving');
 const usesFlow = computed(() => isDevice.value && form.delivery === 'flow');
 // Calls are sent to it directly, or first for no answer / busy / failed.
 const ringsIt = computed(() => !usesFlow.value || ['no_answer', 'busy', 'failed'].includes(form.flow));
-const trunk = computed(() => isDevice.value && form.target === 'trunk');
+const trunk = computed(() => isDevice.value && !receiving.value && form.target === 'trunk');
 const forwards = computed(() => usesFlow.value && form.flow !== 'pbx');
 const numbers = computed(() => props.pbxNumbers[String(form.account_id)] ?? []);
 const pbxTargets = computed(() => (form.pbx_destination.type === 'voicemail' ? numbers.value.filter((n) => n.kind === 'extension' && n.voicemail) : numbers.value));
@@ -158,24 +162,16 @@ const addRule = (type: RuleType) => form.rules.push({ type, value: '' });
 
 const err = (k: string) => (form.errors as Record<string, string>)[k];
 const hostError = computed(() => err('hosts') ?? [0, 1, 2].map((i) => err(`hosts.${i}`)).find(Boolean));
-const sendingErrors = computed(() => Object.keys(form.errors).some((k) => !k.startsWith('rules')));
-const receivingErrors = computed(() => Object.keys(form.errors).some((k) => k.startsWith('rules')));
-watch(
-    () => form.errors,
-    () => {
-        if (receivingErrors.value && !sendingErrors.value) tab.value = 'receiving';
-        else if (sendingErrors.value && !receivingErrors.value) tab.value = 'sending';
-    },
-);
 
 function submit() {
     form.transform((d) => ({
         ...d,
         account_id: isDevice.value ? d.account_id : null,
-        hosts: trunk.value ? [] : d.hosts.slice(0, 1).filter((h) => h.trim() !== ''),
-        delivery: isDevice.value ? d.delivery : 'sip',
-        target: isDevice.value ? d.target : 'hosts',
-        rules: isDevice.value ? d.rules.filter((r) => r.value.trim() !== '') : [],
+        hosts: trunk.value || receiving.value ? [] : d.hosts.slice(0, 1).filter((h) => h.trim() !== ''),
+        mode: isDevice.value ? d.mode : 'sending',
+        delivery: isDevice.value && !receiving.value ? d.delivery : 'sip',
+        target: isDevice.value && !receiving.value ? d.target : 'hosts',
+        rules: receiving.value ? d.rules.filter((r) => r.value.trim() !== '') : [],
     }));
     if (e) form.put(EndpointController.update.url(e.id), { preserveScroll: true });
     else form.post(EndpointController.store.url(), { preserveScroll: true });
@@ -232,22 +228,23 @@ function submit() {
                 </label>
             </section>
 
-            <!-- Device: Sending / Receiving -->
-            <div v-if="isDevice" class="d-flex flex-wrap gap-4 border-bottom pb-2">
-                <label class="d-flex align-items-center gap-2 fw-medium">
-                    <input v-model="tab" type="radio" value="sending" class="form-check-input m-0" /> Sending calls
-                    <span v-if="sendingErrors" class="text-danger small">(check)</span>
-                </label>
-                <label class="d-flex align-items-center gap-2 fw-medium">
-                    <input v-model="tab" type="radio" value="receiving" class="form-check-input m-0" /> Receiving calls
-                    <span v-if="form.rules.length" class="badge bg-secondary-lt">{{ form.rules.length }}</span>
-                    <span v-if="receivingErrors" class="text-danger small">(check)</span>
-                </label>
-            </div>
+            <!-- Device: Sending or Receiving (one or the other) -->
+            <fieldset v-if="isDevice" class="ss-grid gap-1 border-bottom pb-2">
+                <legend class="visually-hidden">Sending or receiving calls</legend>
+                <div class="d-flex flex-wrap gap-4">
+                    <label v-for="(label, m) in modes" :key="m" class="d-flex align-items-center gap-2 fw-medium">
+                        <input v-model="form.mode" type="radio" :value="m" class="form-check-input m-0" /> {{ label }}
+                    </label>
+                </div>
+                <p class="small text-secondary mb-0">
+                    <template v-if="receiving">The device sends calls to the switch; they go out through the customer's LCR. No DIDs can be sent to it.</template>
+                    <template v-else>The switch sends calls (DIDs) to the device.</template>
+                </p>
+                <InputError :message="form.errors.mode" />
+            </fieldset>
 
-            <!-- Sending calls (and everything a PBX has) -->
-            <div v-show="!isDevice || tab === 'sending'" class="ss-stack-4">
-                <section class="ss-stack-3">
+            <div class="ss-stack-4">
+                <section v-if="!receiving" class="ss-stack-3">
                     <fieldset v-if="isDevice" class="ss-grid gap-1">
                         <legend class="fw-medium fs-5 mb-1">How do you want to send calls?</legend>
                         <label class="d-flex align-items-center gap-2"><input v-model="form.delivery" type="radio" value="sip" class="form-check-input m-0" /> IP/FQDN</label>
@@ -378,6 +375,38 @@ function submit() {
                     </div>
                 </section>
 
+                <!-- Receiving calls: how the calls this device sends us are recognised -->
+                <section v-if="receiving" class="ss-stack-3">
+                    <p class="mb-0">
+                        How to recognise calls this device sends to the switch, so they go out through
+                        <strong>{{ customer?.name ?? "the customer" }}</strong>'s LCR. Any rule that matches is enough.
+                    </p>
+
+                    <div v-if="form.rules.length" class="ss-stack-2">
+                        <div v-for="(r, i) in form.rules" :key="i" class="ss-grid gap-1">
+                            <div class="d-flex flex-wrap gap-2 align-items-start">
+                                <select v-model="r.type" :class="selectClass" class="w-auto" :aria-label="`Rule ${i + 1} type`">
+                                    <option v-for="(label, t) in ruleTypes" :key="t" :value="t">{{ label }}</option>
+                                </select>
+                                <Input v-model="r.value" class="font-monospace ss-maxw-xs" :placeholder="ruleHelp[r.type].placeholder" :aria-label="`Rule ${i + 1} value`" />
+                                <Button type="button" variant="ghost" size="sm" :aria-label="`Remove rule ${i + 1}`" @click="form.rules.splice(i, 1)"><Trash2 class="icon" /></Button>
+                            </div>
+                            <p class="small text-secondary mb-0">{{ ruleHelp[r.type].help }}</p>
+                            <InputError :message="err(`rules.${i}.value`) ?? err(`rules.${i}.type`)" />
+                        </div>
+                    </div>
+                    <p v-else class="text-secondary mb-0">No rules yet: add at least one.</p>
+
+                    <InputError :message="form.errors.rules" />
+                    <div class="d-flex flex-wrap gap-2">
+                        <Button v-for="(label, t) in ruleTypes" :key="t" type="button" variant="outline" size="sm" @click="addRule(t)"><Plus class="icon" /> {{ label }}</Button>
+                    </div>
+                    <p class="small text-secondary mb-0">
+                        FROM domain and caller number rules only count for calls arriving from one of your PBXs or from this device's own IP/FQDN rules, so
+                        nobody else can borrow them.
+                    </p>
+                </section>
+
                 <section class="ss-grid gap-3 ss-cols-sm-2">
                     <fieldset class="ss-grid gap-1">
                         <legend class="fw-medium fs-5 mb-1">Codecs (in order of preference)</legend>
@@ -388,15 +417,18 @@ function submit() {
                         <p class="small text-secondary mb-0">The switch transcodes when the other side uses a different codec.</p>
                         <InputError :message="form.errors.codecs" />
                     </fieldset>
-                    <div v-if="isDevice" class="ss-grid gap-1 align-content-start">
+                    <div v-if="isDevice && (receiving || forwards || trunk)" class="ss-grid gap-1 align-content-start">
                         <Label for="caller_id_number">Caller ID <span class="small text-secondary">(optional)</span></Label>
                         <Input id="caller_id_number" v-model="form.caller_id_number" inputmode="tel" class="font-monospace" placeholder="14165550000" />
                         <p class="small text-secondary mb-0">
-                            Shown on calls it makes out{{ forwards ? ' (and on forwards, if chosen above)' : '' }}. Blank keeps the caller's own number. Carriers may override it.
+                            <template v-if="receiving">Shown on the calls it sends out.</template>
+                            <template v-else-if="trunk">Shown on calls it sends over its SIP trunk{{ forwards ? ' (and on forwards, if chosen above)' : '' }}.</template>
+                            <template v-else>Shown on forwarded calls, if chosen above.</template>
+                            Blank keeps the caller's own number. Carriers may override it.
                         </p>
                         <InputError :message="form.errors.caller_id_number" />
                     </div>
-                    <div v-else class="small text-secondary align-self-start rounded border p-3">
+                    <div v-else-if="!isDevice" class="small text-secondary align-self-start rounded border p-3">
                         Calls this PBX sends to the switch are matched to customers by their devices' <strong>Receiving calls</strong> rules (From domain or
                         caller number), then go out through that customer's LCR.
                         <template v-if="endpoint">
@@ -408,18 +440,18 @@ function submit() {
                 <section class="ss-stack-2">
                     <h2 class="fw-semibold mb-0">Concurrent call limits</h2>
                     <div class="ss-grid gap-3 ss-cols-sm-3">
-                        <div class="ss-grid gap-1">
+                        <div v-if="!receiving" class="ss-grid gap-1">
                             <Label for="max_inbound">Inbound</Label>
                             <Input id="max_inbound" v-model="form.max_inbound" type="number" min="1" placeholder="Unlimited" />
                             <InputError :message="form.errors.max_inbound" />
                         </div>
-                        <template v-if="isDevice">
+                        <template v-if="receiving || trunk">
                             <div class="ss-grid gap-1">
                                 <Label for="max_outbound">Outbound</Label>
                                 <Input id="max_outbound" v-model="form.max_outbound" type="number" min="1" placeholder="Unlimited" />
                                 <InputError :message="form.errors.max_outbound" />
                             </div>
-                            <div class="ss-grid gap-1">
+                            <div v-if="trunk" class="ss-grid gap-1">
                                 <Label for="max_total">Total (inbound + outbound)</Label>
                                 <Input id="max_total" v-model="form.max_total" type="number" min="1" placeholder="Unlimited" />
                                 <InputError :message="form.errors.max_total" />
@@ -429,38 +461,6 @@ function submit() {
                     <p v-if="isDevice" class="small text-secondary mb-0">The customer's own account limits still apply on top.</p>
                 </section>
             </div>
-
-            <!-- Receiving calls: how the calls this device sends us are recognised -->
-            <section v-if="isDevice" v-show="tab === 'receiving'" class="ss-stack-3">
-                <p class="mb-0">
-                    How to recognise calls this device sends to the switch, so they go out through
-                    <strong>{{ customer?.name ?? "the customer" }}</strong>'s LCR. Any rule that matches is enough.
-                </p>
-                <p v-if="trunk" class="small text-secondary mb-0">Calls the PBX sends over its SIP trunk login are accepted without rules.</p>
-
-                <div v-if="form.rules.length" class="ss-stack-2">
-                    <div v-for="(r, i) in form.rules" :key="i" class="ss-grid gap-1">
-                        <div class="d-flex flex-wrap gap-2 align-items-start">
-                            <select v-model="r.type" :class="selectClass" class="w-auto" :aria-label="`Rule ${i + 1} type`">
-                                <option v-for="(label, t) in ruleTypes" :key="t" :value="t">{{ label }}</option>
-                            </select>
-                            <Input v-model="r.value" class="font-monospace ss-maxw-xs" :placeholder="ruleHelp[r.type].placeholder" :aria-label="`Rule ${i + 1} value`" />
-                            <Button type="button" variant="ghost" size="sm" :aria-label="`Remove rule ${i + 1}`" @click="form.rules.splice(i, 1)"><Trash2 class="icon" /></Button>
-                        </div>
-                        <p class="small text-secondary mb-0">{{ ruleHelp[r.type].help }}</p>
-                        <InputError :message="err(`rules.${i}.value`) ?? err(`rules.${i}.type`)" />
-                    </div>
-                </div>
-                <p v-else class="text-secondary mb-0">No rules yet: this device only receives calls{{ trunk ? ' (apart from its SIP trunk)' : '' }}.</p>
-
-                <div class="d-flex flex-wrap gap-2">
-                    <Button v-for="(label, t) in ruleTypes" :key="t" type="button" variant="outline" size="sm" @click="addRule(t)"><Plus class="icon" /> {{ label }}</Button>
-                </div>
-                <p class="small text-secondary mb-0">
-                    FROM domain and caller number rules only count for calls arriving from one of your PBXs or from this device's own IP/FQDN rules, so
-                    nobody else can borrow them.
-                </p>
-            </section>
 
             <div class="ss-grid gap-1">
                 <Label for="notes">Notes</Label>

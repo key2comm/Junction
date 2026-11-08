@@ -39,7 +39,7 @@ class EndpointTest extends TestCase
 
     private function device(array $over = []): array
     {
-        return ['kind' => 'device', 'account_id' => $this->customer->id, 'name' => 'Office', 'enabled' => true, 'delivery' => 'sip', 'target' => 'hosts',
+        return ['kind' => 'device', 'account_id' => $this->customer->id, 'name' => 'Office', 'enabled' => true, 'mode' => 'sending', 'delivery' => 'sip', 'target' => 'hosts',
             'hosts' => ['office.example.com'], 'transport' => 'udp', 'port' => 5060, 'codecs' => ['PCMU'], 'forward_caller_id' => 'original', ...$over];
     }
 
@@ -145,23 +145,30 @@ class EndpointTest extends TestCase
 
         $rules = [['type' => 'domain', 'value' => '@Tenant.Example.com'], ['type' => 'number', 'value' => '+14165551234'],
             ['type' => 'number', 'value' => '4165551234'], ['type' => 'ip', 'value' => 'office.example.com']];
-        $this->save($this->device(['rules' => [['type' => 'domain', 'value' => 'not a domain']]]))->assertSessionHasErrors('rules.0.value');
-        $this->save($this->device(['rules' => [['type' => 'number', 'value' => '416-555']]]))->assertSessionHasErrors('rules.0.value');
-        $this->save($this->device(['rules' => [['type' => 'ip', 'value' => '10.0.0.0/8']]]))->assertSessionHasErrors('rules.0.value');
-        $this->save($this->device(['rules' => $rules, 'caller_id_number' => '14165550000', 'max_outbound' => 4, 'max_total' => 6]))->assertSessionHasNoErrors();
+        $recv = fn (array $over = []) => $this->device(['mode' => 'receiving', ...$over]);
+        $this->save($recv(['rules' => []]))->assertSessionHasErrors('rules');
+        $this->save($recv(['rules' => [['type' => 'domain', 'value' => 'not a domain']]]))->assertSessionHasErrors('rules.0.value');
+        $this->save($recv(['rules' => [['type' => 'number', 'value' => '416-555']]]))->assertSessionHasErrors('rules.0.value');
+        $this->save($recv(['rules' => [['type' => 'ip', 'value' => '10.0.0.0/8']]]))->assertSessionHasErrors('rules.0.value');
+        $this->save($recv(['rules' => $rules, 'caller_id_number' => '14165550000', 'max_inbound' => 9, 'max_outbound' => 4, 'max_total' => 6]))->assertSessionHasNoErrors();
         $device = Endpoint::query()->where('kind', 'device')->sole();
+        // Receiving only: nothing to send calls to, and no DIDs can go to it.
+        $this->assertSame(['receiving', [], null, 4, null], [$device->mode, $device->hosts, $device->max_inbound, $device->max_outbound, $device->max_total]);
+        $this->assertFalse(app(\App\Services\Pbx::class)->endpoints($this->customer)->contains('id', $device->id));
         $this->assertSame(['domain|tenant.example.com', 'ip|office.example.com', 'number|+14165551234', 'number|4165551234'],
             $device->rules->map(fn ($r) => "{$r->type}|{$r->value}")->all());
 
         // Rules are unique switch-wide.
-        $this->save($this->device(['name' => 'Other', 'rules' => [['type' => 'domain', 'value' => 'tenant.example.com']]]))->assertSessionHasErrors('rules.0.value');
+        $this->save($recv(['name' => 'Other', 'rules' => [['type' => 'domain', 'value' => 'tenant.example.com']]]))->assertSessionHasErrors('rules.0.value');
+        // A separate sending device may use the same FQDN as the receiving one's IP rule.
+        $this->save($this->device(['name' => 'Office out', 'hosts' => ['office.example.com']]))->assertSessionHasNoErrors();
 
-        $this->assertSame(['endpoints' => 2, 'addresses' => 2], app(EndpointSync::class)->sync());
+        $this->assertSame(['endpoints' => 3, 'addresses' => 2], app(EndpointSync::class)->sync());
         $who = fn (string $ip, string $host = '', string $caller = '') => DB::selectOne('SELECT * FROM softswitch_identify_endpoint(?::inet, ?, ?)', [$ip, $host, $caller]);
 
         // From the shared PBX: the From domain or the caller number (as the PBX sends it).
         $hit = $who('198.51.100.5', 'tenant.example.com', '100');
-        $this->assertSame([$device->id, $this->customer->id, 'domain', '14165550000', 4, 6], [$hit->endpoint_id, $hit->account_id, $hit->matched, $hit->caller_id_number, $hit->max_outbound, $hit->max_total]);
+        $this->assertSame([$device->id, $this->customer->id, 'domain', '14165550000', 4, null], [$hit->endpoint_id, $hit->account_id, $hit->matched, $hit->caller_id_number, $hit->max_outbound, $hit->max_total]);
         $this->assertSame('number', $who('198.51.100.5', 'other.example.com', '4165551234')->matched);
         $this->assertNull($who('198.51.100.5', 'other.example.com', '14165551234')); // a format nobody added
         // The same domain/number from anywhere else isn't trusted...
@@ -175,7 +182,7 @@ class EndpointTest extends TestCase
         $this->assertContains('203.0.113.40', $allow);
 
         // Removing a rule stops it matching.
-        $this->save($this->device(['rules' => [['type' => 'number', 'value' => '4165551234']]]), $device)->assertSessionHasNoErrors();
+        $this->save($recv(['rules' => [['type' => 'number', 'value' => '4165551234']]]), $device)->assertSessionHasNoErrors();
         $this->assertNull($who('198.51.100.5', 'tenant.example.com', '100'));
         $this->assertSame('number', $who('198.51.100.5', '', '4165551234')->matched);
     }
@@ -193,6 +200,12 @@ class EndpointTest extends TestCase
         $store('14165550100', (string) $otherDevice->id)->assertSessionHasErrors('destination.type');
         $store('14165550100', (string) $device->id)->assertSessionHasNoErrors();
         $store('14165550101', (string) $pbx->id)->assertSessionHasNoErrors();
+
+        // A device with DIDs can't become receiving-only; a receiving device can't get DIDs.
+        $this->actingAs($this->admin)->put(route('endpoints.update', $device), $this->device(['mode' => 'receiving', 'rules' => [['type' => 'ip', 'value' => '203.0.113.50']]]))
+            ->assertSessionHasErrors('mode');
+        $receiver = Endpoint::create([...collect($this->device(['name' => 'Office in', 'hosts' => []]))->except(['target'])->all(), 'mode' => 'receiving']);
+        $store('14165550102', (string) $receiver->id)->assertSessionHasErrors('destination.type');
 
         $this->actingAs($this->admin)->get(route('dids.index', ['endpoint' => $pbx->id]))->assertInertia(fn (Assert $p) => $p
             ->has('dids.data', 1)->where('dids.data.0.destination', 'PBX: Hosted PBX')->where('filters.endpoint.name', 'Hosted PBX'));

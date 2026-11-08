@@ -17,6 +17,7 @@ type Row = {
     enabled: boolean;
     sip_username: string | null;
     rules_count: number;
+    mode: 'sending' | 'receiving';
     dids: number;
     codecs: string[];
     max_inbound: number | null;
@@ -85,8 +86,10 @@ const limit = (n: number | null) => n ?? '∞';
                                 <Badge variant="outline">{{ e.kind === 'pbx' ? 'PBX' : 'Device' }}</Badge>
                                 <Badge v-if="!e.enabled" variant="secondary">Disabled</Badge>
                                 <Badge v-if="e.sip_username" variant="outline">SIP trunk</Badge>
-                                <Badge v-if="e.rules_count" variant="outline" title="Rules for recognising the calls it sends">{{ e.rules_count }} receiving rule(s)</Badge>
-                                <Badge v-else-if="e.kind === 'device' && !e.sip_username" variant="outline" title="Only receives calls">Inbound only</Badge>
+                                <Badge v-if="e.kind === 'device' && e.mode === 'receiving'" variant="outline" title="It sends calls to the switch, recognised by its rules">
+                                    Receiving calls · {{ e.rules_count }} rule(s)
+                                </Badge>
+                                <Badge v-else-if="e.kind === 'device'" variant="outline" title="The switch sends calls (DIDs) to it">Sending calls</Badge>
                             </div>
                         </td>
                         <td>

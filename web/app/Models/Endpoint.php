@@ -17,17 +17,19 @@ use Illuminate\Support\Str;
  *  - PBX: an off-switch (often multi-tenant) PBX, shared: no customer. DIDs of
  *    any customer can be sent to it; its addresses are trusted sources for
  *    devices' domain and caller-number receiving rules.
- *  - Device: belongs to a customer. "Sending calls" (IP/FQDN or a call flow)
- *    and "Receiving calls" (rules that identify its outgoing calls, and an
- *    optional SIP login).
+ *  - Device: belongs to a customer, and is one or the other (mode):
+ *    "sending": calls are sent to it (IP/FQDN, SIP trunk or a call flow);
+ *    "receiving": it sends calls to the switch, recognised by its rules.
  */
 #[Hidden(['sip_password'])]
-#[Fillable(['account_id', 'kind', 'name', 'enabled', 'hosts', 'sip_username', 'sip_password', 'transport', 'port', 'delivery', 'flow',
+#[Fillable(['account_id', 'kind', 'mode', 'name', 'enabled', 'hosts', 'sip_username', 'sip_password', 'transport', 'port', 'delivery', 'flow',
     'forward_number', 'ring_seconds', 'pbx_destination', 'codecs', 'caller_id_number', 'forward_caller_id', 'max_inbound', 'max_outbound',
     'max_total', 'notes'])]
 class Endpoint extends Model
 {
     public const KINDS = ['pbx' => 'PBX', 'device' => 'Device'];
+
+    public const MODES = ['sending' => 'Sending calls', 'receiving' => 'Receiving calls'];
 
     public const TRANSPORTS = ['udp' => 'UDP', 'tcp' => 'TCP', 'tls' => 'TLS'];
 
@@ -93,6 +95,12 @@ class Endpoint extends Model
         return $this->kind === 'pbx';
     }
 
+    /** A device that only sends calls to the switch (no DIDs can go to it). */
+    public function isReceiving(): bool
+    {
+        return $this->kind === 'device' && $this->mode === 'receiving';
+    }
+
     /** Whether calls are sent out to it (directly, or before a forwarding rule). */
     public function ringsHosts(): bool
     {
@@ -102,6 +110,9 @@ class Endpoint extends Model
     /** "pbx.example.com:5060 (UDP)", "Forward always to 14165551234"... for lists. */
     public function summary(): string
     {
+        if ($this->isReceiving()) {
+            return 'Calls it sends are recognised by its rules';
+        }
         $hosts = ($this->hosts ?? []) === []
             ? ($this->sip_username ? "SIP trunk {$this->sip_username}" : 'nowhere')
             : implode(', ', $this->hosts).':'.$this->port.' ('.self::TRANSPORTS[$this->transport].')';
