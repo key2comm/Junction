@@ -104,7 +104,6 @@ const usesFlow = computed(() => isDevice.value && form.delivery === 'flow');
 const ringsIt = computed(() => !usesFlow.value || ['no_answer', 'busy', 'failed'].includes(form.flow));
 const trunk = computed(() => isDevice.value && form.target === 'trunk');
 const forwards = computed(() => usesFlow.value && form.flow !== 'pbx');
-const hostCount = computed(() => (isDevice.value ? 3 : 1));
 const numbers = computed(() => props.pbxNumbers[String(form.account_id)] ?? []);
 const pbxTargets = computed(() => (form.pbx_destination.type === 'voicemail' ? numbers.value.filter((n) => n.kind === 'extension' && n.voicemail) : numbers.value));
 const customer = computed(() => props.customers.find((c) => c.id === form.account_id));
@@ -173,7 +172,7 @@ function submit() {
     form.transform((d) => ({
         ...d,
         account_id: isDevice.value ? d.account_id : null,
-        hosts: trunk.value ? [] : d.hosts.slice(0, hostCount.value).filter((h) => h.trim() !== ''),
+        hosts: trunk.value ? [] : d.hosts.slice(0, 1).filter((h) => h.trim() !== ''),
         delivery: isDevice.value ? d.delivery : 'sip',
         target: isDevice.value ? d.target : 'hosts',
         rules: isDevice.value ? d.rules.filter((r) => r.value.trim() !== '') : [],
@@ -276,7 +275,7 @@ function submit() {
                     <template v-if="ringsIt">
                         <fieldset v-if="isDevice" class="ss-grid gap-1">
                             <legend class="fw-medium fs-5 mb-1">Reach it by</legend>
-                            <label class="d-flex align-items-center gap-2"><input v-model="form.target" type="radio" value="hosts" class="form-check-input m-0" /> Its IP/FQDN</label>
+                            <label class="d-flex align-items-center gap-2"><input v-model="form.target" type="radio" value="hosts" class="form-check-input m-0" /> IP/FQDN</label>
                             <label class="d-flex align-items-start gap-2">
                                 <input v-model="form.target" type="radio" value="trunk" class="form-check-input m-0 mt-1" />
                                 <span>
@@ -288,16 +287,8 @@ function submit() {
 
                         <div v-if="!trunk" class="ss-grid gap-3 ss-cols-sm-3">
                             <div class="ss-grid gap-1 ss-span-sm-3">
-                                <Label for="host0">{{ isDevice ? 'Addresses (IP or FQDN, tried in order)' : 'Address (IP or FQDN)' }}</Label>
-                                <Input
-                                    v-for="i in hostCount"
-                                    :id="`host${i - 1}`"
-                                    :key="i"
-                                    v-model="form.hosts[i - 1]"
-                                    class="font-monospace"
-                                    :placeholder="isDevice ? ['example.pstn.twilio.com', 'second address (optional)', 'third address (optional)'][i - 1] : 'pbx.example.com or 203.0.113.10'"
-                                    :aria-label="`Address ${i}`"
-                                />
+                                <Label for="host0">IP/FQDN</Label>
+                                <Input id="host0" v-model="form.hosts[0]" class="font-monospace" :placeholder="isDevice ? 'example.pstn.twilio.com or 203.0.113.10' : 'pbx.example.com or 203.0.113.10'" />
                                 <InputError :message="hostError" />
                             </div>
                             <div class="ss-grid gap-1">

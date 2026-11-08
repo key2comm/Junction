@@ -52,7 +52,8 @@ class Endpoint extends Model
     /** Flows that ring the device before forwarding. */
     public const RINGING_FLOWS = ['no_answer', 'busy', 'failed'];
 
-    public const MAX_HOSTS = ['pbx' => 1, 'device' => 3];
+    /** Calls go to one IP/FQDN at a time. */
+    public const MAX_HOSTS = ['pbx' => 1, 'device' => 1];
 
     /** How a device's outgoing calls are recognised ("Receiving calls"). */
     public const RULE_TYPES = [

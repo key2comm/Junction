@@ -179,7 +179,7 @@ class EndpointController extends Controller
             'sip_password' => [$login ? 'required' : 'nullable', 'string', 'min:12', 'max:64', 'regex:/^[A-Za-z0-9!#%*+,.\/:=?@^_~-]+$/'],
         ], [
             'hosts.required' => $isDevice ? 'Enter where to send the calls (an IP address or hostname).' : 'Enter the PBX\'s IP address or hostname.',
-            'hosts.max' => $isDevice ? 'A device can have up to 3 addresses.' : 'A PBX has one address.',
+            'hosts.max' => 'Enter one IP/FQDN.',
             'forward_number.required' => 'Enter the number to forward to.',
             'forward_number.regex' => 'Enter the full number with country code, e.g. 14165551234.',
             'caller_id_number.regex' => 'A caller ID is 3 to 15 digits.',

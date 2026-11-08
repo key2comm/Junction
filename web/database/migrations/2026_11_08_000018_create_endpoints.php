@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Schema;
 /**
  * Routing -> PBX/Devices ("endpoints"): where a customer's calls are delivered.
  *
- * endpoints: a customer's PBX (one host) or device (up to three hosts, e.g.
+ * endpoints: a customer's PBX or device (one host each; originally up to three, e.g.
  *   Twilio's), each with transport, port, codecs, caller ID and call limits.
  *   delivery = 'sip' rings the hosts; 'flow' applies a call flow:
  *     always    forward straight to forward_number

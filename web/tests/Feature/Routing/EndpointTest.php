@@ -83,16 +83,16 @@ class EndpointTest extends TestCase
     public function test_device_sending_calls(): void
     {
         $this->save($this->device(['account_id' => null]))->assertSessionHasErrors('account_id');
-        $this->save($this->device(['hosts' => ['a.example.com', 'b.example.com', 'c.example.com', 'd.example.com']]))->assertSessionHasErrors('hosts');
+        $this->save($this->device(['hosts' => ['a.example.com', 'b.example.com']]))->assertSessionHasErrors('hosts'); // one IP/FQDN
         $this->save($this->device(['delivery' => 'flow', 'flow' => 'busy']))->assertSessionHasErrors('forward_number');
         $this->save($this->device(['delivery' => 'flow', 'flow' => 'busy', 'forward_number' => '5551234']))->assertSessionHasErrors('forward_number');
         $this->save($this->device(['delivery' => 'flow', 'flow' => 'busy', 'forward_number' => '14165551234', 'forward_caller_id' => 'endpoint']))->assertSessionHasErrors('caller_id_number');
         $this->save($this->device(['max_inbound' => 10, 'max_total' => 5]))->assertSessionHasErrors('max_total');
 
         $this->save($this->device(['delivery' => 'flow', 'flow' => 'no_answer', 'forward_number' => '1 416 555 1234', 'ring_seconds' => 20,
-            'hosts' => ['a.pstn.twilio.com', 'b.pstn.twilio.com']]))->assertSessionHasNoErrors();
+            'hosts' => ['a.pstn.twilio.com']]))->assertSessionHasNoErrors();
         $e = Endpoint::query()->sole();
-        $this->assertSame([$this->customer->id, 'no_answer', '14165551234', 20, 2], [$e->account_id, $e->flow, $e->forward_number, $e->ring_seconds, count($e->hosts)]);
+        $this->assertSame([$this->customer->id, 'no_answer', '14165551234', 20, ['a.pstn.twilio.com']], [$e->account_id, $e->flow, $e->forward_number, $e->ring_seconds, $e->hosts]);
 
         $this->save($this->device(['delivery' => 'flow', 'flow' => 'always', 'hosts' => [], 'forward_number' => '14165551234']), $e)->assertSessionHasNoErrors();
         $this->assertSame([[], 'Forward always to 14165551234'], [$e->fresh()->hosts, $e->fresh()->summary()]);
