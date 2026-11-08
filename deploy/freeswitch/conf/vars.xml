@@ -3,6 +3,8 @@
   <X-PRE-PROCESS cmd="set" data="softswitch_public_ip=@SS_PUBLIC_IP@"/>
   <X-PRE-PROCESS cmd="set" data="domain=@SS_PUBLIC_IP@"/>
   <X-PRE-PROCESS cmd="set" data="carrier_sip_port=@SS_CARRIER_PORT@"/>
+  <!-- TLS on the carrier profile is only used to reach customer PBX/Devices over TLS (the firewall keeps the port closed to inbound). -->
+  <X-PRE-PROCESS cmd="set" data="carrier_tls_port=@SS_CARRIER_TLS_PORT@"/>
   <X-PRE-PROCESS cmd="set" data="internal_sip_port=@SS_PBX_PORT@"/>
   <X-PRE-PROCESS cmd="set" data="internal_tls_port=@SS_PBX_TLS_PORT@"/>
   <!-- WebRTC phones: WSS on loopback (self-signed tls/wss.pem), proxied by nginx at wss://<host>/ws. Browsers put "WSS" in Via, so the hop to FreeSWITCH must be TLS too. -->
@@ -12,7 +14,7 @@
 
   <!-- Carrier calls offer the caller's own codecs to the vendor (no transcoding);
        this list is what FreeSWITCH accepts from carriers. -->
-  <X-PRE-PROCESS cmd="set" data="carrier_codecs=PCMU,PCMA,G729,G723,AMR,OPUS"/>
+  <X-PRE-PROCESS cmd="set" data="carrier_codecs=PCMU,PCMA,G729,G723,AMR,OPUS,G722,G726-32"/>
   <X-PRE-PROCESS cmd="set" data="internal_codecs=OPUS,G722,PCMU,PCMA"/>
 
   <!-- Routing behaviour, read by scripts/softswitch/route.lua -->

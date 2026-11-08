@@ -6,6 +6,7 @@ use App\Models\Account;
 use App\Models\AccountIp;
 use App\Models\BlockedPrefix;
 use App\Models\Cdr;
+use App\Models\Endpoint;
 use App\Models\Gateway;
 use App\Models\PbxDid;
 use App\Models\PbxExtension;
@@ -59,6 +60,11 @@ class SelfTest extends Command
 
     private const DID = '99099900011';    // PBX DID of the fake customer (-> IVR 5000)
 
+    // DIDs to PBX/Devices on the fake carrier (its dialplan: 8200... answers, 8486... is busy).
+    private const DEVICE_DID = '82000990021';
+
+    private const BUSY_DEVICE_DID = '84860990022';
+
     protected $signature = 'softswitch:selftest {--keep : Leave the test data in place afterwards}';
 
     protected $description = 'Place real test calls through the switch and check routing, failover, limits and billing';
@@ -99,6 +105,8 @@ class SelfTest extends Command
                 'PBX: extension calls out through LCR' => fn () => $this->pbxOutbound($esl, $ip),
                 'PBX: unanswered extension goes to voicemail' => fn () => $this->pbxVoicemail($esl, $ip),
                 'PBX: DID reaches the IVR, key press followed' => fn () => $this->pbxDidIvr($esl, $ip),
+                'PBX/Device: DID delivered to a device' => fn () => $this->deviceDid($esl, $ip),
+                'PBX/Device: busy device forwards through LCR' => fn () => $this->deviceBusyForward($esl, $ip),
             ];
             foreach ($scenarios as $name => $scenario) {
                 $this->output->write("  {$name} … ");
@@ -309,6 +317,33 @@ class SelfTest extends Command
         return 'IVR answered the DID and hung up on key 9';
     }
 
+    private function deviceDid(EventSocket $esl, string $ip): string
+    {
+        $cdr = $this->placeCall($esl, $ip, self::DEVICE_DID, hold: 3, expectAnswer: true);
+
+        $this->check($cdr->direction === 'pbx_in', "direction {$cdr->direction}, expected pbx_in");
+        $this->check((int) $cdr->endpoint_id === $this->f['endpoints']['device']->id, 'the CDR does not name the device');
+        $this->check($cdr->billsec >= 2, "billsec {$cdr->billsec}, expected about 3");
+        $this->check($cdr->sell_cost === null, 'an inbound DID call was billed');
+
+        return "{$cdr->billsec}s, answered by the device";
+    }
+
+    private function deviceBusyForward(EventSocket $esl, string $ip): string
+    {
+        $this->routes(['ok']);
+        $cdr = $this->placeCall($esl, $ip, self::BUSY_DEVICE_DID, hold: 3, expectAnswer: true);
+
+        $this->check($cdr->direction === 'pbx_out', "direction {$cdr->direction}, expected pbx_out (forwarded)");
+        $this->check((int) $cdr->endpoint_id === $this->f['endpoints']['busy']->id, 'the CDR does not name the device');
+        $this->check($cdr->destination === self::DEST, "forwarded to {$cdr->destination}, expected ".self::DEST);
+        $this->check((int) $cdr->trunk_id === $this->f['trunks']['ok']->id, 'the forward was not carried by the LCR trunk');
+        $this->check(bccomp((string) $cdr->sell_cost, '0', 6) > 0, 'the forward was not billed');
+        $this->check($cdr->caller === '15550001000', "caller {$cdr->caller}, expected the original caller");
+
+        return "busy → forwarded to ".self::DEST.", sell {$cdr->sell_cost}";
+    }
+
     // --- helpers ---------------------------------------------------------
 
     /**
@@ -475,7 +510,21 @@ class SelfTest extends Command
             'options' => (object) ['9' => ['type' => 'hangup'], '1' => ['type' => 'voicemail', 'target' => '1002']]]);
         PbxDid::create(['account_id' => $customer->id, 'number' => self::DID, 'destination' => ['type' => 'number', 'target' => '5000'], 'enabled' => true]);
 
-        $this->f = compact('customer', 'vendor', 'trunks', 'routes', 'plan', 'extensions');
+        // PBX/Devices on the fake carrier. Inbound only: calls from this IP must
+        // keep being identified by the customer's tech prefix.
+        $device = fn (string $name, array $over) => Endpoint::create([
+            'account_id' => $customer->id, 'kind' => 'device', 'name' => "Selftest {$name}", 'enabled' => true,
+            'hosts' => [$ip], 'transport' => 'udp', 'port' => (int) config('softswitch.selftest_port'),
+            'codecs' => ['PCMU', 'PCMA'], 'outbound_enabled' => false, 'forward_caller_id' => 'original', ...$over,
+        ]);
+        $endpoints = [
+            'device' => $device('device', ['delivery' => 'sip']),
+            'busy' => $device('busy', ['delivery' => 'flow', 'flow' => 'busy', 'forward_number' => self::DEST]),
+        ];
+        PbxDid::create(['account_id' => $customer->id, 'number' => self::DEVICE_DID, 'destination' => ['type' => 'endpoint', 'target' => (string) $endpoints['device']->id], 'enabled' => true]);
+        PbxDid::create(['account_id' => $customer->id, 'number' => self::BUSY_DEVICE_DID, 'destination' => ['type' => 'endpoint', 'target' => (string) $endpoints['busy']->id], 'enabled' => true]);
+
+        $this->f = compact('customer', 'vendor', 'trunks', 'routes', 'plan', 'extensions', 'endpoints');
     }
 
     private function cleanup(): void

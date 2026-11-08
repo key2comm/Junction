@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\AccountIp;
+use App\Models\EndpointAddress;
 use App\Models\FirewallEntry;
 use App\Models\Gateway;
 use App\Support\Dns;
@@ -17,7 +18,8 @@ use RuntimeException;
  *
  *  - apply(): the carrier allowlist (nftables sets for the carrier SIP port) =
  *    enabled customer IPs + every enabled carrier gateway host (hostnames
- *    resolved) + static IPs from the installer config.
+ *    resolved) + customer PBX/Devices that may call out + static IPs from the
+ *    installer config.
  *  - applyPolicy(): Settings -> Firewall (whitelist, blacklist, lockdown); see
  *    FirewallPolicy.
  *  - status(), confirm(), rollback(), unban().
@@ -50,6 +52,12 @@ class FirewallSync
         foreach ($hosts as $host) {
             array_push($entries, ...(filter_var($host, FILTER_VALIDATE_IP) ? [$host] : ($this->resolver)($host)));
         }
+
+        // Customer PBX/Devices that may send us calls (addresses resolved by EndpointSync).
+        array_push($entries, ...EndpointAddress::query()
+            ->whereHas('endpoint', fn ($q) => $q->where('enabled', true)->where('outbound_enabled', true)
+                ->whereHas('account', fn ($a) => $a->where('is_customer', true)->where('status', '!=', 'closed')))
+            ->pluck('ip')->all());
 
         foreach (preg_split('/[\s,]+/', (string) config('softswitch.static_carrier_ips'), -1, PREG_SPLIT_NO_EMPTY) as $ip) {
             $entries[] = $ip;

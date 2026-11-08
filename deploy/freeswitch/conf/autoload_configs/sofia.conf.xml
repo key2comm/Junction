@@ -47,7 +47,13 @@
         <param name="enable-timer" value="false"/>
         <param name="enable-100rel" value="false"/>
         <param name="nonce-ttl" value="60"/>
-        <param name="tls" value="false"/>
+        <!-- TLS only to call customer PBX/Devices whose transport is TLS (tls/agent.pem). -->
+        <param name="tls" value="true"/>
+        <param name="tls-only" value="false"/>
+        <param name="tls-sip-port" value="$${carrier_tls_port}"/>
+        <param name="tls-cert-dir" value="$${certs_dir}"/>
+        <param name="tls-version" value="tlsv1.2"/>
+        <param name="tls-verify-policy" value="none"/>
       </settings>
     </profile>
 

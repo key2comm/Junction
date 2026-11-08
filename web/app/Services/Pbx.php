@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Account;
+use App\Models\Endpoint;
 use App\Models\PbxExtension;
 use App\Models\PbxIvr;
 use Illuminate\Support\Collection;
@@ -19,7 +20,7 @@ class Pbx
 {
     public const NUMBER_RULE = 'regex:/^[1-9][0-9]{1,5}$/';
 
-    public const DESTINATION_TYPES = ['number', 'voicemail', 'hangup'];
+    public const DESTINATION_TYPES = ['number', 'voicemail', 'hangup', 'endpoint'];
 
     /**
      * Every number of the account's PBX, for pickers and validation.
@@ -39,6 +40,17 @@ class Pbx
         return $extensions->concat($ivrs)->sortBy('number')->values();
     }
 
+    /**
+     * The account's PBX/Devices (Routing -> PBX/Devices), for DID destinations.
+     *
+     * @return Collection<int, array{id: int, label: string}>
+     */
+    public function endpoints(Account $account): Collection
+    {
+        return $account->endpoints()->orderBy('name')->get(['id', 'kind', 'name'])
+            ->map(fn (Endpoint $e) => ['id' => $e->id, 'label' => Endpoint::KINDS[$e->kind].': '.$e->name]);
+    }
+
     /** Whether a number is free in the account (ignoring the record being edited). */
     public function numberTaken(Account $account, string $number, ?PbxExtension $exceptExtension = null, ?PbxIvr $exceptIvr = null): bool
     {
@@ -47,11 +59,12 @@ class Pbx
     }
 
     /**
-     * Validate a destination ({type, target}) against the account's numbers.
+     * Validate a destination ({type, target}) against the account's numbers
+     * (and, with $endpoints, its PBX/Devices: {type: endpoint, target: id}).
      *
      * @return array{type: string, target?: string}|null
      */
-    public function destination(Account $account, mixed $input, string $field, bool $required = true): ?array
+    public function destination(Account $account, mixed $input, string $field, bool $required = true, bool $endpoints = true): ?array
     {
         $type = is_array($input) ? (string) ($input['type'] ?? '') : '';
         $target = is_array($input) ? trim((string) ($input['target'] ?? '')) : '';
@@ -62,11 +75,18 @@ class Pbx
 
             return null;
         }
-        if (! in_array($type, self::DESTINATION_TYPES, true)) {
+        if (! in_array($type, self::DESTINATION_TYPES, true) || ($type === 'endpoint' && ! $endpoints)) {
             throw ValidationException::withMessages([$field => 'Unknown destination type.']);
         }
         if ($type === 'hangup') {
             return ['type' => 'hangup'];
+        }
+        if ($type === 'endpoint') {
+            if (! ctype_digit($target) || ! $account->endpoints()->whereKey((int) $target)->exists()) {
+                throw ValidationException::withMessages([$field => "Choose one of this customer's PBX/Devices."]);
+            }
+
+            return ['type' => 'endpoint', 'target' => $target];
         }
 
         $match = $this->numbers($account)->firstWhere('number', $target);
@@ -87,6 +107,7 @@ class Pbx
             'number' => (string) ($this->numbers($account)->firstWhere('number', $destination['target'] ?? '')['label'] ?? ($destination['target'] ?? '?').' (missing)'),
             'voicemail' => 'Voicemail of '.($destination['target'] ?? '?'),
             'hangup' => 'Hang up',
+            'endpoint' => (string) ($this->endpoints($account)->firstWhere('id', (int) ($destination['target'] ?? 0))['label'] ?? 'PBX/Device (missing)'),
             default => '—',
         };
     }

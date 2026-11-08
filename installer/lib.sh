@@ -32,7 +32,7 @@ resolve_defaults() {
 	[ -n "$SS_SSH_PORT" ]  || SS_SSH_PORT="$(sshd -T 2>/dev/null | awk '$1=="port" && !f{print $2; f=1}')"
 	[ -n "$SS_SSH_PORT" ]  || SS_SSH_PORT=22
 	: "${SS_PBX_PORT:=5060}" "${SS_PBX_TLS_PORT:=5061}" "${SS_CARRIER_PORT:=5080}" "${SS_SELFTEST_PORT:=5090}"
-	: "${SS_PBX_WSS_PORT:=7443}"
+	: "${SS_PBX_WSS_PORT:=7443}" "${SS_CARRIER_TLS_PORT:=5081}"
 	: "${SS_RTP_START:=16384}" "${SS_RTP_END:=32768}"
 	: "${SS_CARRIER_IPS:=}" "${SS_HARDEN_SSH:=auto}"
 	: "${SS_FREESWITCH_REF:=v1.11.3}" "${SS_SOFIA_SIP_REF:=v1.13.19}" "${SS_SPANDSP_REF:=v3.1.1}"

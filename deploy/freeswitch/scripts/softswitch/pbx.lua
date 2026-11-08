@@ -6,7 +6,8 @@
   Numbers are resolved inside one account with softswitch_pbx_dial(); the
   FreeSWITCH database role can only execute these functions.
 
-  A destination is { type = "number" | "voicemail" | "hangup", target = "1001" }.
+  A destination is { type = "number" | "voicemail" | "hangup" | "endpoint", target = "1001" }
+  ("endpoint": a customer PBX/Device by id, delivered by endpoint.lua).
 ]]
 
 local util = require "softswitch.util"
@@ -135,6 +136,10 @@ go = function(session, u, account_id, dest, depth)
       u.log("WARNING", "PBX destination " .. tostring(dest.target) .. " does not exist")
       session:hangup("UNALLOCATED_NUMBER")
     end
+  elseif dest.type == "endpoint" then
+    if depth > MAX_DEPTH then return session:hangup("NORMAL_CLEARING") end
+    local endpoint = require "softswitch.endpoint"
+    endpoint.deliver(session, u, account_id, tonumber(dest.target), depth)
   elseif dest.type == "voicemail" then
     local row = lookup(u, account_id, dest.target)
     if row and row.kind == "extension" and truthy(row.voicemail) then
@@ -146,6 +151,8 @@ go = function(session, u, account_id, dest, depth)
     session:hangup("NORMAL_CLEARING")
   end
 end
+
+M.go = go
 
 -- A DID call from a carrier (route.lua). dest_type/dest_target from softswitch_pbx_did().
 function M.inbound(session, u, account_id, dest_type, dest_target)

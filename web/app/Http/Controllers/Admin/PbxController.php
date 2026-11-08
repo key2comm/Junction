@@ -64,6 +64,7 @@ class PbxController extends Controller
                 'label' => $this->pbx->describe($account, $d->destination),
             ]),
             'numbers' => $this->pbx->numbers($account),
+            'endpoints' => $this->pbx->endpoints($account),
             'connection' => self::connection(),
         ]);
     }

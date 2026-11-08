@@ -92,6 +92,8 @@ runuser -u postgres -- psql -v ON_ERROR_STOP=1 -qAtX -d "$SS_DB_NAME" <<-SQL
 	GRANT EXECUTE ON FUNCTION softswitch_pbx_caller(text) TO "$SS_FS_DB_USER";
 	GRANT EXECUTE ON FUNCTION softswitch_pbx_dial(bigint, text) TO "$SS_FS_DB_USER";
 	GRANT EXECUTE ON FUNCTION softswitch_pbx_did(text) TO "$SS_FS_DB_USER";
+	GRANT EXECUTE ON FUNCTION softswitch_endpoint(bigint) TO "$SS_FS_DB_USER";
+	GRANT EXECUTE ON FUNCTION softswitch_identify_endpoint(inet) TO "$SS_FS_DB_USER";
 SQL
 artisan optimize --no-interaction >/dev/null
 

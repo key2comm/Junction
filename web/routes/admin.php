@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\AccountController;
 use App\Http\Controllers\Admin\AccountIpController;
 use App\Http\Controllers\Admin\AlertController;
 use App\Http\Controllers\Admin\CdrController;
+use App\Http\Controllers\Admin\EndpointController;
 use App\Http\Controllers\Admin\GatewayController;
 use App\Http\Controllers\Admin\InvoiceController;
 use App\Http\Controllers\Admin\LedgerEntryController;
@@ -118,6 +119,8 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::patch('rate-decks/{rate_deck}/rates/{rate}', [TariffController::class, 'updateRate'])->scopeBindings()->name('rate-decks.rates.update');
 
     Route::resource('trunks', TrunkController::class);
+    // Routing -> PBX/Devices: where customers' calls are delivered.
+    Route::resource('endpoints', EndpointController::class)->except(['show']);
     Route::resource('trunks.gateways', GatewayController::class)->only(['store', 'edit', 'update', 'destroy'])->scoped();
 
     Route::resource('routing-plans', RoutingPlanController::class)->except(['destroy']);

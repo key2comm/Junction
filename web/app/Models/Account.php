@@ -66,6 +66,12 @@ class Account extends Model
         return $this->hasMany(PbxIvr::class);
     }
 
+    /** Routing -> PBX/Devices: where this customer's calls are delivered. */
+    public function endpoints(): HasMany
+    {
+        return $this->hasMany(Endpoint::class);
+    }
+
     public function pbxDids(): HasMany
     {
         return $this->hasMany(PbxDid::class);

@@ -5,7 +5,8 @@
   tester uses; this script applies them to the call:
 
     0. a number we host (a PBX DID) goes to its PBX destination instead
-    1. identify the customer by source IP (+ tech prefix)
+    1. identify the customer by source IP (+ tech prefix), or else a customer
+       PBX/Device calling out from one of its addresses
     2. least-cost route it to the vendors (lcr.lua): limits, funds, failover
     3. leave softswitch_* variables on the call for the CDR (posted by mod_xml_cdr)
 
@@ -53,7 +54,26 @@ local customer
 dbh:query(string.format("SELECT * FROM softswitch_identify(%s::inet, %s)", lit(src_ip), lit(dialled)), function(row)
   customer = row
 end)
+local ep
+if not customer then
+  dbh:query(string.format("SELECT * FROM softswitch_identify_endpoint(%s::inet)", lit(src_ip)), function(row) ep = ep or row end)
+end
 dbh:release()
+if ep then
+  -- A customer PBX/Device calling out: its own limits and caller ID, then the account's.
+  local endpoint = require "softswitch.endpoint"
+  setvar("softswitch_account_id", ep.account_id)
+  setvar("softswitch_endpoint_id", ep.endpoint_id)
+  if not endpoint.count(session, "softswitch_endpoint_out", ep.endpoint_id, ep.max_outbound)
+    or not endpoint.count(session, "softswitch_endpoint", ep.endpoint_id, ep.max_total) then
+    return u.reject("channel_limit")
+  end
+  if ep.caller_id_number then
+    session:setVariable("effective_caller_id_number", ep.caller_id_number)
+    session:setVariable("effective_caller_id_name", ep.caller_id_number)
+  end
+  customer = { account_id = ep.account_id, number = dialled:gsub("^%+", ""), max_channels = ep.max_channels, max_cps = ep.max_cps }
+end
 if not customer then
   return u.reject("unknown_customer")
 end

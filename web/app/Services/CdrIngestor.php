@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Cdr;
+use App\Models\Endpoint;
 use App\Models\Gateway;
 use App\Models\Rate;
 use App\Models\Trunk;
@@ -93,6 +94,7 @@ class CdrIngestor
             $cdr->fill([
                 'direction' => in_array($direction, Cdr::DIRECTIONS, true) ? $direction : 'carrier',
                 'customer_account_id' => $int($var('softswitch_account_id')),
+                'endpoint_id' => ($e = $int($var('softswitch_endpoint_id'))) && Endpoint::query()->whereKey($e)->exists() ? $e : null,
                 'source_ip' => $this->ip((string) ($profile->network_addr ?? $var('network_addr') ?? '')),
                 'caller' => mb_substr((string) ($profile->caller_id_number ?? $var('caller_id_number') ?? ''), 0, 64) ?: null,
                 'callee' => mb_substr((string) ($profile->destination_number ?? $var('destination_number') ?? ''), 0, 64),

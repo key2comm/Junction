@@ -22,6 +22,7 @@ import {
     Menu,
     Moon,
     Phone,
+    Server,
     PhoneCall,
     Receipt,
     Route,
@@ -50,6 +51,7 @@ import { index as carrierRates } from '@/routes/carrier-rates';
 import { index as carriers } from '@/routes/carriers';
 import { index as cdrs } from '@/routes/cdrs';
 import { edit as email } from '@/routes/email';
+import { index as endpoints } from '@/routes/endpoints';
 import { index as firewall } from '@/routes/firewall';
 import { index as invoices } from '@/routes/invoices';
 import { index as live } from '@/routes/live';
@@ -108,6 +110,7 @@ const adminNav = computed((): NavEntry[] => [
             { title: 'Tariffs', href: tariffs(), icon: Tags },
             { title: 'Carrier Rates', href: carrierRates(), icon: Tags },
             { title: 'Trunks', href: trunks(), icon: Cable },
+            { title: 'PBX/Devices', href: endpoints(), icon: Server },
             { title: 'LCR groups', href: routingPlans(), icon: Route },
         ],
     },

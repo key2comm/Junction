@@ -6,7 +6,7 @@ import PbxController from '@/actions/App/Http/Controllers/Admin/PbxController';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
 import DestinationPicker from '@/components/pbx/DestinationPicker.vue';
-import type { Destination, PbxNumber } from '@/components/pbx/DestinationPicker.vue';
+import type { Destination, PbxEndpoint, PbxNumber } from '@/components/pbx/DestinationPicker.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,6 +35,7 @@ const props = defineProps<{
     ivrs: { id: number; extension: string; name: string; timeout_seconds: number; has_greeting: boolean; options: { key: string; label: string }[]; default: string }[];
     dids: { id: number; number: string; description: string | null; enabled: boolean; destination: Destination; label: string }[];
     numbers: PbxNumber[];
+    endpoints: PbxEndpoint[];
     connection: { host: string; sip: string; wss: string; domain: string };
 }>();
 
@@ -277,7 +278,7 @@ const editingDid = ref<number | null>(null);
                                 <td colspan="4">
                                     <Form v-bind="PbxController.updateDid.form([account.id, d.id])" class="d-flex flex-wrap align-items-start gap-2" @success="editingDid = null" v-slot="{ errors, processing }">
                                         <div class="ss-grid gap-1">
-                                            <DestinationPicker name="destination" :numbers="numbers" :value="d.destination" />
+                                            <DestinationPicker name="destination" :numbers="numbers" :endpoints="endpoints" :value="d.destination" />
                                             <InputError :message="errors['destination.type']" />
                                         </div>
                                         <Input name="description" :default-value="d.description ?? ''" placeholder="Description" aria-label="Description" class="ss-w-56" />
@@ -292,19 +293,19 @@ const editingDid = ref<number | null>(null);
                     </tbody>
                 </table>
             </div>
-            <Form v-if="numbers.length" v-bind="PbxController.storeDid.form(account.id)" reset-on-success class="d-flex flex-wrap align-items-start gap-2" v-slot="{ errors, processing }">
+            <Form v-if="numbers.length || endpoints.length" v-bind="PbxController.storeDid.form(account.id)" reset-on-success class="d-flex flex-wrap align-items-start gap-2" v-slot="{ errors, processing }">
                 <div class="ss-grid gap-1">
                     <Input name="number" required inputmode="numeric" placeholder="DID, e.g. 15145550100" aria-label="DID number" class="ss-w-52 font-monospace" />
                     <InputError :message="errors.number" />
                 </div>
                 <div class="ss-grid gap-1">
-                    <DestinationPicker name="destination" :numbers="numbers" />
+                    <DestinationPicker name="destination" :numbers="numbers" :endpoints="endpoints" />
                     <InputError :message="errors['destination.type']" />
                 </div>
                 <Input name="description" placeholder="Description" aria-label="Description" class="ss-w-48" />
                 <Button variant="outline" :disabled="processing">Add DID</Button>
             </Form>
-            <p v-else class="text-secondary">Add an extension or IVR first: a DID needs somewhere to go.</p>
+            <p v-else class="text-secondary">Add an extension, IVR or PBX/Device first: a DID needs somewhere to go.</p>
             <p class="small text-secondary">Carriers must send these calls from an allowed IP (a customer IP or carrier gateway) to the carrier port.</p>
         </section>
     </div>

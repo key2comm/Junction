@@ -66,8 +66,18 @@ if [ ! -s "$conf/tls/wss.pem" ]; then
 	rm -f -- "$wss_key" "$wss_crt"
 	info "Created the loopback WSS certificate $conf/tls/wss.pem"
 fi
+# agent.pem: the carrier profile's TLS identity when it calls customer PBX/Devices
+# over TLS. PBXes don't usually check a client certificate, so self-signed is fine.
+if [ ! -s "$conf/tls/agent.pem" ]; then
+	agent_key="$(mktemp)"; agent_crt="$(mktemp)"
+	openssl req -x509 -newkey rsa:2048 -nodes -days 3650 -subj "/CN=$SS_HOSTNAME" \
+		-keyout "$agent_key" -out "$agent_crt" >/dev/null 2>&1 || die "could not create the SIP TLS certificate"
+	cat "$agent_key" "$agent_crt" > "$conf/tls/agent.pem"
+	rm -f -- "$agent_key" "$agent_crt"
+	info "Created the SIP TLS certificate $conf/tls/agent.pem"
+fi
 chown -R freeswitch:freeswitch "$conf/tls"
-chmod 0600 "$conf/tls/wss.pem"
+chmod 0600 "$conf/tls/wss.pem" "$conf/tls/agent.pem"
 
 # fs_cli on this host picks up the ESL password automatically (root only).
 install -m 0600 /dev/null /etc/fs_cli.conf
