@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { Form, Head, Link, router, usePoll } from '@inertiajs/vue3';
-import { Pencil, Trash2 } from '@lucide/vue';
+import { Pencil, Plus, Trash2 } from '@lucide/vue';
 import { reactive, ref, watch } from 'vue';
+import RateController from '@/actions/App/Http/Controllers/Admin/RateController';
 import RateDeckController from '@/actions/App/Http/Controllers/Admin/RateDeckController';
 import RateImportController from '@/actions/App/Http/Controllers/Admin/RateImportController';
 import TariffController from '@/actions/App/Http/Controllers/Admin/TariffController';
@@ -102,7 +103,10 @@ watch(clearOpen, (open) => {
 });
 const rebuildOk = () => !props.build?.built_at || confirm('Rebuild this tariff? Every rate is replaced, including any you changed by hand.');
 
-// Changing one prefix's rate by hand (tariffs).
+// Adding one rate by hand.
+const adding = ref(false);
+
+// Changing one prefix's rate by hand.
 const editing = ref<number | null>(null);
 const editRate = ref('');
 const editError = ref<string | null>(null);
@@ -303,7 +307,66 @@ function saveEdit(r: Rate) {
 
         <!-- Rates -->
         <section class="ss-stack-3">
+            <div v-if="adding" class="rounded border border-primary p-3">
+                <Heading
+                    variant="small"
+                    title="Add a rate"
+                    description="For a new prefix, or a new rate for an existing one (the old rate ends when this one starts; its history is kept)."
+                />
+                <Form
+                    v-bind="RateController.store.form(deck.id)"
+                    :options="{ preserveScroll: true }"
+                    reset-on-success
+                    class="ss-stack-3"
+                    v-slot="{ errors, processing }"
+                >
+                    <div class="ss-grid gap-3 ss-cols-sm-2 ss-cols-lg-3">
+                        <div class="ss-grid gap-1">
+                            <Label for="add_prefix">Prefix</Label>
+                            <Input id="add_prefix" name="prefix" inputmode="numeric" placeholder="e.g. 1201555" class="font-monospace" required />
+                            <InputError :message="errors.prefix" />
+                        </div>
+                        <div class="ss-grid gap-1">
+                            <Label for="add_destination">Destination <span class="small text-secondary">(optional)</span></Label>
+                            <Input id="add_destination" name="destination" placeholder="e.g. USA - New Jersey" />
+                            <InputError :message="errors.destination" />
+                        </div>
+                        <div class="ss-grid gap-1">
+                            <Label for="add_rate">Rate per minute ({{ deck.currency }})</Label>
+                            <Input id="add_rate" name="rate" type="number" min="0" step="0.000001" placeholder="0.0053" required />
+                            <InputError :message="errors.rate" />
+                        </div>
+                        <div class="ss-grid gap-1">
+                            <Label for="add_connect">Connect fee <span class="small text-secondary">(optional)</span></Label>
+                            <Input id="add_connect" name="connect_fee" type="number" min="0" step="0.000001" placeholder="0" />
+                            <InputError :message="errors.connect_fee" />
+                        </div>
+                        <div class="ss-grid gap-1">
+                            <Label for="add_initial">Interval (seconds)</Label>
+                            <div class="d-flex align-items-center gap-2">
+                                <Input id="add_initial" name="initial_increment" type="number" min="1" max="3600" default-value="60" class="ss-w-24" aria-label="First interval" required />
+                                <span>/</span>
+                                <Input name="increment" type="number" min="1" max="3600" default-value="60" class="ss-w-24" aria-label="Next interval" required />
+                            </div>
+                            <p class="small text-secondary">First / next, e.g. 60/60 or 6/6.</p>
+                            <InputError :message="errors.initial_increment ?? errors.increment" />
+                        </div>
+                        <div class="ss-grid gap-1">
+                            <Label for="add_effective">Effective from (UTC)</Label>
+                            <Input id="add_effective" name="effective_from" type="datetime-local" />
+                            <p class="small text-secondary">Blank = immediately.</p>
+                            <InputError :message="errors.effective_from" />
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <Button type="submit" :disabled="processing || importing">Add rate</Button>
+                        <Button type="button" variant="ghost" @click="adding = false">Close</Button>
+                    </div>
+                </Form>
+            </div>
+
             <div class="d-flex flex-wrap gap-2">
+                <Button v-if="!adding" variant="outline" :disabled="importing" @click="adding = true"><Plus class="icon" /> Add rate</Button>
                 <Input v-model="filters.q" placeholder="Search prefix or destination" class="ss-maxw-xs" @input="apply(300)" />
                 <select v-model="filters.when" :class="selectClass" class="w-auto" aria-label="Show" @change="apply()">
                     <option value="current">In effect now</option>
@@ -323,7 +386,7 @@ function saveEdit(r: Rate) {
                             <th class="text-end">Connect</th>
                             <th>Billing</th>
                             <th>Effective</th>
-                            <th v-if="deck.kind === 'tariff'"></th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -353,7 +416,7 @@ function saveEdit(r: Rate) {
                             <td class="text-nowrap text-secondary">
                                 {{ dateTime(r.effective_from) }}<span v-if="r.effective_to"> → {{ dateTime(r.effective_to) }}</span>
                             </td>
-                            <td v-if="deck.kind === 'tariff'" class="text-end text-nowrap">
+                            <td class="text-end text-nowrap">
                                 <template v-if="editing === r.id">
                                     <Button size="sm" @click="saveEdit(r)">Save</Button>
                                     <Button size="sm" variant="ghost" @click="editing = null">Cancel</Button>
@@ -362,7 +425,7 @@ function saveEdit(r: Rate) {
                             </td>
                         </tr>
                         <tr v-if="rates.data.length === 0">
-                            <td :colspan="deck.kind === 'tariff' ? 7 : 6" class="text-center text-secondary">No rates{{ filters.q ? ' match' : '' }}.</td>
+                            <td colspan="7" class="text-center text-secondary">No rates{{ filters.q ? ' match' : '' }}.</td>
                         </tr>
                     </tbody>
                 </table>

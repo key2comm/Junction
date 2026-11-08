@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\LiveCallsController;
 use App\Http\Controllers\Admin\PbxController;
 use App\Http\Controllers\Admin\PortalUserController;
 use App\Http\Controllers\Admin\QualityController;
+use App\Http\Controllers\Admin\RateController;
 use App\Http\Controllers\Admin\RateDeckController;
 use App\Http\Controllers\Admin\RateImportController;
 use App\Http\Controllers\Admin\TariffController;
@@ -112,6 +113,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
     });
     // Tariffs: build from Carrier Rates plus a markup, and adjust single rates by hand.
     Route::post('rate-decks/{rate_deck}/build', [TariffController::class, 'build'])->middleware('throttle:10,1')->name('rate-decks.build');
+    Route::post('rate-decks/{rate_deck}/rates', [RateController::class, 'store'])->name('rate-decks.rates.store');
     Route::delete('rate-decks/{rate_deck}/rates', [RateDeckController::class, 'clearRates'])->name('rate-decks.rates.clear');
     Route::patch('rate-decks/{rate_deck}/rates/{rate}', [TariffController::class, 'updateRate'])->scopeBindings()->name('rate-decks.rates.update');
 

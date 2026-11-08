@@ -113,6 +113,32 @@ class RoutingSetupTest extends TestCase
         Storage::disk('local')->assertMissing($waiting->path);
     }
 
+    public function test_a_rate_can_be_added_by_hand(): void
+    {
+        $deck = RateDeck::factory()->create();
+        $url = route('rate-decks.rates.store', $deck);
+        $base = ['prefix' => '1201555', 'destination' => 'USA - NJ', 'rate' => '0.0053', 'initial_increment' => 6, 'increment' => 6];
+
+        $this->actingAs($this->admin)->post($url, [...$base, 'prefix' => '1-201'])->assertSessionHasErrors('prefix');
+        $this->actingAs($this->admin)->post($url, [...$base, 'increment' => 0])->assertSessionHasErrors('increment');
+
+        // A new prefix.
+        $this->actingAs($this->admin)->post($url, $base)->assertSessionHasNoErrors();
+        $r = $deck->rates()->sole();
+        $this->assertSame(['1201555', 'USA - NJ', '0.005300', 6, 6, null], [(string) $r->prefix, $r->destination, $r->rate, $r->initial_increment, $r->increment, $r->effective_to]);
+
+        // A new rate for it next month: the current one ends then.
+        $this->actingAs($this->admin)->post($url, [...$base, 'rate' => '0.0060', 'effective_from' => now()->addMonth()->format('Y-m-d\TH:i')])->assertSessionHasNoErrors();
+        $this->assertSame(2, $deck->rates()->count());
+        $this->assertNotNull($r->fresh()->effective_to);
+        $this->assertSame('0.006000', $deck->rates()->whereNull('effective_to')->sole()->rate);
+
+        // Nothing while an import runs.
+        RateImport::create(['rate_deck_id' => $deck->id, 'filename' => 'x.csv', 'path' => 'x', 'mode' => 'update', 'effective_from' => now(), 'status' => 'running']);
+        $this->actingAs($this->admin)->post($url, [...$base, 'prefix' => '44'])->assertSessionHasErrors('prefix');
+        $this->assertSame(0, $deck->rates()->where('prefix', '44')->count());
+    }
+
     public function test_all_rates_can_be_deleted_after_typing_the_name(): void
     {
         $deck = RateDeck::factory()->create(['name' => 'Carrier A']);
