@@ -7,6 +7,7 @@ import TariffController from '@/actions/App/Http/Controllers/Admin/TariffControl
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
 import Pagination from '@/components/Pagination.vue';
+import RateImportMapping from '@/components/rate-decks/RateImportMapping.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -51,6 +52,12 @@ const props = defineProps<{
     imports: Import[];
     importing: boolean;
     usage: { customers: { id: number; name: string; code: string }[]; trunks: { id: number; name: string; account: { code: string } }[] };
+    mapping: {
+        id: number;
+        filename: string;
+        preview: { header: string[]; rows: string[][]; suggested: Record<string, number | null> };
+        fields: Record<string, string>;
+    } | null;
     build: {
         sources: number[];
         markup_type: 'percent' | 'fixed';
@@ -187,37 +194,23 @@ function saveEdit(r: Rate) {
                 <Heading
                     variant="small"
                     title="Import rates"
-                    description="CSV with a header row. Required columns: prefix, rate. Optional: destination, connect_fee, initial_increment, increment (seconds, default 60/60), effective_from."
+                    description="Upload a CSV file. Next you choose which column is the Prefix, NPA, NXX, Interval, Rate and Date effective, and see a preview before anything is imported."
                 />
+                <RateImportMapping v-if="mapping" :key="mapping.id" :deck-id="deck.id" :mapping="mapping" />
                 <Form
+                    v-else
                     v-bind="RateImportController.store.form(deck.id)"
                     reset-on-success
-                    class="ss-grid gap-3 ss-cols-sm-2"
+                    class="d-flex flex-wrap align-items-end gap-2"
                     v-slot="{ errors, processing, progress }"
                 >
-                    <div class="ss-grid gap-2 ss-span-sm-2">
-                        <Label for="file">File</Label>
+                    <div class="ss-grid gap-2">
+                        <Label for="file">CSV file</Label>
                         <Input id="file" name="file" type="file" accept=".csv,text/csv,text/plain" required />
                         <progress v-if="progress" :value="progress.percentage" max="100" class="w-100" />
                         <InputError :message="errors.file" />
                     </div>
-                    <div class="ss-grid gap-2">
-                        <Label for="mode">Mode</Label>
-                        <select id="mode" name="mode" :class="selectClass">
-                            <option value="update">Update: change only the prefixes in the file</option>
-                            <option value="replace">Replace: the file is the whole deck</option>
-                        </select>
-                        <InputError :message="errors.mode" />
-                    </div>
-                    <div class="ss-grid gap-2">
-                        <Label for="effective_from">Effective from (UTC)</Label>
-                        <Input id="effective_from" name="effective_from" type="datetime-local" />
-                        <p class="small text-secondary">Blank = immediately. Rows with their own effective_from override this.</p>
-                        <InputError :message="errors.effective_from" />
-                    </div>
-                    <div>
-                        <Button :disabled="processing || importing">Upload and import</Button>
-                    </div>
+                    <Button :disabled="processing || importing">Upload and choose columns</Button>
                 </Form>
 
                 <ul v-if="imports.length" class="list-group">

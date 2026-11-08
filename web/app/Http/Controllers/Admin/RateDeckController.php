@@ -8,6 +8,7 @@ use App\Models\Account;
 use App\Models\RateDeck;
 use App\Models\RateImport;
 use App\Models\Trunk;
+use App\Services\RateImporter;
 use App\Support\Currencies;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -83,7 +84,8 @@ class RateDeckController extends Controller
             ->withQueryString()
             ->through(fn ($r) => $r->only(['id', 'prefix', 'destination', 'rate', 'connect_fee', 'initial_increment', 'increment', 'effective_from', 'effective_to']));
 
-        $imports = $rateDeck->imports()->with('user:id,name')->latest('id')->limit(10)->get();
+        $imports = $rateDeck->imports()->where('status', '!=', 'mapping')->with('user:id,name')->latest('id')->limit(10)->get();
+        $waiting = $rateDeck->imports()->where('status', 'mapping')->latest('id')->first();
 
         return Inertia::render('rate-decks/Show', [
             'deck' => [...$rateDeck->only(['id', 'name', 'currency', 'description']), 'kind' => $rateDeck->kind->value],
@@ -94,6 +96,8 @@ class RateDeckController extends Controller
                 'user' => $i->user?->name,
             ]),
             'importing' => $imports->contains(fn (RateImport $i) => $i->isPending()),
+            // An uploaded file waiting for its columns to be matched (step 2 of an import).
+            'mapping' => $waiting ? [...$waiting->only(['id', 'filename', 'preview']), 'fields' => RateImporter::FIELDS] : null,
             // Tariffs: built from Carrier Rates plus a markup.
             'build' => $rateDeck->kind === RateDeckKind::Tariff ? [
                 'sources' => $rateDeck->sources()->pluck('rate_decks.id'),

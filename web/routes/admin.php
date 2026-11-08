@@ -106,6 +106,10 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::post('rate-decks/{rate_deck}/imports', [RateImportController::class, 'store'])
         ->middleware('throttle:10,1')
         ->name('rate-decks.imports.store');
+    Route::scopeBindings()->group(function () {
+        Route::post('rate-decks/{rate_deck}/imports/{import}/start', [RateImportController::class, 'start'])->name('rate-decks.imports.start');
+        Route::delete('rate-decks/{rate_deck}/imports/{import}', [RateImportController::class, 'cancel'])->name('rate-decks.imports.cancel');
+    });
     // Tariffs: build from Carrier Rates plus a markup, and adjust single rates by hand.
     Route::post('rate-decks/{rate_deck}/build', [TariffController::class, 'build'])->middleware('throttle:10,1')->name('rate-decks.build');
     Route::patch('rate-decks/{rate_deck}/rates/{rate}', [TariffController::class, 'updateRate'])->scopeBindings()->name('rate-decks.rates.update');

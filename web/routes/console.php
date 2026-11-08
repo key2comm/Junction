@@ -1,11 +1,13 @@
 <?php
 
 use App\Jobs\SyncSwitchConfig;
+use App\Models\RateImport;
 use App\Services\LiveCalls;
 use App\Services\TrunkQuality;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schedule;
+use Illuminate\Support\Facades\Storage;
 
 // Softswitch billing and housekeeping.
 Schedule::command('softswitch:post-usage')->hourly()->withoutOverlapping();
@@ -28,6 +30,14 @@ Schedule::command('softswitch:invoices')->hourlyAt(5)->withoutOverlapping();
 
 // Low-balance alerts (one email per dip below a customer's threshold).
 Schedule::command('softswitch:check-balances')->everyFiveMinutes()->withoutOverlapping();
+
+// Rate files uploaded but never matched to columns and imported: drop after a day.
+Schedule::call(function () {
+    foreach (RateImport::query()->where('status', 'mapping')->where('created_at', '<', now()->subDay())->get() as $import) {
+        Storage::disk('local')->delete($import->path);
+        $import->delete();
+    }
+})->name('softswitch:prune-rate-uploads')->daily();
 
 // Vendor quality stats: rebuild the last few hours (catches late CDRs and leg timings).
 Schedule::command('softswitch:quality-rollup')->everyFiveMinutes()->withoutOverlapping();

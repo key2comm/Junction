@@ -147,4 +147,44 @@ class RateImportTest extends TestCase
         $this->assertSame(['44' => '0.010000'], $this->ratesAt('2026-11-05'));
         $this->assertSame(['33' => '0.020000', '44' => '0.010000'], $this->ratesAt('2026-11-07 12:00:01'));
     }
+
+    public function test_npa_nxx_interval_and_chosen_columns(): void
+    {
+        $deck = RateDeck::factory()->create();
+        // No header row; columns in an unusual order; dollar signs; NPA/NXX with and without a prefix.
+        $csv = "0.0123,201,555,,6/6,2026-12-01\n\$0.0150,416,,1,60,\n0.02,212,555,1212555,1-1,\n0.05,,,44,60/6,\n";
+        $path = 'rate-imports/test-mapped.csv';
+        \Illuminate\Support\Facades\Storage::disk('local')->put($path, $csv);
+        $import = RateImport::create(['rate_deck_id' => $deck->id, 'filename' => 'mapped.csv', 'path' => $path, 'mode' => 'update',
+            'effective_from' => '2026-11-01 00:00:00+00', 'status' => 'queued',
+            'mapping' => ['has_header' => false, 'npa_country' => '1',
+                'columns' => ['rate' => 0, 'npa' => 1, 'nxx' => 2, 'prefix' => 3, 'interval' => 4, 'effective_from' => 5]]]);
+
+        app(RateImporter::class)->run($import);
+        $this->assertSame('done', $import->fresh()->status, json_encode($import->fresh()->errors));
+
+        $rates = $deck->rates()->orderBy('prefix')->get()->keyBy(fn ($r) => (string) $r->prefix);
+        $this->assertSame(['1201555', '1212555', '1416', '44'], array_map('strval', $rates->keys()->all()));
+        $this->assertSame('0.012300', $rates['1201555']->rate);          // country code + NPA + NXX
+        $this->assertSame([6, 6], [$rates['1201555']->initial_increment, $rates['1201555']->increment]);
+        $this->assertSame('2026-12-01', $rates['1201555']->effective_from->utc()->format('Y-m-d'));
+        $this->assertSame('0.015000', $rates['1416']->rate);             // prefix 1 + NPA 416, no NXX; "$" stripped
+        $this->assertSame([60, 60], [$rates['1416']->initial_increment, $rates['1416']->increment]);
+        $this->assertSame([1, 1], [$rates['1212555']->initial_increment, $rates['1212555']->increment]); // prefix already ends in NPA+NXX
+        $this->assertSame([60, 6], [$rates['44']->initial_increment, $rates['44']->increment]);
+        $this->assertSame('2026-11-01', $rates['44']->effective_from->utc()->format('Y-m-d'));
+    }
+
+    public function test_a_bad_interval_is_reported_with_its_line(): void
+    {
+        $deck = RateDeck::factory()->create();
+        $path = 'rate-imports/test-bad.csv';
+        \Illuminate\Support\Facades\Storage::disk('local')->put($path, "prefix,rate,interval\n44,0.01,sixty\n");
+        $import = RateImport::create(['rate_deck_id' => $deck->id, 'filename' => 'bad.csv', 'path' => $path, 'mode' => 'update',
+            'effective_from' => now(), 'status' => 'queued']);
+
+        app(RateImporter::class)->run($import);
+        $this->assertSame('failed', $import->fresh()->status);
+        $this->assertStringContainsString('Line 2: interval "sixty"', $import->fresh()->errors[0]);
+    }
 }

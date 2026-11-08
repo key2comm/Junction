@@ -70,19 +70,47 @@ class RoutingSetupTest extends TestCase
         $this->assertSame('CAD', $deck->currency);
         $this->assertSame('carrier', $deck->kind->value);
 
-        $file = UploadedFile::fake()->createWithContent('az.csv', "prefix,rate\n1,0.01\n");
-        $this->actingAs($this->admin)->post(route('rate-decks.imports.store', $deck), ['file' => $file, 'mode' => 'replace', 'effective_from' => '2026-12-01T00:00'])
-            ->assertSessionHasNoErrors();
-
+        // Step 1: upload. The file is read and waits for its columns to be matched.
+        $file = UploadedFile::fake()->createWithContent('az.csv', "Prefix,NPA,NXX,Interval,Rate,date_effective\n1,201,555,6/6,0.01,2026-12-01\n");
+        $this->actingAs($this->admin)->post(route('rate-decks.imports.store', $deck), ['file' => $file])->assertSessionHasNoErrors();
         $import = RateImport::query()->sole();
+        $this->assertSame('mapping', $import->status);
+        Storage::disk('local')->assertExists($import->path);
+        Queue::assertNothingPushed();
+        // (jsonb doesn't keep key order, so compare without it.)
+        $this->assertEquals(['prefix' => 0, 'npa' => 1, 'nxx' => 2, 'interval' => 3, 'rate' => 4, 'effective_from' => 5, 'destination' => null, 'connect_fee' => null],
+            $import->preview['suggested']);
+        $this->actingAs($this->admin)->get(route('rate-decks.show', $deck))->assertInertia(fn (Assert $p) => $p
+            ->where('mapping.id', $import->id)->where('mapping.preview.header', ['Prefix', 'NPA', 'NXX', 'Interval', 'Rate', 'date_effective'])
+            ->where('mapping.preview.rows.0', ['1', '201', '555', '6/6', '0.01', '2026-12-01'])->has('imports', 0));
+
+        // Step 2: the admin's column choices; a rate column and a prefix (or NPA) are required.
+        $columns = ['prefix' => 0, 'npa' => 1, 'nxx' => 2, 'interval' => 3, 'rate' => 4, 'effective_from' => 5];
+        $start = fn (array $form) => $this->actingAs($this->admin)->post(route('rate-decks.imports.start', [$deck, $import]), $form);
+        $start(['columns' => [...$columns, 'rate' => null], 'mode' => 'update', 'has_header' => true])->assertSessionHasErrors('columns.rate');
+        $start(['columns' => [...$columns, 'prefix' => null, 'npa' => null], 'mode' => 'update', 'has_header' => true])->assertSessionHasErrors('columns.prefix');
+        $start(['columns' => [...$columns, 'nxx' => 1], 'mode' => 'update', 'has_header' => true])->assertSessionHasErrors('columns');
+        $start(['columns' => [...$columns, 'rate' => 9], 'mode' => 'update', 'has_header' => true])->assertSessionHasErrors('columns.rate');
+        $start(['columns' => $columns, 'mode' => 'replace', 'has_header' => true, 'effective_from' => '2026-12-01T00:00'])->assertSessionHasNoErrors();
+
+        $import->refresh();
+        $this->assertSame('queued', $import->status);
         $this->assertSame('replace', $import->mode);
         $this->assertSame('2026-12-01 00:00:00', $import->effective_from->utc()->format('Y-m-d H:i:s'));
-        Storage::disk('local')->assertExists($import->path);
+        $this->assertEquals(['has_header' => true, 'columns' => [...$columns, 'destination' => null, 'connect_fee' => null], 'npa_country' => '1'], $import->mapping);
         Queue::assertPushed(ImportRates::class);
 
         // Only one import per deck at a time.
-        $this->actingAs($this->admin)->post(route('rate-decks.imports.store', $deck), ['file' => UploadedFile::fake()->createWithContent('b.csv', "prefix,rate\n"), 'mode' => 'update'])
-            ->assertSessionHasErrors('file');
+        $this->actingAs($this->admin)->post(route('rate-decks.imports.store', $deck), ['file' => UploadedFile::fake()->createWithContent('b.csv', "prefix,rate\n1,0.02\n")]);
+        $waiting = RateImport::query()->where('status', 'mapping')->sole();
+        $start(['columns' => ['prefix' => 0, 'rate' => 1], 'mode' => 'update', 'has_header' => true]); // the earlier $import is no longer waiting
+        $this->actingAs($this->admin)->post(route('rate-decks.imports.start', [$deck, $waiting]), ['columns' => ['prefix' => 0, 'rate' => 1], 'mode' => 'update', 'has_header' => true])
+            ->assertSessionHasErrors('columns');
+
+        // A waiting upload can be cancelled (its file is removed).
+        $this->actingAs($this->admin)->delete(route('rate-decks.imports.cancel', [$deck, $waiting]))->assertRedirect(route('rate-decks.show', $deck));
+        $this->assertNull($waiting->fresh());
+        Storage::disk('local')->assertMissing($waiting->path);
     }
 
     public function test_tariffs_and_carrier_rates_are_kept_apart(): void

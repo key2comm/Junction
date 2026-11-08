@@ -7,9 +7,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * One uploaded rate deck file and the outcome of applying it.
+ * One uploaded rate deck file (or tariff build) and the outcome of applying it.
+ * Status: mapping (waiting for the admin to match columns), queued, running, done, failed.
  */
-#[Fillable(['rate_deck_id', 'user_id', 'filename', 'path', 'mode', 'effective_from', 'status', 'stats', 'errors', 'started_at', 'finished_at'])]
+#[Fillable(['rate_deck_id', 'user_id', 'filename', 'path', 'mode', 'effective_from', 'status', 'stats', 'errors', 'preview', 'mapping', 'started_at', 'finished_at'])]
 class RateImport extends Model
 {
     protected function casts(): array
@@ -18,6 +19,8 @@ class RateImport extends Model
             'effective_from' => 'datetime',
             'stats' => 'array',
             'errors' => 'array',
+            'preview' => 'array',
+            'mapping' => 'array',
             'started_at' => 'datetime',
             'finished_at' => 'datetime',
         ];
