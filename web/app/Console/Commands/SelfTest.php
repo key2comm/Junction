@@ -423,7 +423,8 @@ class SelfTest extends Command
             ? "origination_caller_id_number={$login[2]},sip_auth_username={$login[0]},sip_auth_password={$login[1]},"
             : 'origination_caller_id_number='.($caller ?? '15550001000').',';
         if ($fromHost) {
-            $vars .= "sip_from_host={$fromHost},";
+            // The whole From header (the From domain is what the receiving rule matches).
+            $vars .= 'sip_invite_from_uri=<sip:'.($caller ?? '15550001000')."@{$fromHost}>,";
         }
         // Phones address the switch by its hostname (which becomes the digest realm),
         // while the INVITE itself is sent to our IP.
