@@ -239,7 +239,7 @@ class EndpointController extends Controller
             'enabled' => $request->boolean('enabled'),
             'delivery' => $delivery,
             'flow' => $flow,
-            'hosts' => $ringsHosts && ! $login ? ($data['hosts'] ?? []) : [],
+            'hosts' => $needsHosts ? ($data['hosts'] ?? []) : [],
             'transport' => $data['transport'] ?? 'udp',
             'port' => $data['port'] ?? 5060,
             'ring_seconds' => $data['ring_seconds'] ?? 25,
