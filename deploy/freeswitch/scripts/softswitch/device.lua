@@ -33,6 +33,7 @@ if dev.active ~= "t" then
 end
 
 local number = (var("destination_number") or ""):gsub("^%+", "")
+number = util.add_one(number, dev.add_one)
 if not number:match("^%d+$") or #number < 7 or #number > 32 then
   return u.reject("invalid_number")
 end

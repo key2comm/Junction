@@ -591,7 +591,7 @@ class SelfTest extends Command
             'device' => $device('device', ['delivery' => 'sip']),
             'busy' => $device('busy', ['delivery' => 'flow', 'flow' => 'busy', 'forward_number' => self::DEST]),
             // A tenant behind the shared PBX below, recognised by caller number or From domain.
-            'office' => $device('office', ['mode' => 'receiving', 'delivery' => 'sip', 'hosts' => []]),
+            'office' => $device('office', ['mode' => 'receiving', 'delivery' => 'sip', 'hosts' => [], 'add_one' => true]),
             // An outside PBX on a SIP trunk login.
             'trunk' => $device('trunk', ['delivery' => 'sip', 'hosts' => [], 'sip_username' => 'selftest-trunk', 'sip_password' => Endpoint::generatePassword()]),
         ];

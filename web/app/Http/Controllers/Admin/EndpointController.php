@@ -86,7 +86,7 @@ class EndpointController extends Controller
         return Inertia::render('endpoints/Form', [
             'endpoint' => [
                 ...$endpoint->only(['id', 'account_id', 'kind', 'mode', 'name', 'enabled', 'hosts', 'transport', 'port', 'delivery', 'flow',
-                    'forward_number', 'ring_seconds', 'pbx_destination', 'codecs', 'caller_id_number', 'forward_caller_id',
+                    'forward_number', 'ring_seconds', 'pbx_destination', 'codecs', 'caller_id_number', 'add_one', 'forward_caller_id',
                     'max_inbound', 'max_outbound', 'max_total', 'notes', 'sip_username']),
                 'sip_password' => $endpoint->sip_password,
                 'rules' => $endpoint->rules->map(fn (EndpointRule $r) => $r->only(['type', 'value']))->values(),
@@ -249,6 +249,8 @@ class EndpointController extends Controller
             'codecs' => $data['codecs'],
             // A shared PBX only receives calls: no caller ID or outbound limits of its own.
             'caller_id_number' => $isDevice ? $data['caller_id_number'] : null,
+            // 10-digit North American numbers get a 1: for calls it sends us (receiving, or over its SIP trunk).
+            'add_one' => ($receiving || $login) && $request->boolean('add_one'),
             'max_inbound' => $receiving ? null : ($data['max_inbound'] ?? null),
             // Outbound limits: for calls a device sends us (receiving, or over its SIP trunk).
             'max_outbound' => $receiving || $login ? ($data['max_outbound'] ?? null) : null,

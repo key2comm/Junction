@@ -85,7 +85,8 @@ if ep then
     session:setVariable("effective_caller_id_number", ep.caller_id_number)
     session:setVariable("effective_caller_id_name", ep.caller_id_number)
   end
-  customer = { account_id = ep.account_id, number = dialled:gsub("^%+", ""), max_channels = ep.max_channels, max_cps = ep.max_cps }
+  local number = dialled:gsub("^%+", "")
+  customer = { account_id = ep.account_id, number = util.add_one(number, ep.add_one), max_channels = ep.max_channels, max_cps = ep.max_cps }
 end
 if not customer then
   return u.reject("unknown_customer")

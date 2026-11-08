@@ -79,6 +79,15 @@ function M.new(session)
   return u
 end
 
+-- A device that dials North American numbers as 10 digits (NXX NXX XXXX):
+-- add the 1 so they route as 1NXXNXXXXXX. Anything else is left alone.
+function M.add_one(number, enabled)
+  if enabled == "t" and number:match("^[2-9]%d%d[2-9]%d%d%d%d%d%d$") then
+    return "1" .. number
+  end
+  return number
+end
+
 -- SQL string literal. Inputs are validated before use; quoting is belt and braces.
 function M.lit(s)
   if s == nil then return "NULL" end

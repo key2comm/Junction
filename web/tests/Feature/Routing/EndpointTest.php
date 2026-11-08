@@ -106,7 +106,7 @@ class EndpointTest extends TestCase
 
     public function test_a_device_can_be_a_sip_trunk(): void
     {
-        $trunk = fn (array $over = []) => $this->device(['target' => 'trunk', 'hosts' => [], 'sip_username' => 'acme.office', 'sip_password' => 'Abcdefgh12345678', ...$over]);
+        $trunk = fn (array $over = []) => $this->device(['target' => 'trunk', 'hosts' => [], 'sip_username' => 'acme.office', 'sip_password' => 'Abcdefgh12345678', 'add_one' => true, ...$over]);
         $this->save($trunk(['sip_username' => '']))->assertSessionHasErrors('sip_username');
         $this->save($trunk(['sip_password' => 'short']))->assertSessionHasErrors('sip_password');
         $this->save($trunk(['sip_password' => 'has spaces in it ok']))->assertSessionHasErrors('sip_password');
@@ -128,7 +128,7 @@ class EndpointTest extends TestCase
         $this->assertStringContainsString('<variable name="softswitch_device_id" value="'.$e->id.'"/>', $xml);
 
         $row = DB::selectOne('SELECT * FROM softswitch_device(?)', [$e->id]);
-        $this->assertSame([$this->customer->id, true], [$row->account_id, $row->active]);
+        $this->assertSame([$this->customer->id, true, true], [$row->account_id, $row->active, $row->add_one]);
         $this->assertSame('acme.office', DB::selectOne('SELECT sip_username FROM softswitch_endpoint(?)', [$e->id])->sip_username);
 
         // Back to IP/FQDN drops the login.
@@ -150,7 +150,7 @@ class EndpointTest extends TestCase
         $this->save($recv(['rules' => [['type' => 'domain', 'value' => 'not a domain']]]))->assertSessionHasErrors('rules.0.value');
         $this->save($recv(['rules' => [['type' => 'number', 'value' => '416-555']]]))->assertSessionHasErrors('rules.0.value');
         $this->save($recv(['rules' => [['type' => 'ip', 'value' => '10.0.0.0/8']]]))->assertSessionHasErrors('rules.0.value');
-        $this->save($recv(['rules' => $rules, 'caller_id_number' => '14165550000', 'max_inbound' => 9, 'max_outbound' => 4, 'max_total' => 6]))->assertSessionHasNoErrors();
+        $this->save($recv(['rules' => $rules, 'caller_id_number' => '14165550000', 'add_one' => true, 'max_inbound' => 9, 'max_outbound' => 4, 'max_total' => 6]))->assertSessionHasNoErrors();
         $device = Endpoint::query()->where('kind', 'device')->sole();
         // Receiving only: nothing to send calls to, and no DIDs can go to it.
         $this->assertSame(['receiving', [], null, 4, null], [$device->mode, $device->hosts, $device->max_inbound, $device->max_outbound, $device->max_total]);
@@ -161,14 +161,15 @@ class EndpointTest extends TestCase
         // Rules are unique switch-wide.
         $this->save($recv(['name' => 'Other', 'rules' => [['type' => 'domain', 'value' => 'tenant.example.com']]]))->assertSessionHasErrors('rules.0.value');
         // A separate sending device may use the same FQDN as the receiving one's IP rule.
-        $this->save($this->device(['name' => 'Office out', 'hosts' => ['office.example.com']]))->assertSessionHasNoErrors();
+        $this->save($this->device(['name' => 'Office out', 'hosts' => ['office.example.com'], 'add_one' => true]))->assertSessionHasNoErrors();
+        $this->assertFalse(Endpoint::query()->where('name', 'Office out')->sole()->add_one);
 
         $this->assertSame(['endpoints' => 3, 'addresses' => 2], app(EndpointSync::class)->sync());
         $who = fn (string $ip, string $host = '', string $caller = '') => DB::selectOne('SELECT * FROM softswitch_identify_endpoint(?::inet, ?, ?)', [$ip, $host, $caller]);
 
         // From the shared PBX: the From domain or the caller number (as the PBX sends it).
         $hit = $who('198.51.100.5', 'tenant.example.com', '100');
-        $this->assertSame([$device->id, $this->customer->id, 'domain', '14165550000', 4, null], [$hit->endpoint_id, $hit->account_id, $hit->matched, $hit->caller_id_number, $hit->max_outbound, $hit->max_total]);
+        $this->assertSame([$device->id, $this->customer->id, 'domain', '14165550000', 4, null, true], [$hit->endpoint_id, $hit->account_id, $hit->matched, $hit->caller_id_number, $hit->max_outbound, $hit->max_total, $hit->add_one]);
         $this->assertSame('number', $who('198.51.100.5', 'other.example.com', '4165551234')->matched);
         $this->assertNull($who('198.51.100.5', 'other.example.com', '14165551234')); // a format nobody added
         // The same domain/number from anywhere else isn't trusted...

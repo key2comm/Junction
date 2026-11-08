@@ -34,6 +34,7 @@ type Endpoint = {
     pbx_destination: { type: string; target?: string } | null;
     codecs: string[];
     caller_id_number: string | null;
+    add_one: boolean;
     forward_caller_id: 'original' | 'endpoint';
     max_inbound: number | null;
     max_outbound: number | null;
@@ -93,6 +94,7 @@ const form = useForm({
     pbx_destination: { type: e?.pbx_destination?.type ?? 'number', target: e?.pbx_destination?.target ?? '' },
     codecs: e?.codecs ?? ['PCMU', 'PCMA'],
     caller_id_number: e?.caller_id_number ?? '',
+    add_one: e?.add_one ?? false,
     forward_caller_id: e?.forward_caller_id ?? 'original',
     max_inbound: e?.max_inbound ?? '',
     max_outbound: e?.max_outbound ?? '',
@@ -427,6 +429,13 @@ function submit() {
                             Blank keeps the caller's own number. Carriers may override it.
                         </p>
                         <InputError :message="form.errors.caller_id_number" />
+                        <label v-if="receiving || trunk" class="d-flex align-items-start gap-2 mt-2">
+                            <input v-model="form.add_one" type="checkbox" class="form-check-input m-0 mt-1" />
+                            <span>
+                                Add 1 to 10-digit numbers
+                                <span class="d-block small text-secondary">For systems that dial North American numbers without the 1: 4165551234 is routed as 14165551234.</span>
+                            </span>
+                        </label>
                     </div>
                     <div v-else-if="!isDevice" class="small text-secondary align-self-start rounded border p-3">
                         Calls this PBX sends to the switch are matched to customers by their devices' <strong>Receiving calls</strong> rules (From domain or

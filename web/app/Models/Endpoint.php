@@ -23,7 +23,7 @@ use Illuminate\Support\Str;
  */
 #[Hidden(['sip_password'])]
 #[Fillable(['account_id', 'kind', 'mode', 'name', 'enabled', 'hosts', 'sip_username', 'sip_password', 'transport', 'port', 'delivery', 'flow',
-    'forward_number', 'ring_seconds', 'pbx_destination', 'codecs', 'caller_id_number', 'forward_caller_id', 'max_inbound', 'max_outbound',
+    'forward_number', 'ring_seconds', 'pbx_destination', 'codecs', 'caller_id_number', 'add_one', 'forward_caller_id', 'max_inbound', 'max_outbound',
     'max_total', 'notes'])]
 class Endpoint extends Model
 {
@@ -68,6 +68,7 @@ class Endpoint extends Model
     {
         return [
             'enabled' => 'boolean',
+            'add_one' => 'boolean',
             'hosts' => 'array',
             'codecs' => 'array',
             'pbx_destination' => 'array',
