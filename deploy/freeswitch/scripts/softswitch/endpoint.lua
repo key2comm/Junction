@@ -3,7 +3,8 @@
 
     endpoint.deliver(session, u, account_id, endpoint_id, depth)
         A DID whose destination is a PBX/Device (pbx.lua). Rings its hosts in
-        order ("|" failover) with its codecs, then applies its call flow:
+        order ("|" failover), or its SIP trunk registration, with its codecs,
+        then (devices) applies its call flow:
           always              forward straight away
           no_answer/busy/failed  forward when the hosts give that outcome
           pbx                 a destination on this switch's PBX
@@ -34,9 +35,14 @@ function M.count(session, key, id, max)
   return true
 end
 
--- "sofia/carrier/<number>@host:port;transport=tcp|..." for each of its hosts.
+-- "sofia/carrier/<number>@host:port;transport=tcp|..." for each of its hosts,
+-- or, for a SIP trunk, the PBX's registration (the DID goes in the To header).
 local function dial_string(ep, number)
   local legs = {}
+  if (ep.hosts or "") == "" and ep.sip_username and ep.sip_username:match("^[%w%._%-]+$") then
+    local domain = freeswitch.getGlobalVariable("domain")
+    return "[sip_invite_to_uri=<sip:" .. number .. "@" .. domain .. ">]user/" .. ep.sip_username .. "@" .. domain
+  end
   local port = tonumber(ep.port) or 5060
   local transport = (ep.transport == "tcp" or ep.transport == "tls") and (";transport=" .. ep.transport) or ""
   for host in (ep.hosts or ""):gmatch("[^,]+") do
@@ -99,7 +105,8 @@ end
 function M.deliver(session, u, account_id, endpoint_id, depth)
   if not session:ready() then return end
   local ep = endpoint_id and u.row(string.format("SELECT * FROM softswitch_endpoint(%d)", endpoint_id))
-  if not ep or tonumber(ep.account_id) ~= account_id then
+  -- PBXs are shared by every customer; a device only takes its own customer's DIDs.
+  if not ep or (ep.kind ~= "pbx" and tonumber(ep.account_id) ~= account_id) then
     u.log("WARNING", "PBX/Device " .. tostring(endpoint_id) .. " does not exist")
     return session:hangup("UNALLOCATED_NUMBER")
   end

@@ -5,8 +5,8 @@
   tester uses; this script applies them to the call:
 
     0. a number we host (a PBX DID) goes to its PBX destination instead
-    1. identify the customer by source IP (+ tech prefix), or else a customer
-       PBX/Device calling out from one of its addresses
+    1. identify the customer by source IP (+ tech prefix), or else by a
+       customer device's receiving rules (From domain, caller number, IP)
     2. least-cost route it to the vendors (lcr.lua): limits, funds, failover
     3. leave softswitch_* variables on the call for the CDR (posted by mod_xml_cdr)
 
@@ -60,14 +60,22 @@ dbh:query(string.format("SELECT * FROM softswitch_identify(%s::inet, %s)", lit(s
 end)
 local ep
 if not customer then
-  dbh:query(string.format("SELECT * FROM softswitch_identify_endpoint(%s::inet)", lit(src_ip)), function(row) ep = ep or row end)
+  -- A customer device's receiving rules: From domain, caller number, or source IP.
+  local from_host = (var("sip_from_host") or ""):lower()
+  local caller = var("caller_id_number") or var("sip_from_user") or ""
+  if not from_host:match("^[%w%.%-]*$") or #from_host > 253 then from_host = "" end
+  if not caller:match("^[%w%+%.%-]*$") or #caller > 64 then caller = "" end
+  dbh:query(string.format("SELECT * FROM softswitch_identify_endpoint(%s::inet, %s, %s)", lit(src_ip), lit(from_host), lit(caller)), function(row)
+    ep = ep or row
+  end)
 end
 dbh:release()
 if ep then
-  -- A customer PBX/Device calling out: its own limits and caller ID, then the account's.
+  -- A customer device calling out: its own limits and caller ID, then the account's.
   local endpoint = require "softswitch.endpoint"
   setvar("softswitch_account_id", ep.account_id)
   setvar("softswitch_endpoint_id", ep.endpoint_id)
+  setvar("softswitch_matched_by", ep.matched)
   if not endpoint.count(session, "softswitch_endpoint_out", ep.endpoint_id, ep.max_outbound)
     or not endpoint.count(session, "softswitch_endpoint", ep.endpoint_id, ep.max_total) then
     return u.reject("channel_limit")

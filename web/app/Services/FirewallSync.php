@@ -18,7 +18,7 @@ use RuntimeException;
  *
  *  - apply(): the carrier allowlist (nftables sets for the carrier SIP port) =
  *    enabled customer IPs + every enabled carrier gateway host (hostnames
- *    resolved) + customer PBX/Devices that may call out + static IPs from the
+ *    resolved) + PBXs and devices' IP receiving rules + static IPs from the
  *    installer config.
  *  - applyPolicy(): Settings -> Firewall (whitelist, blacklist, lockdown); see
  *    FirewallPolicy.
@@ -53,10 +53,10 @@ class FirewallSync
             array_push($entries, ...(filter_var($host, FILTER_VALIDATE_IP) ? [$host] : ($this->resolver)($host)));
         }
 
-        // Customer PBX/Devices that may send us calls (addresses resolved by EndpointSync).
+        // PBXs and devices' IP/FQDN receiving rules (addresses resolved by EndpointSync).
         array_push($entries, ...EndpointAddress::query()
-            ->whereHas('endpoint', fn ($q) => $q->where('enabled', true)->where('outbound_enabled', true)
-                ->whereHas('account', fn ($a) => $a->where('is_customer', true)->where('status', '!=', 'closed')))
+            ->whereHas('endpoint', fn ($q) => $q->where('enabled', true)->where(fn ($w) => $w->whereNull('account_id')
+                ->orWhereHas('account', fn ($a) => $a->where('is_customer', true)->where('status', '!=', 'closed'))))
             ->pluck('ip')->all());
 
         foreach (preg_split('/[\s,]+/', (string) config('softswitch.static_carrier_ips'), -1, PREG_SPLIT_NO_EMPTY) as $ip) {

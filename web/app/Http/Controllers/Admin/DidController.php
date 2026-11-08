@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Account;
+use App\Models\Endpoint;
 use App\Models\PbxDid;
 use App\Services\Pbx;
 use App\Support\Languages;
@@ -29,6 +30,7 @@ class DidController extends Controller
             'account' => ['nullable', 'integer'],
             'provider' => ['nullable', 'integer'],
             'status' => ['nullable', Rule::in(array_keys(PbxDid::STATUSES))],
+            'endpoint' => ['nullable', 'integer'],
         ]);
         $digits = preg_replace('/\D/', '', (string) ($filters['q'] ?? ''));
 
@@ -39,6 +41,7 @@ class DidController extends Controller
             ->when($filters['account'] ?? null, fn ($q, $id) => $q->where('account_id', $id))
             ->when($filters['provider'] ?? null, fn ($q, $id) => $q->where('provider_account_id', $id))
             ->when($filters['status'] ?? null, fn ($q, $s) => $q->where('status', $s))
+            ->when($filters['endpoint'] ?? null, fn ($q, $id) => $q->where('destination->type', 'endpoint')->where('destination->target', (string) $id))
             ->orderBy('number')
             ->paginate(50)->withQueryString();
 
@@ -53,7 +56,8 @@ class DidController extends Controller
 
         return Inertia::render('dids/Index', [
             'dids' => $dids,
-            'filters' => ['q' => $filters['q'] ?? '', 'account' => $filters['account'] ?? null, 'provider' => $filters['provider'] ?? null, 'status' => $filters['status'] ?? ''],
+            'filters' => ['q' => $filters['q'] ?? '', 'account' => $filters['account'] ?? null, 'provider' => $filters['provider'] ?? null, 'status' => $filters['status'] ?? '',
+                'endpoint' => ($id = $filters['endpoint'] ?? null) ? Endpoint::query()->whereKey($id)->first(['id', 'kind', 'name'])?->only(['id', 'kind', 'name']) : null],
             'customers' => $this->customers(),
             'providers' => $this->providers(),
             'statuses' => PbxDid::STATUSES,

@@ -16,6 +16,7 @@ use App\Models\RateDeck;
 use App\Models\RoutingPlan;
 use App\Models\RoutingPlanRoute;
 use App\Models\Trunk;
+use App\Services\EndpointSync;
 use App\Services\Freeswitch\EventSocket;
 use App\Services\Freeswitch\GatewaySync;
 use App\Services\Freeswitch\PbxSync;
@@ -67,13 +68,18 @@ class SelfTest extends Command
 
     private const BANNED_DID = '99099900013';    // banned DID: refused with 403
 
+    // A tenant of the shared PBX: its device's receiving rules.
+    private const TENANT_NUMBER = '14165559999';
+
+    private const TENANT_DOMAIN = 'tenant.selftest.invalid';
+
     protected $signature = 'softswitch:selftest {--keep : Leave the test data in place afterwards}';
 
     protected $description = 'Place real test calls through the switch and check routing, failover, limits and billing';
 
     private array $f = [];
 
-    public function handle(EventSocket $esl, GatewaySync $gateways, PbxSync $pbx): int
+    public function handle(EventSocket $esl, GatewaySync $gateways, PbxSync $pbx, EndpointSync $endpointSync): int
     {
         $ip = config('softswitch.public_ip');
         if (! $ip) {
@@ -87,6 +93,7 @@ class SelfTest extends Command
             $this->fixtures($ip);
             $gateways->sync();
             $pbx->sync();
+            $endpointSync->sync();
             $this->waitForGateways($esl);
             $this->waitForPbxUsers($esl);
 
@@ -110,6 +117,9 @@ class SelfTest extends Command
                 'DID: a banned DID is refused (403)' => fn () => $this->bannedDid($esl, $ip),
                 'PBX/Device: DID delivered to a device' => fn () => $this->deviceDid($esl, $ip),
                 'PBX/Device: busy device forwards through LCR' => fn () => $this->deviceBusyForward($esl, $ip),
+                'Device: call via a shared PBX, matched by caller number' => fn () => $this->deviceByNumber($esl, $ip),
+                'Device: call via a shared PBX, matched by FROM domain' => fn () => $this->deviceByDomain($esl, $ip),
+                'Device: SIP trunk login calls out through LCR' => fn () => $this->deviceTrunk($esl, $ip),
             ];
             foreach ($scenarios as $name => $scenario) {
                 $this->output->write("  {$name} … ");
@@ -131,6 +141,7 @@ class SelfTest extends Command
                 try {
                     $gateways->sync();
                     $pbx->sync();
+                    $endpointSync->sync();
                 } catch (Throwable) {
                     // Leftover gateway and PBX user files are removed by the next sync.
                 }
@@ -357,23 +368,66 @@ class SelfTest extends Command
         return "busy → forwarded to ".self::DEST.", sell {$cdr->sell_cost}";
     }
 
+    private function deviceByNumber(EventSocket $esl, string $ip): string
+    {
+        $this->routes(['ok']);
+        $cdr = $this->placeCall($esl, $ip, self::DEST, hold: 3, expectAnswer: true, caller: self::TENANT_NUMBER);
+
+        $this->check((int) $cdr->endpoint_id === $this->f['endpoints']['office']->id, 'not recognised as the device');
+        $this->check((int) $cdr->trunk_id === $this->f['trunks']['ok']->id, 'not carried by the LCR trunk');
+        $this->check(bccomp((string) $cdr->sell_cost, '0', 6) > 0, 'the call was not billed');
+
+        return "caller {$cdr->caller} → device, {$cdr->billsec}s, sell {$cdr->sell_cost}";
+    }
+
+    private function deviceByDomain(EventSocket $esl, string $ip): string
+    {
+        $this->routes(['ok']);
+        $cdr = $this->placeCall($esl, $ip, self::DEST, hold: 3, expectAnswer: true, caller: '100', fromHost: self::TENANT_DOMAIN);
+
+        $this->check((int) $cdr->endpoint_id === $this->f['endpoints']['office']->id, 'not recognised as the device');
+        $this->check((int) $cdr->trunk_id === $this->f['trunks']['ok']->id, 'not carried by the LCR trunk');
+
+        return '100@'.self::TENANT_DOMAIN." → device, {$cdr->billsec}s";
+    }
+
+    private function deviceTrunk(EventSocket $esl, string $ip): string
+    {
+        $this->routes(['ok']);
+        $trunk = $this->f['endpoints']['trunk'];
+        $cdr = $this->placeCall($esl, $ip, self::DEST, hold: 3, expectAnswer: true, login: [$trunk->sip_username, $trunk->sip_password, '15550002000']);
+
+        $this->check($cdr->direction === 'pbx_out', "direction {$cdr->direction}, expected pbx_out");
+        $this->check((int) $cdr->endpoint_id === $trunk->id, 'the CDR does not name the trunk device');
+        $this->check((int) $cdr->trunk_id === $this->f['trunks']['ok']->id, 'not carried by the LCR trunk');
+        $this->check(bccomp((string) $cdr->sell_cost, '0', 6) > 0, 'the call was not billed');
+
+        return "authenticated as {$trunk->sip_username}, {$cdr->billsec}s, sell {$cdr->sell_cost}";
+    }
+
     // --- helpers ---------------------------------------------------------
 
     /**
      * Place a call from the fake customer and return the CDR the app stored.
      */
     private function placeCall(EventSocket $esl, string $ip, string $number, int $hold, bool $expectAnswer,
-        bool $expectRemoteHangup = false, bool $customer = true, ?PbxExtension $phone = null, ?Closure $during = null): Cdr
+        bool $expectRemoteHangup = false, bool $customer = true, ?PbxExtension $phone = null, ?Closure $during = null,
+        ?string $caller = null, ?string $fromHost = null, ?array $login = null): Cdr
     {
         $before = (int) Cdr::query()->max('id');
-        // As a carrier (carrier profile), or as a PBX phone (internal profile, digest auth).
-        $port = $phone ? (int) config('softswitch.pbx_port') : (int) config('softswitch.carrier_port');
-        $vars = $phone
-            ? "origination_caller_id_number={$phone->extension},sip_auth_username={$phone->sip_username},sip_auth_password={$phone->sip_password},"
-            : 'origination_caller_id_number=15550001000,';
+        // A SIP login: a PBX phone's, or a device's trunk ([username, password, caller]).
+        $login ??= $phone ? [$phone->sip_username, $phone->sip_password, $phone->extension] : null;
+        // As a carrier (carrier profile), or with a login (internal profile, digest auth).
+        $port = $login ? (int) config('softswitch.pbx_port') : (int) config('softswitch.carrier_port');
+        $vars = $login
+            ? "origination_caller_id_number={$login[2]},sip_auth_username={$login[0]},sip_auth_password={$login[1]},"
+            : 'origination_caller_id_number='.($caller ?? '15550001000').',';
+        if ($fromHost) {
+            $vars .= "sip_from_host={$fromHost},";
+        }
         // Phones address the switch by its hostname (which becomes the digest realm),
         // while the INVITE itself is sent to our IP.
-        if ($phone) {
+        if ($login) {
             $vars .= "sip_invite_req_uri=sip:{$number}@{$this->wsHost()},sip_invite_to_uri=<sip:{$number}@{$this->wsHost()}>,";
         }
         $reply = trim($esl->api(
@@ -452,10 +506,10 @@ class SelfTest extends Command
     {
         $domain = trim($esl->api('global_getvar domain'));
         $deadline = microtime(true) + 15;
-        foreach ($this->f['extensions'] as $ext) {
+        foreach ([...array_values($this->f['extensions']), $this->f['endpoints']['trunk']] as $ext) {
             while (trim($esl->api("user_exists id {$ext->sip_username} {$domain}")) !== 'true') {
                 if (microtime(true) > $deadline) {
-                    throw new RuntimeException("PBX user {$ext->sip_username} did not load into FreeSWITCH");
+                    throw new RuntimeException("SIP user {$ext->sip_username} did not load into FreeSWITCH");
                 }
                 usleep(500_000);
             }
@@ -530,12 +584,21 @@ class SelfTest extends Command
         $device = fn (string $name, array $over) => Endpoint::create([
             'account_id' => $customer->id, 'kind' => 'device', 'name' => "Selftest {$name}", 'enabled' => true,
             'hosts' => [$ip], 'transport' => 'udp', 'port' => (int) config('softswitch.selftest_port'),
-            'codecs' => ['PCMU', 'PCMA'], 'outbound_enabled' => false, 'forward_caller_id' => 'original', ...$over,
+            'codecs' => ['PCMU', 'PCMA'], 'forward_caller_id' => 'original', ...$over,
         ]);
         $endpoints = [
             'device' => $device('device', ['delivery' => 'sip']),
             'busy' => $device('busy', ['delivery' => 'flow', 'flow' => 'busy', 'forward_number' => self::DEST]),
+            // A tenant behind the shared PBX below, recognised by caller number or From domain.
+            'office' => $device('office', ['delivery' => 'sip']),
+            // An outside PBX on a SIP trunk login.
+            'trunk' => $device('trunk', ['delivery' => 'sip', 'hosts' => [], 'sip_username' => 'selftest-trunk', 'sip_password' => Endpoint::generatePassword()]),
         ];
+        $endpoints['office']->rules()->create(['type' => 'number', 'value' => self::TENANT_NUMBER]);
+        $endpoints['office']->rules()->create(['type' => 'domain', 'value' => self::TENANT_DOMAIN]);
+        // The shared PBX: this switch's own IP stands in for it (a trusted source).
+        $endpoints['pbx'] = Endpoint::create(['kind' => 'pbx', 'name' => 'Selftest shared PBX', 'enabled' => true, 'hosts' => [$ip],
+            'transport' => 'udp', 'port' => (int) config('softswitch.selftest_port'), 'codecs' => ['PCMU']]);
         PbxDid::create(['account_id' => $customer->id, 'number' => self::DEVICE_DID, 'destination' => ['type' => 'endpoint', 'target' => (string) $endpoints['device']->id]]);
         PbxDid::create(['account_id' => $customer->id, 'number' => self::BUSY_DEVICE_DID, 'destination' => ['type' => 'endpoint', 'target' => (string) $endpoints['busy']->id]]);
 
@@ -560,6 +623,7 @@ class SelfTest extends Command
             Account::query()->whereIn('id', $ids)->get()->each->delete();
             RoutingPlan::query()->where('name', 'SELFTEST plan')->delete();
             RateDeck::query()->where('name', 'like', 'SELFTEST %')->delete();
+            Endpoint::query()->whereNull('account_id')->where('name', 'like', 'Selftest %')->delete(); // the shared PBX
         }));
     }
 }

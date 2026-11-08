@@ -2,6 +2,7 @@
 
 namespace App\Services\Freeswitch;
 
+use App\Models\Endpoint;
 use App\Models\PbxExtension;
 use App\Models\PbxIvr;
 use Illuminate\Support\Facades\Cache;
@@ -14,7 +15,8 @@ use Throwable;
 /**
  * Pushes the PBX to FreeSWITCH:
  *
- *  - one directory file per enabled extension (directory/pbx/<user>.xml), then
+ *  - one directory file per enabled extension, and per device SIP trunk login
+ *    (Routing -> PBX/Devices), in directory/pbx/<user>.xml, then
  *    reloadxml. Registrations of removed users, or users whose password changed, are flushed so phones
  *    re-register (and fail if their password changed).
  *  - IVR greetings, copied from the app's storage (which php-fpm writes under
@@ -49,6 +51,12 @@ class PbxSync
             ->orderBy('sip_username')->get();
         foreach ($extensions as $extension) {
             $wanted["{$extension->sip_username}.xml"] = $this->render($extension);
+        }
+        $trunks = Endpoint::query()->where('kind', 'device')->where('enabled', true)->whereNotNull('sip_username')
+            ->whereHas('account', fn ($q) => $q->where('is_customer', true)->where('status', 'active'))
+            ->orderBy('sip_username')->get();
+        foreach ($trunks as $device) {
+            $wanted["{$device->sip_username}.xml"] ??= $this->renderTrunk($device);
         }
 
         $written = $removed = $flush = [];
@@ -130,6 +138,26 @@ class PbxSync
     public static function validName(?string $file): bool
     {
         return $file !== null && preg_match('/^ivr-\d+-[a-z0-9]{8,40}\.wav$/', $file) === 1;
+    }
+
+    /** A device's SIP trunk login: the outside PBX registers with it and sends calls through it. */
+    public function renderTrunk(Endpoint $device): string
+    {
+        $e = fn ($value) => htmlspecialchars((string) $value, ENT_XML1 | ENT_QUOTES);
+        $params = ['password' => (string) $device->sip_password, 'vm-enabled' => 'false'];
+        $variables = [
+            // Calls it sends run dialplan/device.xml (device.lua: out through the customer's LCR).
+            'user_context' => 'device',
+            // Set only on authenticated channels: the call path trusts it to say which device is calling.
+            'softswitch_device_id' => (string) $device->id,
+        ];
+        $line = fn (string $tag, string $k, string $v) => "        <{$tag} name=\"{$e($k)}\" value=\"{$e($v)}\"/>";
+
+        return "<include>\n  <!-- Generated from device #{$device->id} (account #{$device->account_id}), SIP trunk login. Do not edit. -->\n"
+            ."  <user id=\"{$e($device->sip_username)}\">\n"
+            ."    <params>\n".implode("\n", array_map(fn ($k, $v) => $line('param', $k, $v), array_keys($params), $params))."\n    </params>\n"
+            ."    <variables>\n".implode("\n", array_map(fn ($k, $v) => $line('variable', $k, $v), array_keys($variables), $variables))."\n    </variables>\n"
+            ."  </user>\n</include>\n";
     }
 
     public function render(PbxExtension $extension): string

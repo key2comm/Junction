@@ -28,7 +28,7 @@ type Did = {
 
 const props = defineProps<{
     dids: Paginated<Did>;
-    filters: { q: string; account: number | null; provider: number | null; status: string };
+    filters: { q: string; account: number | null; provider: number | null; status: string; endpoint: { id: number; kind: string; name: string } | null };
     customers: Account[];
     providers: Account[];
     statuses: Record<string, string>;
@@ -42,7 +42,7 @@ let timer: ReturnType<typeof setTimeout> | undefined;
 function apply(delay = 0) {
     clearTimeout(timer);
     timer = setTimeout(() => {
-        const query = { q: f.q || undefined, account: f.account || undefined, provider: f.provider || undefined, status: f.status || undefined };
+        const query = { q: f.q || undefined, account: f.account || undefined, provider: f.provider || undefined, status: f.status || undefined, endpoint: props.filters.endpoint?.id };
         router.get(index.url({ query }), {}, { preserveState: true, replace: true });
     }, delay);
 }
@@ -63,6 +63,10 @@ const badge = (s: string) => (s === 'banned' ? 'destructive' : s === 'active' ? 
             <Button as-child><Link :href="create({ query: { account: f.account || undefined } })"><Plus class="icon" /> Add DID</Link></Button>
         </div>
 
+        <p v-if="filters.endpoint" class="mb-0">
+            Showing DIDs sent to <strong>{{ filters.endpoint.name }}</strong>.
+            <Link :href="index()" class="ms-1">Show all</Link>
+        </p>
         <div class="d-flex flex-wrap gap-2">
             <Input v-model="f.q" placeholder="Search number or comment" class="ss-maxw-xs" @input="apply(300)" />
             <select v-model="f.account" :class="selectClass" class="w-auto" aria-label="Customer" @change="apply()">

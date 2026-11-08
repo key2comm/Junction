@@ -41,13 +41,15 @@ class Pbx
     }
 
     /**
-     * The account's PBX/Devices (Routing -> PBX/Devices), for DID destinations.
+     * Where the account's DIDs can be sent (Routing -> PBX/Devices): every PBX
+     * (they are shared) and the account's own devices.
      *
      * @return Collection<int, array{id: int, label: string}>
      */
     public function endpoints(Account $account): Collection
     {
-        return $account->endpoints()->orderBy('name')->get(['id', 'kind', 'name'])
+        return Endpoint::query()->where(fn ($q) => $q->where('kind', 'pbx')->orWhere(fn ($d) => $d->where('kind', 'device')->where('account_id', $account->id)))
+            ->orderBy('kind')->orderBy('name')->get(['id', 'kind', 'name'])
             ->map(fn (Endpoint $e) => ['id' => $e->id, 'label' => Endpoint::KINDS[$e->kind].': '.$e->name]);
     }
 
@@ -82,8 +84,8 @@ class Pbx
             return ['type' => 'hangup'];
         }
         if ($type === 'endpoint') {
-            if (! ctype_digit($target) || ! $account->endpoints()->whereKey((int) $target)->exists()) {
-                throw ValidationException::withMessages([$field => "Choose one of this customer's PBX/Devices."]);
+            if (! ctype_digit($target) || ! $this->endpoints($account)->contains('id', (int) $target)) {
+                throw ValidationException::withMessages([$field => "Choose a PBX, or one of this customer's devices."]);
             }
 
             return ['type' => 'endpoint', 'target' => $target];

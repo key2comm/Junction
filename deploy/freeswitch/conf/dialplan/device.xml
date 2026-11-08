@@ -1,0 +1,10 @@
+<include>
+  <!-- Calls an outside PBX sends over a device's SIP trunk login (the directory sets user_context=device). -->
+  <context name="device">
+    <extension name="softswitch-device-trunk">
+      <condition field="destination_number" expression="^.+$">
+        <action application="lua" data="softswitch/device.lua"/>
+      </condition>
+    </extension>
+  </context>
+</include>

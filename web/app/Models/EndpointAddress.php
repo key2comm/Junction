@@ -6,8 +6,12 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-/** One IP of an endpoint's hosts (hostnames resolved by App\Services\EndpointSync). */
-#[Fillable(['endpoint_id', 'ip'])]
+/**
+ * A known IP of an endpoint (hostnames resolved by App\Services\EndpointSync):
+ * purpose pbx_host (a PBX's host, a trusted source) or ip_rule (a device's
+ * IP/FQDN receiving rule).
+ */
+#[Fillable(['endpoint_id', 'purpose', 'ip'])]
 class EndpointAddress extends Model
 {
     public $timestamps = false;

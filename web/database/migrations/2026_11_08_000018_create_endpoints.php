@@ -66,6 +66,12 @@ return new class extends Migration
         });
 
         DB::unprepared(<<<'SQL'
+            -- migrate:fresh drops tables, not functions; later migrations change these.
+            DROP FUNCTION IF EXISTS softswitch_endpoint(bigint);
+            DROP FUNCTION IF EXISTS softswitch_identify_endpoint(inet);
+            DROP FUNCTION IF EXISTS softswitch_identify_endpoint(inet, text, text);
+            DROP FUNCTION IF EXISTS softswitch_device(bigint);
+
             -- Everything the call path needs to deliver a call to an endpoint.
             CREATE OR REPLACE FUNCTION softswitch_endpoint(p_id bigint)
             RETURNS TABLE (id bigint, account_id bigint, kind text, name text, active boolean, hosts text, transport text, port integer,
