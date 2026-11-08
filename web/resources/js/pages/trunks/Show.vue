@@ -2,6 +2,8 @@
 import { Form, Head, Link } from '@inertiajs/vue3';
 import { Pencil, Trash2 } from '@lucide/vue';
 import GatewayController from '@/actions/App/Http/Controllers/Admin/GatewayController';
+import TrunkController from '@/actions/App/Http/Controllers/Admin/TrunkController';
+import ConfirmByName from '@/components/ConfirmByName.vue';
 import Heading from '@/components/Heading.vue';
 import GatewayFields from '@/components/trunks/GatewayFields.vue';
 import { Badge } from '@/components/ui/badge';
@@ -39,6 +41,7 @@ const props = defineProps<{
     }[];
     routes: { id: number; prefix: string; priority: number; weight: number; enabled: boolean; plan: { id: number; name: string } }[];
     transports: string[];
+    routes_count: number;
 }>();
 
 defineOptions({
@@ -72,7 +75,20 @@ defineOptions({
                     <Badge v-if="trunk.tech_prefix" variant="outline" class="font-monospace">+{{ trunk.tech_prefix }}</Badge>
                 </div>
             </div>
-            <Button variant="outline" as-child><Link :href="edit(trunk.id)"><Pencil class="icon" /> Edit</Link></Button>
+            <div class="d-flex gap-2">
+                <Button variant="outline" as-child><Link :href="edit(trunk.id)"><Pencil class="icon" /> Edit</Link></Button>
+                <ConfirmByName
+                    :action="TrunkController.destroy.form(trunk.id)"
+                    :name="trunk.name"
+                    :title="`Delete trunk ${trunk.name}?`"
+                    description="The trunk and its gateways are deleted and calls stop going to it straight away. Past call records are kept. This cannot be undone."
+                    label="Delete trunk"
+                >
+                    <div v-if="routes_count" class="alert alert-warning">
+                        It is in {{ routes_count }} LCR group route(s); they are removed with it. Calls on those prefixes use the group's other carriers.
+                    </div>
+                </ConfirmByName>
+            </div>
         </div>
 
         <section class="ss-stack-3">

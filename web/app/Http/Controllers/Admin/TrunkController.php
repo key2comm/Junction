@@ -9,6 +9,8 @@ use App\Models\RateDeck;
 use App\Models\Trunk;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -74,6 +76,7 @@ class TrunkController extends Controller
             'routes' => $trunk->routes()->with('routingPlan:id,name')->orderBy('prefix')->limit(100)->get()
                 ->map(fn ($r) => [...$r->only(['id', 'prefix', 'priority', 'weight', 'enabled']), 'plan' => $r->routingPlan->only(['id', 'name'])]),
             'transports' => Transport::values(),
+            'routes_count' => $trunk->routes()->count(),
         ]);
     }
 
@@ -92,6 +95,29 @@ class TrunkController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Trunk updated.']);
 
         return to_route('trunks.show', $trunk);
+    }
+
+    /**
+     * Delete a carrier trunk, confirmed by typing its name. Its gateways are
+     * removed one by one so FreeSWITCH is resynced; the database removes it
+     * from LCR groups and its quality stats. Past CDRs are kept (they hold
+     * their own rates; their trunk link is cleared).
+     */
+    public function destroy(Request $request, Trunk $trunk): RedirectResponse
+    {
+        $request->validate(['confirm' => ['required', 'string']]);
+        if (trim($request->string('confirm')) !== trim($trunk->name)) {
+            throw ValidationException::withMessages(['confirm' => 'Type the name exactly as shown to confirm.']);
+        }
+
+        $account = $trunk->account_id;
+        DB::transaction(function () use ($trunk) {
+            $trunk->gateways()->get()->each->delete();
+            $trunk->delete();
+        });
+        Inertia::flash('toast', ['type' => 'success', 'message' => "Trunk {$trunk->name} deleted."]);
+
+        return to_route('accounts.show', $account);
     }
 
     private function options(): array

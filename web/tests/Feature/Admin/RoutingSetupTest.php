@@ -212,6 +212,25 @@ class RoutingSetupTest extends TestCase
         $this->assertSame('tariff', $carrier->fresh()->kind->value);
     }
 
+    public function test_a_trunk_can_be_deleted_after_typing_its_name(): void
+    {
+        $trunk = Trunk::factory()->create(['name' => 'Main']);
+        $gateway = Gateway::factory()->create(['trunk_id' => $trunk->id]);
+        $plan = RoutingPlan::factory()->create();
+        RoutingPlanRoute::create(['routing_plan_id' => $plan->id, 'prefix' => '', 'trunk_id' => $trunk->id, 'priority' => 1, 'weight' => 100]);
+        $url = route('trunks.destroy', $trunk);
+
+        $this->actingAs($this->admin)->get(route('trunks.show', $trunk))->assertInertia(fn (Assert $p) => $p->where('routes_count', 1));
+        $this->actingAs($this->admin)->delete($url, ['confirm' => 'main'])->assertSessionHasErrors('confirm');
+        $this->assertNotNull($trunk->fresh());
+
+        $this->actingAs($this->admin)->delete($url, ['confirm' => 'Main'])->assertRedirect(route('accounts.show', $trunk->account_id));
+        $this->assertNull($trunk->fresh());
+        $this->assertNull($gateway->fresh());
+        $this->assertSame(0, RoutingPlanRoute::query()->count());
+        $this->assertNotNull($plan->fresh());
+    }
+
     public function test_trunks_require_a_vendor_account(): void
     {
         $customer = Account::factory()->create();

@@ -117,7 +117,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::delete('rate-decks/{rate_deck}/rates', [RateDeckController::class, 'clearRates'])->name('rate-decks.rates.clear');
     Route::patch('rate-decks/{rate_deck}/rates/{rate}', [TariffController::class, 'updateRate'])->scopeBindings()->name('rate-decks.rates.update');
 
-    Route::resource('trunks', TrunkController::class)->except(['destroy']);
+    Route::resource('trunks', TrunkController::class);
     Route::resource('trunks.gateways', GatewayController::class)->only(['store', 'edit', 'update', 'destroy'])->scoped();
 
     Route::resource('routing-plans', RoutingPlanController::class)->except(['destroy']);
