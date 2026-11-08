@@ -9,8 +9,8 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Keeps endpoint_addresses equal to the IPs (hostnames resolved) of:
- *   pbx_host  every PBX's host: a trusted source for devices' domain and
- *             caller-number receiving rules
+ *   pbx_host  every PBX's host (DIDs are sent there; it may send calls too,
+ *             which are recognised only by the devices' own rules)
  *   ip_rule   every device's IP/FQDN receiving rule
  * Both are let through the firewall to the carrier port. A failed lookup keeps
  * the last known IPs.

@@ -15,8 +15,8 @@ use Illuminate\Support\Str;
  * shared_pbx_and_receive_rules migrations):
  *
  *  - PBX: an off-switch (often multi-tenant) PBX, shared: no customer. DIDs of
- *    any customer can be sent to it; its addresses are trusted sources for
- *    devices' domain and caller-number receiving rules.
+ *    any customer can be sent to it. It plays no part in recognising calls
+ *    (that is only the devices' own rules).
  *  - Device: belongs to a customer, and is one or the other (mode):
  *    "sending": calls are sent to it (IP/FQDN, SIP trunk or a call flow);
  *    "receiving": it sends calls to the switch, recognised by its rules.

@@ -404,8 +404,9 @@ function submit() {
                         <Button v-for="(label, t) in ruleTypes" :key="t" type="button" variant="outline" size="sm" @click="addRule(t)"><Plus class="icon" /> {{ label }}</Button>
                     </div>
                     <p class="small text-secondary mb-0">
-                        FROM domain and caller number rules only count for calls arriving from one of your PBXs or from this device's own IP/FQDN rules, so
-                        nobody else can borrow them.
+                        Only this device's own rules decide: a FROM domain or caller number rule matches whichever server the call comes from (for example
+                        a multi-tenant PBX), so each tenant is billed by its own FROM domain. The server still has to be let in by the firewall (a carrier,
+                        a PBX in this list, or Settings → Firewall → Trusted).
                     </p>
                 </section>
 
@@ -438,8 +439,8 @@ function submit() {
                         </label>
                     </div>
                     <div v-else-if="!isDevice" class="small text-secondary align-self-start rounded border p-3">
-                        Calls this PBX sends to the switch are matched to customers by their devices' <strong>Receiving calls</strong> rules (From domain or
-                        caller number), then go out through that customer's LCR.
+                        This PBX doesn't authorise calls by itself. Calls it sends to the switch are matched to customers only by their devices'
+                        <strong>Receiving calls</strong> rules (FROM domain or caller number), then go out through that customer's LCR.
                         <template v-if="endpoint">
                             <br /><Link :href="didsIndex({ query: { endpoint: endpoint.id } })" class="fw-medium">{{ endpoint.dids }} DID(s)</Link> are sent here.
                         </template>

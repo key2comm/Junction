@@ -172,9 +172,11 @@ class EndpointTest extends TestCase
         $this->assertSame([$device->id, $this->customer->id, 'domain', '14165550000', 4, null, true], [$hit->endpoint_id, $hit->account_id, $hit->matched, $hit->caller_id_number, $hit->max_outbound, $hit->max_total, $hit->add_one]);
         $this->assertSame('number', $who('198.51.100.5', 'other.example.com', '4165551234')->matched);
         $this->assertNull($who('198.51.100.5', 'other.example.com', '14165551234')); // a format nobody added
-        // The same domain/number from anywhere else isn't trusted...
-        $this->assertNull($who('192.0.2.77', 'tenant.example.com', '+14165551234'));
-        // ...but the device's own IP rule is.
+        // Only the device's own rules decide: the FROM domain / number match whichever server sends it...
+        $this->assertSame('domain', $who('192.0.2.77', 'tenant.example.com')->matched);
+        $this->assertSame('number', $who('192.0.2.77', '', '+14165551234')->matched);
+        $this->assertNull($who('192.0.2.77', 'unknown.example.com', '100')); // ...and nothing else
+        // ...and the device's own IP rule by source address.
         $this->assertSame('ip', $who('203.0.113.40')->matched);
 
         // The firewall lets the PBX and the device's IP rule in.
