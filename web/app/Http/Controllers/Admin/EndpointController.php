@@ -40,7 +40,7 @@ class EndpointController extends Controller
             ->when($kind, fn ($q) => $q->where('kind', $kind))
             ->orderBy('kind')->orderBy('name')->get()
             ->map(fn (Endpoint $e) => [
-                ...$e->only(['id', 'kind', 'mode', 'name', 'enabled', 'codecs', 'max_inbound', 'max_outbound', 'max_total', 'sip_username', 'rules_count']),
+                ...$e->only(['id', 'kind', 'mode', 'match_dids', 'name', 'enabled', 'codecs', 'max_inbound', 'max_outbound', 'max_total', 'sip_username', 'rules_count']),
                 'account' => $e->account?->only(['id', 'name', 'code']),
                 'summary' => $e->summary(),
                 'dids' => (int) ($didCounts[(string) $e->id] ?? 0),
@@ -86,7 +86,7 @@ class EndpointController extends Controller
         return Inertia::render('endpoints/Form', [
             'endpoint' => [
                 ...$endpoint->only(['id', 'account_id', 'kind', 'mode', 'name', 'enabled', 'hosts', 'transport', 'port', 'delivery', 'flow',
-                    'forward_number', 'ring_seconds', 'pbx_destination', 'codecs', 'caller_id_number', 'add_one', 'forward_caller_id',
+                    'forward_number', 'ring_seconds', 'pbx_destination', 'codecs', 'caller_id_number', 'add_one', 'match_dids', 'forward_caller_id',
                     'max_inbound', 'max_outbound', 'max_total', 'notes', 'sip_username']),
                 'sip_password' => $endpoint->sip_password,
                 'rules' => $endpoint->rules->map(fn (EndpointRule $r) => $r->only(['type', 'value']))->values(),
@@ -132,6 +132,8 @@ class EndpointController extends Controller
         $isDevice = $kind === 'device';
         // A device either has calls sent to it, or sends calls to us (recognised by its rules): never both.
         $receiving = $isDevice && $request->input('mode') === 'receiving';
+        // Or recognised by the caller ID being one of the customer's DIDs.
+        $matchDids = $receiving && $request->boolean('match_dids');
         // Sending calls to a device: to its IP/FQDN, or down its SIP trunk (where the PBX registers with the login).
         $login = $isDevice && ! $receiving && $request->input('target') === 'trunk';
         $request->merge([
@@ -175,7 +177,7 @@ class EndpointController extends Controller
             'max_outbound' => ['nullable', 'integer', 'min:1', 'max:100000'],
             'max_total' => ['nullable', 'integer', 'min:1', 'max:100000'],
             'notes' => ['nullable', 'string', 'max:2000'],
-            'rules' => [$receiving ? 'required' : 'nullable', 'array', 'max:50'],
+            'rules' => [$receiving && ! $matchDids ? 'required' : 'nullable', 'array', 'max:50'],
             'rules.*.type' => ['required', Rule::in(array_keys(Endpoint::RULE_TYPES))],
             'rules.*.value' => ['required', 'string', 'max:253'],
             'sip_username' => [$login ? 'required' : 'nullable', 'regex:/^[A-Za-z0-9][A-Za-z0-9._-]{2,63}$/'],
@@ -183,7 +185,7 @@ class EndpointController extends Controller
         ], [
             'hosts.required' => $isDevice ? 'Enter where to send the calls (an IP address or hostname).' : 'Enter the PBX\'s IP address or hostname.',
             'hosts.max' => 'Enter one IP/FQDN.',
-            'rules.required' => 'Add at least one rule to recognise the calls this device sends.',
+            'rules.required' => 'Add at least one rule, or recognise calls by the customer\'s DIDs.',
             'forward_number.required' => 'Enter the number to forward to.',
             'forward_number.regex' => 'Enter the full number with country code, e.g. 14165551234.',
             'caller_id_number.regex' => 'A caller ID is 3 to 15 digits.',
@@ -251,6 +253,7 @@ class EndpointController extends Controller
             'caller_id_number' => $isDevice ? $data['caller_id_number'] : null,
             // 10-digit North American numbers get a 1: for calls it sends us (receiving, or over its SIP trunk).
             'add_one' => ($receiving || $login) && $request->boolean('add_one'),
+            'match_dids' => $matchDids,
             'max_inbound' => $receiving ? null : ($data['max_inbound'] ?? null),
             // Outbound limits: for calls a device sends us (receiving, or over its SIP trunk).
             'max_outbound' => $receiving || $login ? ($data['max_outbound'] ?? null) : null,

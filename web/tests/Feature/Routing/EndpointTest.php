@@ -190,6 +190,35 @@ class EndpointTest extends TestCase
         $this->assertSame('number', $who('198.51.100.5', '', '4165551234')->matched);
     }
 
+    public function test_a_receiving_device_can_be_recognised_by_the_customers_dids(): void
+    {
+        $provider = Account::factory()->vendor()->create();
+        $other = Account::factory()->create(['is_customer' => true]);
+        PbxDid::create(['account_id' => $this->customer->id, 'provider_account_id' => $provider->id, 'number' => '14165550100', 'destination' => ['type' => 'hangup']]);
+        PbxDid::create(['account_id' => $this->customer->id, 'provider_account_id' => $provider->id, 'number' => '14165550101', 'destination' => ['type' => 'hangup'], 'status' => 'deactivated']);
+        PbxDid::create(['account_id' => $other->id, 'provider_account_id' => $provider->id, 'number' => '14165550200', 'destination' => ['type' => 'hangup']]);
+
+        $recv = fn (array $over = []) => $this->device(['mode' => 'receiving', 'hosts' => [], ...$over]);
+        $this->save($recv(['rules' => [], 'match_dids' => false]))->assertSessionHasErrors('rules');
+        $this->save($recv(['rules' => [], 'match_dids' => true]))->assertSessionHasNoErrors(); // the DID option alone is enough
+        $device = Endpoint::query()->sole();
+        $this->assertTrue($device->match_dids);
+
+        $who = fn (string $caller) => DB::selectOne('SELECT * FROM softswitch_identify_endpoint(?::inet, ?, ?)', ['192.0.2.10', 'shared.example.com', $caller]);
+        foreach (['14165550100', '+14165550100', '4165550100'] as $caller) {
+            $hit = $who($caller);
+            $this->assertSame([$device->id, $this->customer->id, 'did'], [$hit?->endpoint_id, $hit?->account_id, $hit?->matched], $caller);
+        }
+        $this->assertNull($who('14165550101')); // deactivated
+        $this->assertNull($who('14165550200')); // another customer's DID
+        $this->assertNull($who('100'));
+
+        // A sending device can't use it.
+        $this->save($this->device(['match_dids' => true]), $device)->assertSessionHasNoErrors();
+        $this->assertFalse($device->fresh()->match_dids);
+        $this->assertNull($who('14165550100'));
+    }
+
     public function test_dids_can_point_at_a_pbx_or_device(): void
     {
         $pbx = Endpoint::create([...$this->pbx(), 'account_id' => null]);

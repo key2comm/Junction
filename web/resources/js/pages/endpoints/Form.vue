@@ -35,6 +35,7 @@ type Endpoint = {
     codecs: string[];
     caller_id_number: string | null;
     add_one: boolean;
+    match_dids: boolean;
     forward_caller_id: 'original' | 'endpoint';
     max_inbound: number | null;
     max_outbound: number | null;
@@ -95,6 +96,7 @@ const form = useForm({
     codecs: e?.codecs ?? ['PCMU', 'PCMA'],
     caller_id_number: e?.caller_id_number ?? '',
     add_one: e?.add_one ?? false,
+    match_dids: e?.match_dids ?? false,
     forward_caller_id: e?.forward_caller_id ?? 'original',
     max_inbound: e?.max_inbound ?? '',
     max_outbound: e?.max_outbound ?? '',
@@ -397,12 +399,22 @@ function submit() {
                             <InputError :message="err(`rules.${i}.value`) ?? err(`rules.${i}.type`)" />
                         </div>
                     </div>
-                    <p v-else class="text-secondary mb-0">No rules yet: add at least one.</p>
+                    <p v-else-if="!form.match_dids" class="text-secondary mb-0">No rules yet: add at least one, or use the DID option below.</p>
 
                     <InputError :message="form.errors.rules" />
                     <div class="d-flex flex-wrap gap-2">
                         <Button v-for="(label, t) in ruleTypes" :key="t" type="button" variant="outline" size="sm" @click="addRule(t)"><Plus class="icon" /> {{ label }}</Button>
                     </div>
+                    <label class="d-flex align-items-start gap-2">
+                        <input v-model="form.match_dids" type="checkbox" class="form-check-input m-0 mt-1" />
+                        <span>
+                            Caller ID is one of {{ customer?.name ?? "the customer" }}'s DIDs
+                            <span class="d-block small text-secondary">
+                                For systems that don't send a usable FROM domain: a call showing one of this customer's active DIDs as caller ID
+                                (+14165551234, 14165551234 or 4165551234) is theirs.
+                            </span>
+                        </span>
+                    </label>
                     <p class="small text-secondary mb-0">
                         Only this device's own rules decide: a FROM domain or caller number rule matches whichever server the call comes from (for example
                         a multi-tenant PBX), so each tenant is billed by its own FROM domain. The server still has to be let in by the firewall (a carrier,

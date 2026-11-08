@@ -19,11 +19,13 @@ use Illuminate\Support\Str;
  *    (that is only the devices' own rules).
  *  - Device: belongs to a customer, and is one or the other (mode):
  *    "sending": calls are sent to it (IP/FQDN, SIP trunk or a call flow);
- *    "receiving": it sends calls to the switch, recognised by its rules.
+ *    "receiving": it sends calls to the switch, recognised only by its own
+ *    rules (FROM domain, caller number, IP/FQDN) or by the caller ID being one
+ *    of the customer's DIDs (match_dids). A shared server authorises nothing.
  */
 #[Hidden(['sip_password'])]
 #[Fillable(['account_id', 'kind', 'mode', 'name', 'enabled', 'hosts', 'sip_username', 'sip_password', 'transport', 'port', 'delivery', 'flow',
-    'forward_number', 'ring_seconds', 'pbx_destination', 'codecs', 'caller_id_number', 'add_one', 'forward_caller_id', 'max_inbound', 'max_outbound',
+    'forward_number', 'ring_seconds', 'pbx_destination', 'codecs', 'caller_id_number', 'add_one', 'match_dids', 'forward_caller_id', 'max_inbound', 'max_outbound',
     'max_total', 'notes'])]
 class Endpoint extends Model
 {
@@ -69,6 +71,7 @@ class Endpoint extends Model
         return [
             'enabled' => 'boolean',
             'add_one' => 'boolean',
+            'match_dids' => 'boolean',
             'hosts' => 'array',
             'codecs' => 'array',
             'pbx_destination' => 'array',
