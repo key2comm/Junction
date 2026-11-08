@@ -87,7 +87,7 @@ class EndpointTest extends TestCase
         $this->save($this->device(['delivery' => 'flow', 'flow' => 'busy']))->assertSessionHasErrors('forward_number');
         $this->save($this->device(['delivery' => 'flow', 'flow' => 'busy', 'forward_number' => '5551234']))->assertSessionHasErrors('forward_number');
         $this->save($this->device(['delivery' => 'flow', 'flow' => 'busy', 'forward_number' => '14165551234', 'forward_caller_id' => 'endpoint']))->assertSessionHasErrors('caller_id_number');
-        $this->save($this->device(['max_inbound' => 10, 'max_total' => 5]))->assertSessionHasErrors('max_total');
+        $this->save($this->device(['target' => 'trunk', 'hosts' => [], 'sip_username' => 'acme.limits', 'sip_password' => 'Abcdefgh12345678', 'max_inbound' => 10, 'max_total' => 5]))->assertSessionHasErrors('max_total');
 
         $this->save($this->device(['delivery' => 'flow', 'flow' => 'no_answer', 'forward_number' => '1 416 555 1234', 'ring_seconds' => 20,
             'hosts' => ['a.pstn.twilio.com']]))->assertSessionHasNoErrors();

@@ -222,7 +222,7 @@ class EndpointController extends Controller
         if ($forwards && $data['caller_id_number'] === null && ($data['forward_caller_id'] ?? 'original') === 'endpoint') {
             throw ValidationException::withMessages(['caller_id_number' => 'Enter the caller ID that forwarded calls should show.']);
         }
-        if (isset($data['max_total']) && (($data['max_inbound'] ?? 0) > $data['max_total'] || ($data['max_outbound'] ?? 0) > $data['max_total'])) {
+        if ($login && isset($data['max_total']) && (($data['max_inbound'] ?? 0) > $data['max_total'] || ($data['max_outbound'] ?? 0) > $data['max_total'])) {
             throw ValidationException::withMessages(['max_total' => 'The total limit can\'t be lower than the inbound or outbound limit.']);
         }
 
