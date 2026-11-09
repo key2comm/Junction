@@ -112,15 +112,11 @@ function hangup(uuid: string) {
                         <td>
                             <Link v-if="c.customer" :href="showAccount(c.customer.id)">{{ c.customer.code }}</Link>
                             <span v-else class="text-secondary">unidentified</span>
-                            <div class="small text-secondary">
-                                <template v-if="c.endpoint">{{ c.endpoint.name }}</template>
-                                <template v-if="c.matched_by"> · by {{ c.matched_by === 'did' ? 'DID' : c.matched_by === 'ip' ? 'IP' : c.matched_by === 'domain' ? 'FROM domain' : 'caller number' }}</template>
-                            </div>
                         </td>
                         <td class="small">
                             <span class="font-monospace">{{ c.caller ?? '?' }} → {{ c.dialled }}</span>
                             <div class="text-secondary">
-                                {{ c.direction_label ?? '' }}<template v-if="c.did"> · DID {{ c.did }}</template><template v-if="c.source"> · from {{ c.source }}</template>
+                                {{ c.direction_label ?? '' }}<template v-if="c.did"> · DID {{ c.did }}</template>
                             </div>
                         </td>
                         <td class="text-nowrap">
@@ -128,13 +124,8 @@ function hangup(uuid: string) {
                             <span v-if="c.state !== 'answered'" class="ms-1 small text-secondary tabular-nums">{{ fmt(elapsed(c.started_at)) }}</span>
                         </td>
                         <td class="small">
-                            <template v-if="c.trunk">
-                                <Link :href="showTrunk(c.trunk.id)">{{ c.vendor_name ?? c.vendor }}</Link>
-                                <div class="text-secondary">{{ c.gateway }}<template v-if="c.sent_as"> · sent <span class="font-monospace">{{ c.sent_as }}</span></template></div>
-                            </template>
-                            <span v-else-if="c.sent_as" class="text-secondary">to <span class="font-monospace">{{ c.sent_as }}</span></span>
+                            <Link v-if="c.trunk" :href="showTrunk(c.trunk.id)">{{ c.vendor_name ?? c.vendor }}</Link>
                             <span v-else class="text-secondary">—</span>
-                            <div v-if="c.codec" class="text-secondary">{{ c.codec }}</div>
                         </td>
                         <td class="text-end tabular-nums">{{ fmt(since(c.talking_seconds)) }}</td>
                         <td class="text-end tabular-nums text-secondary">
