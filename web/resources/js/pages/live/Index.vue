@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { Head, Link, router, usePoll } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import { PhoneOff } from '@lucide/vue';
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import LiveCallsController from '@/actions/App/Http/Controllers/Admin/LiveCallsController';
 import Heading from '@/components/Heading.vue';
 import { Badge } from '@/components/ui/badge';
@@ -38,8 +38,33 @@ const props = defineProps<{ snapshot: { at: string | null; calls: Call[] } }>();
 
 defineOptions({ layout: { breadcrumbs: [{ title: 'Live calls', href: index() }] } });
 
-// Reload every 3 s; the server refreshes its snapshot every 5 s while we watch.
-usePoll(3000, { only: ['snapshot'] });
+// Reload every 5 s by default (the server refreshes its snapshot every 5 s
+// while someone watches); the choice is remembered in this browser.
+const RATES = [5, 25, 40, 60];
+const STORE = 'softswitch.live.refresh';
+const stored = (() => {
+    try {
+        return Number(localStorage.getItem(STORE));
+    } catch {
+        return 0;
+    }
+})();
+const refreshEvery = ref(RATES.includes(stored) ? stored : 5);
+let poller: ReturnType<typeof setInterval> | undefined;
+function startPolling() {
+    clearInterval(poller);
+    poller = setInterval(() => router.reload({ only: ['snapshot'] }), refreshEvery.value * 1000);
+}
+watch(refreshEvery, (s) => {
+    try {
+        localStorage.setItem(STORE, String(s));
+    } catch {
+        // not remembered (private window etc.)
+    }
+    startPolling();
+});
+onMounted(startPolling);
+onBeforeUnmount(() => clearInterval(poller));
 
 // Tick durations locally between snapshots.
 const now = ref(Date.now());
@@ -82,10 +107,16 @@ function hangup(uuid: string) {
     <div class="ss-stack-4">
         <div class="d-flex flex-wrap align-items-end justify-content-between gap-3">
             <Heading title="Live calls" description="Calls in progress through the switch" />
-            <p class="small text-secondary">
+            <div class="d-flex align-items-center gap-3 small text-secondary">
                 <span v-if="snapshot.at">Updated {{ age }}s ago</span>
                 <span v-else>Waiting for the first snapshot…</span>
-            </p>
+                <label class="d-flex align-items-center gap-2 mb-0">
+                    Refresh every
+                    <select v-model.number="refreshEvery" class="form-select form-select-sm w-auto">
+                        <option v-for="s in RATES" :key="s" :value="s">{{ s }} seconds</option>
+                    </select>
+                </label>
+            </div>
         </div>
 
         <div class="ss-grid gap-3 ss-cols-sm-3">

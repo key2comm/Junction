@@ -41,10 +41,10 @@ class LiveCalls
 
     public function __construct(private EventSocket $esl) {}
 
-    /** Called by pages and the API: keep snapshots coming for the next 30 seconds. */
+    /** Called by pages and the API: keep snapshots coming (longer than the page's slowest refresh, 60 s). */
     public static function watch(): void
     {
-        Cache::put(self::WATCHING, true, now()->addSeconds(30));
+        Cache::put(self::WATCHING, true, now()->addSeconds(90));
     }
 
     /** @return array{at: ?string, calls: list<array<string, mixed>>} */
