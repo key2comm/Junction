@@ -83,7 +83,7 @@ class LiveCallsTest extends TestCase
             json_encode(['Caller-Channel-Answered-Time' => '1794036640123456', 'variable_softswitch_direction' => 'carrier', 'variable_read_codec' => 'PCMU']),
             json_encode(['Caller-Channel-Answered-Time' => '0']),
             json_encode(['Caller-Channel-Answered-Time' => '0', 'variable_softswitch_account_id' => (string) $this->customer->id,
-                'variable_softswitch_endpoint_id' => (string) $this->device->id, 'variable_softswitch_matched_by' => 'domain']),
+                'variable_softswitch_endpoint_id' => (string) $this->device->id, 'variable_softswitch_matched_by' => 'domain', 'Other-Leg-Unique-ID' => self::DEVICE_B]),
             self::A, (string) $this->gateway->id,
             '_undef_', (string) $this->gateway->id,
         ]);
