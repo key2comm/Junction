@@ -17,8 +17,16 @@ type Call = {
     caller: string | null;
     dialled: string | null;
     sent_as: string | null;
+    direction: string | null;
+    direction_label: string | null;
+    source: string | null;
     customer: { id: number; code: string; name: string } | null;
+    endpoint: { id: number; name: string } | null;
+    matched_by: string | null;
+    did: string | null;
+    codec: string | null;
     vendor: string | null;
+    vendor_name: string | null;
     trunk: { id: number; name: string } | null;
     gateway: string | null;
     talking_seconds: number | null;
@@ -104,18 +112,29 @@ function hangup(uuid: string) {
                         <td>
                             <Link v-if="c.customer" :href="showAccount(c.customer.id)">{{ c.customer.code }}</Link>
                             <span v-else class="text-secondary">unidentified</span>
+                            <div class="small text-secondary">
+                                <template v-if="c.endpoint">{{ c.endpoint.name }}</template>
+                                <template v-if="c.matched_by"> · by {{ c.matched_by === 'did' ? 'DID' : c.matched_by === 'ip' ? 'IP' : c.matched_by === 'domain' ? 'FROM domain' : 'caller number' }}</template>
+                            </div>
                         </td>
-                        <td class="font-monospace small">{{ c.caller ?? '?' }} → {{ c.dialled }}</td>
+                        <td class="small">
+                            <span class="font-monospace">{{ c.caller ?? '?' }} → {{ c.dialled }}</span>
+                            <div class="text-secondary">
+                                {{ c.direction_label ?? '' }}<template v-if="c.did"> · DID {{ c.did }}</template><template v-if="c.source"> · from {{ c.source }}</template>
+                            </div>
+                        </td>
                         <td class="text-nowrap">
                             <Badge :variant="c.state === 'answered' ? 'default' : 'secondary'">{{ c.state }}</Badge>
                             <span v-if="c.state !== 'answered'" class="ms-1 small text-secondary tabular-nums">{{ fmt(elapsed(c.started_at)) }}</span>
                         </td>
                         <td class="small">
                             <template v-if="c.trunk">
-                                {{ c.vendor }} / <Link :href="showTrunk(c.trunk.id)">{{ c.trunk.name }}</Link>
-                                <span class="font-monospace text-secondary"> {{ c.gateway }}</span>
+                                <Link :href="showTrunk(c.trunk.id)">{{ c.vendor_name ?? c.vendor }}</Link>
+                                <div class="text-secondary">{{ c.gateway }}<template v-if="c.sent_as"> · sent <span class="font-monospace">{{ c.sent_as }}</span></template></div>
                             </template>
+                            <span v-else-if="c.sent_as" class="text-secondary">to <span class="font-monospace">{{ c.sent_as }}</span></span>
                             <span v-else class="text-secondary">—</span>
+                            <div v-if="c.codec" class="text-secondary">{{ c.codec }}</div>
                         </td>
                         <td class="text-end tabular-nums">{{ fmt(since(c.talking_seconds)) }}</td>
                         <td class="text-end tabular-nums text-secondary">
