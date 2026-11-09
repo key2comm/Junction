@@ -102,7 +102,7 @@ class AccountsTest extends TestCase
         $account = Account::factory()->create(['code' => 'OLD']);
 
         $this->actingAs($this->admin)
-            ->put(route('accounts.update', $account), $this->validAccount(['code' => 'OLD', 'is_customer' => null, 'role' => 'carrier', 'billing_type' => 'postpaid', 'credit_limit' => '2500']))
+            ->put(route('accounts.update', $account), $this->validAccount(['code' => 'OLD', 'is_customer' => null, 'role' => 'carrier', 'codecs' => ['PCMU'], 'billing_type' => 'postpaid', 'credit_limit' => '2500']))
             ->assertRedirect(route('accounts.show', $account));
 
         $account->refresh();
@@ -138,7 +138,7 @@ class AccountsTest extends TestCase
         // Each "New" form makes its own kind of account.
         $this->actingAs($this->admin)->get(route('carriers.create'))->assertInertia(fn (Assert $page) => $page->component('accounts/Create')->where('role', 'carrier'));
         $this->actingAs($this->admin)->get(route('accounts.create'))->assertInertia(fn (Assert $page) => $page->where('role', 'customer'));
-        $this->actingAs($this->admin)->post(route('accounts.store'), $this->validAccount(['code' => 'CARR2', 'is_customer' => null, 'role' => 'carrier']))
+        $this->actingAs($this->admin)->post(route('accounts.store'), $this->validAccount(['code' => 'CARR2', 'is_customer' => null, 'role' => 'carrier', 'codecs' => ['PCMU']]))
             ->assertSessionHasNoErrors();
         $new = Account::query()->where('code', 'CARR2')->sole();
         $this->assertTrue($new->is_vendor);
