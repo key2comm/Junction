@@ -36,6 +36,7 @@ return new class extends Migration
 
         DB::unprepared(<<<'SQL'
             DROP FUNCTION IF EXISTS softswitch_pbx_did(text);
+            DROP FUNCTION IF EXISTS softswitch_did(text);
 
             -- A DID delivered by a carrier (any format: only its digits count).
             CREATE OR REPLACE FUNCTION softswitch_did(p_number text)

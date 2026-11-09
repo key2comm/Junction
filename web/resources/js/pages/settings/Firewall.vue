@@ -96,7 +96,7 @@ const expiry = (e: Entry) => (e.expires_at ? `until ${dateTime(e.expires_at)}` :
         <Heading
             variant="small"
             title="Firewall"
-            description="Who can reach this server. Whitelisted addresses can always connect and are never banned; blacklisted ones can't connect at all. Customer and carrier addresses are allowed on the carrier SIP port automatically, from their accounts and carrier SIP trunks (listed in the whitelist as "Carrier: …"; SIP only)."
+            description="Who can reach this server. Whitelisted addresses can always connect and are never banned; blacklisted ones can't connect at all. Customer and carrier addresses are allowed on the carrier SIP port automatically, from their accounts and carrier SIP trunks (listed in the whitelist as Carrier: name, SIP ports only)."
         />
 
         <!-- A change waiting for confirmation -->
