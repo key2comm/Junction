@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Form, Head, router, usePoll } from '@inertiajs/vue3';
+import { Form, Head, Link, router, usePoll } from '@inertiajs/vue3';
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import FirewallController from '@/actions/App/Http/Controllers/Settings/FirewallController';
 import Heading from '@/components/Heading.vue';
@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { dateTime } from '@/lib/format';
 import { selectClass } from '@/lib/ui';
+import { show as showAccount } from '@/routes/accounts';
 import { index } from '@/routes/firewall';
 
 type Entry = {
@@ -29,6 +30,7 @@ type Service = 'ssh' | 'web' | 'pbx';
 const props = defineProps<{
     allow: Entry[];
     block: Entry[];
+    carriers: { id: number; host: string; label: string | null; account_id: number; carrier: string | null }[];
     lockdown: Record<Service, boolean>;
     services: Record<Service, string>;
     pending: { until: string; what: string; helper: boolean } | null;
@@ -94,7 +96,7 @@ const expiry = (e: Entry) => (e.expires_at ? `until ${dateTime(e.expires_at)}` :
         <Heading
             variant="small"
             title="Firewall"
-            description="Who can reach this server. Whitelisted addresses can always connect and are never banned; blacklisted ones can't connect at all. Customer and carrier addresses are allowed on the carrier SIP port automatically, from their accounts and trunks."
+            description="Who can reach this server. Whitelisted addresses can always connect and are never banned; blacklisted ones can't connect at all. Customer and carrier addresses are allowed on the carrier SIP port automatically, from their accounts and carrier SIP trunks (listed in the whitelist as "Carrier: …"; SIP only)."
         />
 
         <!-- A change waiting for confirmation -->
@@ -222,7 +224,17 @@ const expiry = (e: Entry) => (e.expires_at ? `until ${dateTime(e.expires_at)}` :
                                     <Button size="sm" variant="ghost" :disabled="!!pending" @click="remove(e)">Remove</Button>
                                 </td>
                             </tr>
-                            <tr v-if="(list === 'allow' ? allow : block).length === 0">
+                            <template v-if="list === 'allow'">
+                                <tr v-for="c in carriers" :key="`c${c.id}`">
+                                    <td><span class="font-monospace">{{ c.host }}</span></td>
+                                    <td>
+                                        Carrier: <Link :href="showAccount(c.account_id)">{{ c.carrier }}</Link>
+                                        <div class="small text-secondary">{{ c.label }} · SIP ports only, added automatically</div>
+                                    </td>
+                                    <td class="text-end small text-secondary">on the carrier</td>
+                                </tr>
+                            </template>
+                            <tr v-if="(list === 'allow' ? allow.length + carriers.length : block.length) === 0">
                                 <td colspan="3" class="text-center text-secondary">Nothing here yet.</td>
                             </tr>
                         </tbody>

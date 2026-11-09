@@ -54,7 +54,7 @@ class RoutingPlanController extends Controller
                 ]),
             'filters' => ['q' => $q],
             'trunks' => Trunk::query()->with('account:id,code,name')->orderBy('name')->get(['id', 'name', 'account_id'])
-                ->map(fn (Trunk $t) => ['id' => $t->id, 'label' => "{$t->account->name} ({$t->account->code}) / {$t->name}"])
+                ->map(fn (Trunk $t) => ['id' => $t->id, 'label' => $t->name === $t->account->name ? "{$t->account->name} ({$t->account->code})" : "{$t->account->name} ({$t->account->code}) / {$t->name}"])
                 ->sortBy('label')->values(),
             'customers' => $routingPlan->accounts()->orderBy('name')->get(['id', 'name', 'code']),
         ]);
@@ -89,7 +89,7 @@ class RoutingPlanController extends Controller
 
         $exists = $routingPlan->routes()->where('prefix', $data['prefix'])->where('trunk_id', $data['trunk_id'])->exists();
         if ($exists) {
-            throw ValidationException::withMessages(['trunk_id' => 'That trunk is already routed for this prefix.']);
+            throw ValidationException::withMessages(['trunk_id' => 'That carrier is already routed for this prefix.']);
         }
         $routingPlan->routes()->create($data);
 

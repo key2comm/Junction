@@ -11,7 +11,6 @@ import {
     BellRing,
     BrickWall,
     Building2,
-    Cable,
     ChevronDown,
     FileText,
     Hash,
@@ -67,7 +66,6 @@ import { edit as profile } from '@/routes/profile';
 import { index as quality } from '@/routes/quality';
 import { index as routingPlans } from '@/routes/routing-plans';
 import { index as tariffs } from '@/routes/tariffs';
-import { index as trunks } from '@/routes/trunks';
 import type { BreadcrumbItem, NavItem, User } from '@/types';
 
 const { breadcrumbs = [] } = defineProps<{ breadcrumbs?: BreadcrumbItem[] }>();
@@ -111,7 +109,6 @@ const adminNav = computed((): NavEntry[] => [
             { title: 'Carriers', href: carriers(), icon: Building2 },
             { title: 'Tariffs', href: tariffs(), icon: Tags },
             { title: 'Carrier Rates', href: carrierRates(), icon: Tags },
-            { title: 'Trunks', href: trunks(), icon: Cable },
             { title: 'PBX/Devices', href: endpoints(), icon: Server },
             { title: 'DIDs', href: dids(), icon: Hash },
             { title: 'LCR groups', href: routingPlans(), icon: Route },

@@ -50,7 +50,7 @@ class RoutingController extends Controller
 
     public function updateTrunk(Request $request, Trunk $trunk, TrunkController $admin): JsonResponse
     {
-        $request->replace([...$trunk->only(['account_id', 'name', 'rate_deck_id', 'enabled', 'max_channels', 'max_cps', 'tech_prefix', 'strip_digits']), ...$request->except('vendor_id')]);
+        $request->replace([...$trunk->only(['account_id', 'name', 'rate_deck_id', 'enabled', 'max_channels', 'max_inbound', 'max_cps', 'tech_prefix', 'strip_digits']), ...$request->except('vendor_id')]);
         $trunk->update($admin->validated($request, $trunk));
 
         return response()->json(['data' => Present::trunk($trunk->fresh()->load('gateways'), true)]);
@@ -70,7 +70,8 @@ class RoutingController extends Controller
     public function updateGateway(Request $request, Trunk $trunk, Gateway $gateway, GatewayController $admin): JsonResponse
     {
         $clearPassword = $request->exists('password') && $request->input('password') === null;
-        $request->replace([...$gateway->only(['name', 'host', 'port', 'username', 'register', 'enabled', 'priority', 'weight']),
+        $request->replace([...$gateway->only(['name', 'label', 'host', 'port', 'username', 'from_user', 'from_domain', 'outbound_proxy',
+            'send_rpid', 'send_pai', 'register', 'enabled', 'priority', 'weight']),
             'transport' => $gateway->transport->value, ...$request->all()]);
         $data = $admin->validated($request, $trunk, $gateway);
         if (! $request->filled('password')) {

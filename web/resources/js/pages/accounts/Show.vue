@@ -21,7 +21,11 @@ import { show as showPbx } from '@/routes/accounts/pbx';
 import { index as carriers } from '@/routes/carriers';
 import { index as cdrIndex } from '@/routes/cdrs';
 import { show as showInvoice } from '@/routes/invoices';
-import { create as createTrunk } from '@/routes/trunks';
+import { edit as editSipTrunk } from '@/routes/accounts/sip-trunks';
+import { show as showDeck } from '@/routes/rate-decks';
+import GatewayController from '@/actions/App/Http/Controllers/Admin/GatewayController';
+import SipTrunkFields from '@/components/accounts/SipTrunkFields.vue';
+import type { SipTrunkValues } from '@/components/accounts/SipTrunkFields.vue';
 
 type Account = {
     id: number;
@@ -52,7 +56,19 @@ type Account = {
 const props = defineProps<{
     account: Account;
     ips: { id: number; ip: string; tech_prefix: string; description: string | null; enabled: boolean }[];
-    trunks: { id: number; name: string; enabled: boolean; gateways_count: number }[];
+    carrier: {
+        trunk_id: number | null;
+        rate_deck: { id: number; name: string; currency: string } | null;
+        max_inbound: number | null;
+        max_outbound: number | null;
+        outbound_cps: string | null;
+        codecs: string[];
+        tech_prefix: string;
+        strip_digits: number;
+        routes_count: number;
+        sip_trunks: (SipTrunkValues & { id: number; name: string })[];
+        transports: string[];
+    } | null;
     ledger: { id: number; type: string; amount: string; balance_after: string; description: string; created_at: string; effective_at: string }[];
     timezones: string[];
     portalUsers: { id: number; name: string; email: string; created_at: string }[];
@@ -319,19 +335,85 @@ const select = 'form-select w-auto';
                 </Form>
             </section>
 
-            <!-- Carrier egress -->
-            <section v-if="account.is_vendor" class="ss-stack-3">
-                <div class="d-flex flex-wrap align-items-start justify-content-between gap-2">
-                    <Heading variant="small" title="Carrier trunks" description="Where we send traffic to this carrier." />
-                    <Button size="sm" variant="outline" as-child><Link :href="createTrunk({ query: { vendor: account.id } })">Add trunk</Link></Button>
+            <!-- Carrier: settings and SIP trunks -->
+            <section v-if="carrier" class="ss-stack-3 ss-span-lg-2">
+                <Heading variant="small" title="Carrier settings" description="Change them with Edit." />
+                <dl class="ss-grid ss-cols-sm-4 gap-2">
+                    <div>
+                        <dt class="text-secondary small">Concurrent calls in / out</dt>
+                        <dd class="tabular-nums">{{ carrier.max_inbound ?? '∞' }} / {{ carrier.max_outbound ?? '∞' }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-secondary small">Codecs</dt>
+                        <dd>{{ carrier.codecs.join(', ') || '— not set —' }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-secondary small">Carrier rates</dt>
+                        <dd>
+                            <Link v-if="carrier.rate_deck" :href="showDeck(carrier.rate_deck.id)">{{ carrier.rate_deck.name }}</Link>
+                            <span v-else class="text-danger">not set (no calls are routed to it)</span>
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-secondary small">Number sent</dt>
+                        <dd>
+                            <span v-if="!carrier.strip_digits && !carrier.tech_prefix">as dialled</span>
+                            <span v-else>
+                                <template v-if="carrier.strip_digits">strip {{ carrier.strip_digits }}</template>
+                                <template v-if="carrier.tech_prefix"> + <span class="font-monospace">{{ carrier.tech_prefix }}</span> in front</template>
+                            </span>
+                        </dd>
+                    </div>
+                </dl>
+                <p v-if="carrier.routes_count === 0" class="small text-secondary mb-0">Not in any LCR group yet: add it to one under Routing → LCR groups.</p>
+
+                <Heading
+                    variant="small"
+                    title="SIP trunks"
+                    description="Where calls to this carrier are sent. Priority 1 is tried first; the others are failovers. Each IP/FQDN is allowed through the firewall (SIP only) as soon as it's saved."
+                />
+                <div class="card table-responsive">
+                    <table class="table table-vcenter card-table table-tight">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>IP / FQDN</th>
+                                <th>Options</th>
+                                <th class="text-end">Priority</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="g in carrier.sip_trunks" :key="g.id" :class="{ 'opacity-50': !g.enabled }">
+                                <td>{{ g.label }} <Badge v-if="!g.enabled" variant="secondary" class="ms-1">disabled</Badge></td>
+                                <td class="font-monospace">{{ g.host }}:{{ g.port }} <span class="text-secondary">{{ g.transport.toUpperCase() }}</span></td>
+                                <td class="small text-secondary">
+                                    {{ [g.send_rpid ? 'RPID' : null, g.send_pai ? 'PAI' : null, g.username ? `auth ${g.username}${g.register ? ' (registers)' : ''}` : 'IP auth',
+                                        g.from_user ? `From user ${g.from_user}` : null, g.from_domain ? `From domain ${g.from_domain}` : null,
+                                        g.outbound_proxy ? `proxy ${g.outbound_proxy}` : null].filter(Boolean).join(' · ') }}
+                                </td>
+                                <td class="text-end tabular-nums">{{ g.priority }}<span v-if="g.weight !== 100" class="text-secondary"> / {{ g.weight }}</span></td>
+                                <td class="text-end text-nowrap">
+                                    <Button size="sm" variant="ghost" as-child><Link :href="editSipTrunk([account.id, g.id])" :aria-label="`Edit ${g.label}`"><Pencil class="icon" /></Link></Button>
+                                    <Form v-bind="GatewayController.destroy.form([account.id, g.id])" class="d-inline" v-slot="{ processing }">
+                                        <Button size="sm" variant="ghost" :disabled="processing" :aria-label="`Remove ${g.label}`"><Trash2 class="icon" /></Button>
+                                    </Form>
+                                </td>
+                            </tr>
+                            <tr v-if="carrier.sip_trunks.length === 0">
+                                <td colspan="5" class="text-center text-secondary">No SIP trunks yet. Calls can't be sent to this carrier until one is added.</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
-                <ul class="list-group">
-                    <li v-for="t in trunks" :key="t.id" class="list-group-item d-flex justify-content-between px-2 py-2">
-                        <span :class="{ 'opacity-50': !t.enabled }">{{ t.name }}</span>
-                        <span class="text-secondary">{{ t.gateways_count }} gateway(s)</span>
-                    </li>
-                    <li v-if="trunks.length === 0" class="list-group-item px-2 py-4 text-center text-secondary">No trunks yet.</li>
-                </ul>
+
+                <details class="card card-body" :open="carrier.sip_trunks.length === 0">
+                    <summary class="fw-medium">Add SIP trunk</summary>
+                    <Form v-bind="GatewayController.store.form(account.id)" reset-on-success class="mt-3 ss-stack-3" v-slot="{ errors, processing }">
+                        <SipTrunkFields :transports="carrier.transports" :errors="errors" id-prefix="new" />
+                        <div><Button :disabled="processing">Add SIP trunk</Button></div>
+                    </Form>
+                </details>
             </section>
 
             <VendorPayables

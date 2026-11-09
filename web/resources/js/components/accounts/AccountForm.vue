@@ -16,6 +16,8 @@ export type AccountFormOptions = {
     routingPlans: { id: number; name: string }[];
     timezones: string[];
     currencies: { code: string; name: string; top: boolean }[];
+    carrierRates: { id: number; name: string; currency: string }[];
+    codecs: Record<string, string>;
 };
 
 export type AccountFormValues = {
@@ -36,6 +38,14 @@ export type AccountFormValues = {
     max_channels: number | null;
     max_cps: string | null;
     notes: string | null;
+    // Carriers
+    carrier_rate_deck_id: number | null;
+    max_inbound: number | null;
+    max_outbound: number | null;
+    outbound_cps: string | null;
+    codecs: string[];
+    tech_prefix: string;
+    strip_digits: number;
 };
 
 const props = defineProps<{
@@ -193,6 +203,68 @@ const customerBilling = computed(() => billing.value && props.role === 'customer
                 <Label for="max_cps">Max calls per second</Label>
                 <Input id="max_cps" name="max_cps" type="number" step="0.1" min="0.1" :default-value="v.max_cps ?? ''" placeholder="Unlimited" />
                 <InputError :message="errors.max_cps" />
+            </div>
+        </section>
+
+        <section v-if="role === 'carrier'" class="ss-grid gap-4 ss-cols-sm-2">
+            <div class="ss-span-sm-2">
+                <h2 class="fw-semibold">Carrier settings</h2>
+                <p class="small text-secondary">Its SIP trunks (IP/FQDN, port, transport) are added on the carrier's page after saving.</p>
+            </div>
+
+            <div class="ss-grid gap-2">
+                <Label for="max_inbound">Max concurrent calls inbound</Label>
+                <Input id="max_inbound" name="max_inbound" type="number" min="1" :default-value="v.max_inbound ?? ''" placeholder="Unlimited" />
+                <p class="small text-secondary">Calls this carrier sends us at once (its DIDs). More are refused with 503.</p>
+                <InputError :message="errors.max_inbound" />
+            </div>
+
+            <div class="ss-grid gap-2">
+                <Label for="max_outbound">Max concurrent calls outbound</Label>
+                <Input id="max_outbound" name="max_outbound" type="number" min="1" :default-value="v.max_outbound ?? ''" placeholder="Unlimited" />
+                <p class="small text-secondary">Calls we send it at once. When full, calls go to the next carrier in the LCR group.</p>
+                <InputError :message="errors.max_outbound" />
+            </div>
+
+            <div class="ss-grid gap-2 ss-span-sm-2">
+                <span class="form-label mb-0">Codecs</span>
+                <div class="d-flex flex-wrap gap-3">
+                    <label v-for="(label, c) in options.codecs" :key="c" class="d-flex align-items-center gap-2">
+                        <input type="checkbox" name="codecs[]" :value="c" :checked="(v.codecs ?? ['PCMU', 'PCMA']).includes(c)" class="form-check-input m-0" />
+                        {{ label }}
+                    </label>
+                </div>
+                <p class="small text-secondary">Offered on every call we send this carrier, in this order (G.711 µ-law first); the switch transcodes when the caller uses another codec.</p>
+                <InputError :message="errors.codecs" />
+            </div>
+
+            <div class="ss-grid gap-2">
+                <Label for="carrier_rate_deck_id">Carrier rates</Label>
+                <select id="carrier_rate_deck_id" name="carrier_rate_deck_id" :class="select">
+                    <option value="">— None —</option>
+                    <option v-for="d in options.carrierRates" :key="d.id" :value="d.id" :selected="d.id === v.carrier_rate_deck_id">{{ d.name }} ({{ d.currency }})</option>
+                </select>
+                <p class="small text-secondary">What this carrier charges us. Calls are only routed to it for destinations with a rate.</p>
+                <InputError :message="errors.carrier_rate_deck_id" />
+            </div>
+
+            <div class="ss-grid gap-2">
+                <Label for="outbound_cps">Max calls per second outbound</Label>
+                <Input id="outbound_cps" name="outbound_cps" type="number" step="0.1" min="0.1" :default-value="v.outbound_cps ?? ''" placeholder="Unlimited" />
+                <InputError :message="errors.outbound_cps" />
+            </div>
+
+            <div class="ss-grid gap-2">
+                <Label for="strip_digits">Strip leading digits</Label>
+                <Input id="strip_digits" name="strip_digits" type="number" min="0" max="15" :default-value="v.strip_digits ?? 0" />
+                <InputError :message="errors.strip_digits" />
+            </div>
+
+            <div class="ss-grid gap-2">
+                <Label for="tech_prefix">Tech prefix</Label>
+                <Input id="tech_prefix" name="tech_prefix" :default-value="v.tech_prefix ?? ''" placeholder="None" class="font-monospace" />
+                <p class="small text-secondary">Added in front of the number sent to this carrier, after stripping.</p>
+                <InputError :message="errors.tech_prefix" />
             </div>
         </section>
 

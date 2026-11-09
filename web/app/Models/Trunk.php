@@ -11,9 +11,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * A vendor's egress product: a buy rate deck plus one or more gateways.
+ * A carrier's routing record (one per carrier, edited on the carrier form):
+ * carrier rates, inbound/outbound concurrent calls (max_inbound / max_channels),
+ * codecs and number format, plus its SIP trunks (gateways). Not shown as a
+ * separate thing in the UI.
  */
-#[Fillable(['account_id', 'name', 'rate_deck_id', 'enabled', 'max_channels', 'max_cps', 'tech_prefix', 'strip_digits'])]
+#[Fillable(['account_id', 'name', 'rate_deck_id', 'enabled', 'max_channels', 'max_inbound', 'codecs', 'max_cps', 'tech_prefix', 'strip_digits'])]
 class Trunk extends Model
 {
     /** @use HasFactory<TrunkFactory> */
@@ -24,6 +27,8 @@ class Trunk extends Model
         return [
             'enabled' => 'boolean',
             'max_channels' => 'integer',
+            'max_inbound' => 'integer',
+            'codecs' => 'array',
             'max_cps' => 'decimal:2',
             'strip_digits' => 'integer',
         ];

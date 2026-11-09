@@ -50,14 +50,15 @@ class RoutingSetupTest extends TestCase
         $pages = [
             [route('tariffs.index'), 'rate-decks/Index'], [route('carrier-rates.index'), 'rate-decks/Index'], [route('rate-decks.create'), 'rate-decks/Form'],
             [route('rate-decks.show', $deck), 'rate-decks/Show'], [route('rate-decks.edit', $deck), 'rate-decks/Form'],
-            [route('trunks.index'), 'trunks/Index'], [route('trunks.create'), 'trunks/Form'],
-            [route('trunks.show', $trunk), 'trunks/Show'], [route('trunks.edit', $trunk), 'trunks/Form'],
             [route('routing-plans.index'), 'routing-plans/Index'], [route('routing-plans.create'), 'routing-plans/Form'],
             [route('routing-plans.show', $plan), 'routing-plans/Show'], [route('routing-plans.edit', $plan), 'routing-plans/Form'],
         ];
         foreach ($pages as [$url, $component]) {
             $this->actingAs($this->admin)->get($url)->assertOk()->assertInertia(fn (Assert $p) => $p->component($component));
         }
+        // Trunks are part of the carrier now: old links open the carrier.
+        $this->actingAs($this->admin)->get(route('trunks.index'))->assertRedirect(route('carriers.index'));
+        $this->actingAs($this->admin)->get(route('trunks.show', $trunk))->assertRedirect(route('accounts.show', $trunk->account_id));
     }
 
     public function test_rate_decks_can_be_created_and_files_queued_for_import(): void
@@ -195,16 +196,15 @@ class RoutingSetupTest extends TestCase
         $this->actingAs($this->admin)->post(route('rate-decks.store'), ['name' => 'No kind', 'currency' => 'CAD'])->assertSessionHasErrors('kind');
         $this->actingAs($this->admin)->post(route('rate-decks.store'), ['name' => 'Bad currency', 'kind' => 'tariff', 'currency' => 'XYZ'])->assertSessionHasErrors('currency');
 
-        // Customers pick tariffs, trunks pick carrier rates.
-        $this->actingAs($this->admin)->get(route('accounts.create'))->assertInertia(fn (Assert $p) => $p->has('options.rateDecks', 1)->where('options.rateDecks.0.id', $tariff->id));
-        $this->actingAs($this->admin)->get(route('trunks.create'))->assertInertia(fn (Assert $p) => $p->has('rateDecks', 1)->where('rateDecks.0.id', $carrier->id));
+        // Customers pick tariffs, carriers pick carrier rates.
+        $this->actingAs($this->admin)->get(route('accounts.create'))->assertInertia(fn (Assert $p) => $p->has('options.rateDecks', 1)->where('options.rateDecks.0.id', $tariff->id)
+            ->has('options.carrierRates', 1)->where('options.carrierRates.0.id', $carrier->id));
         $form = ['name' => 'Cust', 'code' => 'CUST', 'role' => 'customer', 'status' => 'active', 'currency' => 'CAD', 'billing_type' => 'prepaid',
             'credit_limit' => 0, 'timezone' => 'UTC'];
         $this->actingAs($this->admin)->post(route('accounts.store'), [...$form, 'sell_rate_deck_id' => $carrier->id])->assertSessionHasErrors('sell_rate_deck_id');
         $this->actingAs($this->admin)->post(route('accounts.store'), [...$form, 'sell_rate_deck_id' => $tariff->id])->assertSessionHasNoErrors();
-        $carrierAccount = Account::factory()->vendor()->create();
-        $this->actingAs($this->admin)->post(route('trunks.store'), ['account_id' => $carrierAccount->id, 'name' => 'Main', 'rate_deck_id' => $tariff->id])
-            ->assertSessionHasErrors('rate_deck_id');
+        $this->actingAs($this->admin)->post(route('accounts.store'), [...$form, 'code' => 'CARR', 'role' => 'carrier', 'codecs' => ['PCMU'], 'carrier_rate_deck_id' => $tariff->id])
+            ->assertSessionHasErrors('carrier_rate_deck_id');
 
         // A tariff in use can't become carrier rates; an unused deck can change.
         $this->actingAs($this->admin)->put(route('rate-decks.update', $tariff), ['name' => 'Retail', 'kind' => 'carrier', 'currency' => 'USD'])->assertSessionHasErrors('kind');
@@ -212,71 +212,83 @@ class RoutingSetupTest extends TestCase
         $this->assertSame('tariff', $carrier->fresh()->kind->value);
     }
 
-    public function test_a_trunk_can_be_deleted_after_typing_its_name(): void
+    public function test_a_carrier_holds_its_limits_codecs_and_rates(): void
     {
-        $trunk = Trunk::factory()->create(['name' => 'Main']);
-        $gateway = Gateway::factory()->create(['trunk_id' => $trunk->id]);
-        $plan = RoutingPlan::factory()->create();
-        RoutingPlanRoute::create(['routing_plan_id' => $plan->id, 'prefix' => '', 'trunk_id' => $trunk->id, 'priority' => 1, 'weight' => 100]);
-        $url = route('trunks.destroy', $trunk);
+        $deck = RateDeck::factory()->create(['kind' => 'carrier']);
+        $form = ['name' => 'Acme Telecom', 'code' => 'ACME', 'role' => 'carrier', 'status' => 'active', 'currency' => 'CAD', 'billing_type' => 'prepaid',
+            'credit_limit' => 0, 'timezone' => 'UTC'];
 
-        $this->actingAs($this->admin)->get(route('trunks.show', $trunk))->assertInertia(fn (Assert $p) => $p->where('routes_count', 1));
-        $this->actingAs($this->admin)->delete($url, ['confirm' => 'main'])->assertSessionHasErrors('confirm');
-        $this->assertNotNull($trunk->fresh());
+        $this->actingAs($this->admin)->post(route('accounts.store'), $form)->assertSessionHasErrors('codecs');
+        $this->actingAs($this->admin)->post(route('accounts.store'), [...$form, 'codecs' => ['G729', 'PCMU', 'NOPE']])->assertSessionHasErrors('codecs.2');
+        $this->actingAs($this->admin)->post(route('accounts.store'), [...$form, 'codecs' => ['G729', 'PCMU'], 'max_inbound' => 20, 'max_outbound' => 50,
+            'carrier_rate_deck_id' => $deck->id, 'tech_prefix' => ' 99# ', 'strip_digits' => 1])->assertSessionHasNoErrors();
 
-        $this->actingAs($this->admin)->delete($url, ['confirm' => 'Main'])->assertRedirect(route('accounts.show', $trunk->account_id));
-        $this->assertNull($trunk->fresh());
-        $this->assertNull($gateway->fresh());
-        $this->assertSame(0, RoutingPlanRoute::query()->count());
-        $this->assertNotNull($plan->fresh());
+        $carrier = Account::query()->where('code', 'ACME')->sole();
+        $trunk = $carrier->carrierTrunk;
+        $this->assertSame('Acme Telecom', $trunk->name);
+        $this->assertSame([20, 50, $deck->id, '99#', 1], [$trunk->max_inbound, $trunk->max_channels, $trunk->rate_deck_id, $trunk->tech_prefix, $trunk->strip_digits]);
+        $this->assertSame(['PCMU', 'G729'], $trunk->codecs); // offered in the list's order, PCMU first
+
+        // Editing updates the same record (one per carrier).
+        $this->actingAs($this->admin)->get(route('accounts.edit', $carrier))->assertInertia(fn (Assert $p) => $p->where('account.max_inbound', 20)->where('account.codecs', ['PCMU', 'G729']));
+        $this->actingAs($this->admin)->put(route('accounts.update', $carrier), [...$form, 'name' => 'Acme', 'codecs' => ['PCMA'], 'max_outbound' => ''])->assertSessionHasNoErrors();
+        $this->assertSame(1, $carrier->trunks()->count());
+        $trunk->refresh();
+        $this->assertSame(['Acme', ['PCMA'], null, null], [$trunk->name, $trunk->codecs, $trunk->max_channels, $trunk->max_inbound]);
+
+        $this->actingAs($this->admin)->get(route('accounts.show', $carrier))->assertInertia(fn (Assert $p) => $p->component('accounts/Show')
+            ->where('carrier.trunk_id', $trunk->id)->where('carrier.codecs', ['G.711 A-law'])->has('carrier.sip_trunks', 0));
     }
 
-    public function test_trunks_require_a_vendor_account(): void
+    public function test_sip_trunks_are_added_on_the_carrier_and_validated(): void
     {
-        $customer = Account::factory()->create();
-        $vendor = Account::factory()->vendor()->create();
+        $carrier = Account::factory()->vendor()->create(['code' => 'ACME']);
+        $base = ['label' => 'Primary', 'host' => 'sip.vendor.example', 'port' => 5060, 'transport' => 'udp', 'priority' => 1, 'weight' => 100, 'enabled' => '1', 'checkboxes' => '1', 'send_rpid' => '1'];
+        $store = route('accounts.sip-trunks.store', $carrier);
 
-        $this->actingAs($this->admin)->post(route('trunks.store'), ['account_id' => $customer->id, 'name' => 'Main'])
-            ->assertSessionHasErrors('account_id');
-        $this->actingAs($this->admin)->post(route('trunks.store'), ['account_id' => $vendor->id, 'name' => 'Main', 'enabled' => '1', 'tech_prefix' => '99#', 'strip_digits' => '1'])
-            ->assertSessionHasNoErrors();
-
-        $trunk = Trunk::query()->sole();
-        $this->assertTrue($trunk->enabled);
-        $this->assertSame('99#', $trunk->tech_prefix);
-
-        // Names are unique per vendor.
-        $this->actingAs($this->admin)->post(route('trunks.store'), ['account_id' => $vendor->id, 'name' => 'Main'])
-            ->assertSessionHasErrors('name');
-    }
-
-    public function test_gateways_are_validated_and_passwords_kept_unless_changed(): void
-    {
-        $trunk = Trunk::factory()->create();
-        $base = ['host' => 'sip.vendor.example', 'port' => 5060, 'transport' => 'udp', 'priority' => 1, 'weight' => 100, 'enabled' => '1'];
-
-        $this->actingAs($this->admin)->post(route('trunks.gateways.store', $trunk), [...$base, 'host' => 'not a host'])->assertSessionHasErrors('host');
-        $this->actingAs($this->admin)->post(route('trunks.gateways.store', $trunk), [...$base, 'transport' => 'sctp'])->assertSessionHasErrors('transport');
-        $this->actingAs($this->admin)->post(route('trunks.gateways.store', $trunk), [...$base, 'name' => 'Vendor GW 1', 'username' => 'acme', 'password' => 'pw1'])
-            ->assertSessionHasNoErrors();
+        $this->actingAs($this->admin)->post($store, [...$base, 'label' => ''])->assertSessionHasErrors('label');
+        $this->actingAs($this->admin)->post($store, [...$base, 'host' => 'not a host'])->assertSessionHasErrors('host');
+        $this->actingAs($this->admin)->post($store, [...$base, 'transport' => 'sctp'])->assertSessionHasErrors('transport');
+        $this->actingAs($this->admin)->post($store, [...$base, 'outbound_proxy' => 'bad proxy'])->assertSessionHasErrors('outbound_proxy');
+        $this->actingAs($this->admin)->post($store, [...$base, 'from_user' => 'a b'])->assertSessionHasErrors('from_user');
+        $this->actingAs($this->admin)->post($store, [...$base, 'username' => 'acme', 'password' => 'pw1', 'from_user' => '12345', 'from_domain' => 'acme.example',
+            'outbound_proxy' => 'proxy.acme.example:5070', 'send_pai' => '1'])->assertSessionHasNoErrors()->assertRedirect(route('accounts.show', $carrier));
 
         $gateway = Gateway::query()->sole();
-        $this->assertSame('vendor-gw-1', $gateway->name); // slugged for FreeSWITCH
-        $this->assertSame('pw1', $gateway->password);
+        $this->assertSame($carrier->carrierTrunk->id, $gateway->trunk_id); // the carrier's routing record was made for it
+        $this->assertStringStartsWith('acme-primary-', $gateway->name); // FreeSWITCH name, generated
+        $this->assertSame(['Primary', 'pw1', '12345', 'acme.example', 'proxy.acme.example:5070', true, true],
+            [$gateway->label, $gateway->password, $gateway->from_user, $gateway->from_domain, $gateway->outbound_proxy, $gateway->send_rpid, $gateway->send_pai]);
 
-        // Blank password keeps it; unticked "enabled" disables.
-        $this->actingAs($this->admin)->put(route('trunks.gateways.update', [$trunk, $gateway]), [...$base, 'name' => 'vendor-gw-1', 'enabled' => null, 'password' => ''])
-            ->assertSessionHasNoErrors();
+        // Blank password keeps it; unticked boxes are off; the FreeSWITCH name stays.
+        $name = $gateway->name;
+        $update = route('accounts.sip-trunks.update', [$carrier, $gateway]);
+        $this->actingAs($this->admin)->put($update, [...$base, 'label' => 'Failover', 'priority' => 2, 'enabled' => null, 'send_rpid' => null, 'password' => ''])->assertSessionHasNoErrors();
         $gateway->refresh();
-        $this->assertSame('pw1', $gateway->password);
-        $this->assertFalse($gateway->enabled);
-
-        $this->actingAs($this->admin)->put(route('trunks.gateways.update', [$trunk, $gateway]), [...$base, 'name' => 'vendor-gw-1', 'clear_password' => '1']);
+        $this->assertSame(['Failover', $name, 'pw1', false, false, false, null], [$gateway->label, $gateway->name, $gateway->password, $gateway->enabled, $gateway->send_rpid, $gateway->send_pai, $gateway->from_user]);
+        $this->actingAs($this->admin)->put($update, [...$base, 'clear_password' => '1']);
         $this->assertNull($gateway->fresh()->password);
+        $this->actingAs($this->admin)->get(route('accounts.sip-trunks.edit', [$carrier, $gateway]))->assertInertia(fn (Assert $p) => $p->component('accounts/SipTrunkEdit'));
 
-        // Gateways can only be reached through their own trunk.
-        $other = Trunk::factory()->create();
-        $this->actingAs($this->admin)->delete(route('trunks.gateways.destroy', [$other, $gateway]))->assertNotFound();
+        // Only through its own carrier; customers have no SIP trunks.
+        $other = Account::factory()->vendor()->create();
+        $this->actingAs($this->admin)->delete(route('accounts.sip-trunks.destroy', [$other, $gateway]))->assertNotFound();
+        $this->actingAs($this->admin)->post(route('accounts.sip-trunks.store', Account::factory()->create()), $base)->assertNotFound();
+        $this->actingAs($this->admin)->delete(route('accounts.sip-trunks.destroy', [$carrier, $gateway]))->assertRedirect(route('accounts.show', $carrier));
+        $this->assertNull($gateway->fresh());
+    }
+
+    public function test_sip_trunk_options_reach_the_gateway_file_and_call_path(): void
+    {
+        $trunk = Trunk::factory()->create(['codecs' => ['PCMU', 'G729']]);
+        $gateway = Gateway::factory()->create(['trunk_id' => $trunk->id, 'from_user' => '12345', 'from_domain' => 'acme.example', 'outbound_proxy' => '198.51.100.9:5070',
+            'username' => 'acme', 'send_pai' => true]);
+        $xml = app(\App\Services\Freeswitch\GatewaySync::class)->render($gateway);
+        foreach (['"from-user" value="12345"', '"caller-id-in-from" value="false"', '"from-domain" value="acme.example"', '"outbound-proxy" value="198.51.100.9:5070"', '"username" value="acme"'] as $param) {
+            $this->assertStringContainsString($param, $xml);
+        }
+        $row = \Illuminate\Support\Facades\DB::selectOne('SELECT * FROM softswitch_gateway_options(ARRAY[?]::bigint[])', [$gateway->id]);
+        $this->assertSame([true, true, 'acme.example', 'PCMU,G729'], [$row->send_rpid, $row->send_pai, $row->cid_host, $row->codecs]);
     }
 
     public function test_routing_plan_routes_can_be_added_toggled_and_removed(): void

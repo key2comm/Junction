@@ -116,12 +116,18 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::delete('rate-decks/{rate_deck}/rates', [RateDeckController::class, 'clearRates'])->name('rate-decks.rates.clear');
     Route::patch('rate-decks/{rate_deck}/rates/{rate}', [TariffController::class, 'updateRate'])->scopeBindings()->name('rate-decks.rates.update');
 
-    Route::resource('trunks', TrunkController::class);
+    // Trunks are part of the carrier now (Routing -> Carriers); old links go to the carrier.
+    Route::get('trunks', [TrunkController::class, 'index'])->name('trunks.index');
+    Route::get('trunks/{trunk}', [TrunkController::class, 'show'])->name('trunks.show');
     // Routing -> PBX/Devices: where customers' calls are delivered.
     Route::resource('endpoints', EndpointController::class)->except(['show']);
     // Routing -> DIDs: numbers providers deliver to us, and where each one goes.
     Route::resource('dids', DidController::class)->except(['show']);
-    Route::resource('trunks.gateways', GatewayController::class)->only(['store', 'edit', 'update', 'destroy'])->scoped();
+    // A carrier's SIP trunks (gateways), on the carrier page.
+    Route::post('accounts/{account}/sip-trunks', [GatewayController::class, 'store'])->name('accounts.sip-trunks.store');
+    Route::get('accounts/{account}/sip-trunks/{gateway}/edit', [GatewayController::class, 'edit'])->name('accounts.sip-trunks.edit');
+    Route::put('accounts/{account}/sip-trunks/{gateway}', [GatewayController::class, 'update'])->name('accounts.sip-trunks.update');
+    Route::delete('accounts/{account}/sip-trunks/{gateway}', [GatewayController::class, 'destroy'])->name('accounts.sip-trunks.destroy');
 
     Route::resource('routing-plans', RoutingPlanController::class)->except(['destroy']);
     Route::scopeBindings()->group(function () {

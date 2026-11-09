@@ -12,6 +12,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -80,6 +82,28 @@ class Account extends Model
     public function trunks(): HasMany
     {
         return $this->hasMany(Trunk::class);
+    }
+
+    /** A carrier's SIP trunks. */
+    public function gateways(): HasManyThrough
+    {
+        return $this->hasManyThrough(Gateway::class, Trunk::class);
+    }
+
+    /** A carrier's routing record (carrier rates, limits, codecs, SIP trunks). */
+    public function carrierTrunk(): HasOne
+    {
+        return $this->hasOne(Trunk::class)->oldestOfMany();
+    }
+
+    /** The carrier's routing record, made on first use. */
+    public function ensureCarrierTrunk(): Trunk
+    {
+        if ($this->carrierTrunk === null) {
+            $this->setRelation('carrierTrunk', $this->trunks()->create(['name' => $this->name, 'codecs' => ['PCMU', 'PCMA']]));
+        }
+
+        return $this->carrierTrunk;
     }
 
     public function sellRateDeck(): BelongsTo

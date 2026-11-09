@@ -112,6 +112,17 @@ class GatewaySync
         if ($gateway->register) {
             $params['expire-seconds'] = '600';
         }
+        // Advanced: a fixed From user (the caller ID then travels in RPID/PAI), From domain, outbound proxy.
+        if ($gateway->from_user) {
+            $params['from-user'] = $gateway->from_user;
+            $params['caller-id-in-from'] = 'false';
+        }
+        if ($gateway->from_domain) {
+            $params['from-domain'] = $gateway->from_domain;
+        }
+        if ($gateway->outbound_proxy) {
+            $params['outbound-proxy'] = $gateway->outbound_proxy;
+        }
 
         $lines = array_map(fn ($k, $v) => "    <param name=\"{$e($k)}\" value=\"{$e($v)}\"/>", array_keys($params), $params);
 

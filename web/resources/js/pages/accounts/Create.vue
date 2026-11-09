@@ -33,7 +33,7 @@ const title = props.role === 'carrier' ? 'New carrier' : 'New customer';
     <Head :title="title" />
 
     <div class="ss-maxw-3xl ss-stack-4">
-        <Heading :title="title" :description="role === 'carrier' ? 'A carrier we send traffic to. Add its trunks after saving.' : 'A customer that sends us traffic'" />
+        <Heading :title="title" :description="role === 'carrier' ? 'A carrier we send traffic to. Add its SIP trunks after saving.' : 'A customer that sends us traffic'" />
         <p v-if="role === 'customer'" class="small text-secondary mb-0">
             Tariff, LCR group, limits and billing are filled in from <Link :href="editDefaults()" class="fw-medium">Client defaults</Link>; change any of them for this
             customer if needed.

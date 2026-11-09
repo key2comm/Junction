@@ -98,7 +98,7 @@ final class Present
     {
         return [
             'id' => $t->id, 'vendor_id' => $t->account_id, 'name' => $t->name, 'rate_deck_id' => $t->rate_deck_id, 'enabled' => $t->enabled,
-            'max_channels' => $t->max_channels, 'max_cps' => $t->max_cps, 'tech_prefix' => $t->tech_prefix, 'strip_digits' => $t->strip_digits,
+            'max_channels' => $t->max_channels, 'max_inbound' => $t->max_inbound, 'codecs' => $t->codecs, 'max_cps' => $t->max_cps, 'tech_prefix' => $t->tech_prefix, 'strip_digits' => $t->strip_digits,
             ...($withGateways ? ['gateways' => $t->gateways->map(fn ($g) => self::gateway($g))->all()] : []),
         ];
     }
@@ -106,9 +106,11 @@ final class Present
     /** Gateway passwords are write-only. */
     public static function gateway(Gateway $g): array
     {
-        return ['id' => $g->id, 'trunk_id' => $g->trunk_id, 'name' => $g->name, 'host' => $g->host, 'port' => $g->port,
+        return ['id' => $g->id, 'trunk_id' => $g->trunk_id, 'name' => $g->name, 'label' => $g->label, 'host' => $g->host, 'port' => $g->port,
             'transport' => $g->transport->value, 'username' => $g->username, 'has_password' => $g->getRawOriginal('password') !== null,
-            'register' => $g->register, 'enabled' => $g->enabled, 'priority' => $g->priority, 'weight' => $g->weight];
+            'register' => $g->register, 'enabled' => $g->enabled, 'priority' => $g->priority, 'weight' => $g->weight,
+            'from_user' => $g->from_user, 'from_domain' => $g->from_domain, 'outbound_proxy' => $g->outbound_proxy,
+            'send_rpid' => $g->send_rpid, 'send_pai' => $g->send_pai];
     }
 
     public static function plan(RoutingPlan $p, bool $withRoutes = false): array

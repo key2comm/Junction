@@ -23,7 +23,7 @@ type Row = {
     currency: string;
     balance: string;
     available: string;
-    trunks_count: number;
+    gateways_count: number;
 };
 
 const props = defineProps<{
@@ -70,7 +70,7 @@ const statusVariant = (s: string) => (s === 'active' ? 'default' : s === 'suspen
 
     <div class="ss-stack-4">
         <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
-            <Heading v-if="carriers" title="Carriers" description="The carriers you send traffic to. Each has one or more trunks, and LCR groups choose between them." />
+            <Heading v-if="carriers" title="Carriers" description="The carriers you send traffic to. Each has its SIP trunks (primary and failovers); LCR groups choose between carriers." />
             <Heading v-else title="Accounts" description="Your customers, and the carriers you send traffic to (managed under Routing → Carriers)" />
             <Button as-child>
                 <Link v-if="carriers" :href="createCarrier()"><Plus class="icon" /> New carrier</Link>
@@ -102,7 +102,7 @@ const statusVariant = (s: string) => (s === 'active' ? 'default' : s === 'suspen
                         <th class="fw-medium">Status</th>
                         <template v-if="carriers">
                             <th class="fw-medium">Currency</th>
-                            <th class="text-end fw-medium">Trunks</th>
+                            <th class="text-end fw-medium">SIP trunks</th>
                         </template>
                         <template v-else-if="billing">
                             <th class="fw-medium">Billing</th>
@@ -124,7 +124,7 @@ const statusVariant = (s: string) => (s === 'active' ? 'default' : s === 'suspen
                         <td><Badge :variant="statusVariant(a.status)">{{ titleCase(a.status) }}</Badge></td>
                         <template v-if="carriers">
                             <td>{{ a.currency }}</td>
-                            <td class="text-end tabular-nums">{{ a.trunks_count }}</td>
+                            <td class="text-end tabular-nums">{{ a.gateways_count }}</td>
                         </template>
                         <template v-else-if="billing && a.is_customer">
                             <td>{{ titleCase(a.billing_type) }}</td>

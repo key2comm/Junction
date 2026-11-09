@@ -50,6 +50,13 @@ if did then
   if did.status == "banned" then return u.reject("did_banned") end
   if did.status ~= "active" then return u.reject("did_deactivated") end
   if did.account_active ~= "t" then return u.reject("account_inactive") end
+  -- The carrier providing the DID: its inbound concurrent call limit.
+  if tonumber(did.provider_id) and tonumber(did.provider_max_inbound) then
+    local endpoint = require "softswitch.endpoint"
+    if not endpoint.count(session, "softswitch_carrier_in", did.provider_id, did.provider_max_inbound) then
+      return u.reject("channel_limit")
+    end
+  end
   local pbx = require "softswitch.pbx"
   return pbx.inbound(session, u, tonumber(did.account_id), did.dest_type, did.dest_target)
 end

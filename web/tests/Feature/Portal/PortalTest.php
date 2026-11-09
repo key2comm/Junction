@@ -60,7 +60,7 @@ class PortalTest extends TestCase
     {
         $as = $this->actingAs($this->portalUser);
 
-        foreach (['/dashboard', '/accounts', "/accounts/{$this->customer->id}", '/cdrs', '/invoices', '/rate-decks', '/trunks', '/routing-plans',
+        foreach (['/dashboard', '/accounts', "/accounts/{$this->customer->id}", '/cdrs', '/invoices', '/rate-decks', '/carriers', '/routing-plans',
             '/settings/email', '/settings/api-tokens', '/settings/certificate'] as $url) {
             $as->get($url)->assertRedirect(route('portal.home'));
         }

@@ -7,6 +7,7 @@ use App\Jobs\ApplyFirewallPolicy;
 use App\Jobs\RefreshFirewallStatus;
 use App\Jobs\UnbanAddress;
 use App\Models\FirewallEntry;
+use App\Models\Gateway;
 use App\Services\FirewallPolicy;
 use App\Services\FirewallSync;
 use App\Support\Dns;
@@ -47,6 +48,11 @@ class FirewallController extends Controller
 
         return Inertia::render('settings/Firewall', [
             'allow' => $entries->where('list', 'allow')->values(),
+            // Carriers' SIP trunks: allowed on the SIP ports only (not SSH or admin), managed on the carrier.
+            'carriers' => Gateway::query()->where('enabled', true)->whereHas('trunk', fn ($q) => $q->where('enabled', true))
+                ->with('trunk.account:id,name')->orderBy('host')->get()
+                ->map(fn (Gateway $g) => ['id' => $g->id, 'host' => $g->host, 'label' => $g->label, 'account_id' => $g->trunk->account_id, 'carrier' => $g->trunk->account?->name])
+                ->values(),
             'block' => $entries->where('list', 'block')->values(),
             'lockdown' => FirewallPolicy::lockdown(),
             'services' => FirewallPolicy::SERVICES,
@@ -251,7 +257,7 @@ class FirewallController extends Controller
             foreach ($nets as $n) {
                 foreach ($peers as $peer) {
                     if (IpNet::normalize($peer) !== null && IpNet::overlaps($n, IpNet::normalize($peer))) {
-                        throw ValidationException::withMessages(['value' => "{$value} covers {$peer}, a customer or carrier address. Disable it on the account or trunk instead."]);
+                        throw ValidationException::withMessages(['value' => "{$value} covers {$peer}, a customer or carrier address. Disable it on the account or carrier instead."]);
                     }
                 }
             }

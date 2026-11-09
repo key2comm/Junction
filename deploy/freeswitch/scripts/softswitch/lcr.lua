@@ -73,6 +73,16 @@ function M.run(session, u, ctx)
       table.insert(attempts[n].gateways, { id = tonumber(row.gateway_id), name = row.gateway_name })
     end
   end)
+  -- Per SIP trunk: caller ID headers (RPID / PAI) and the carrier's codecs.
+  local ids, options = {}, {}
+  for _, a in pairs(attempts) do
+    for _, gw in ipairs(a.gateways) do table.insert(ids, gw.id) end
+  end
+  if #ids > 0 then
+    dbh:query("SELECT * FROM softswitch_gateway_options(ARRAY[" .. table.concat(ids, ",") .. "]::bigint[])", function(row)
+      options[tonumber(row.gateway_id)] = row
+    end)
+  end
   dbh:release()
 
   if not first then
@@ -92,10 +102,10 @@ function M.run(session, u, ctx)
   session:setVariable("ignore_early_media", "false")
   session:setVariable("call_timeout", freeswitch.getGlobalVariable("softswitch_answer_timeout") or "60")
   session:setVariable("progress_timeout", freeswitch.getGlobalVariable("softswitch_progress_timeout") or "10")
-  -- Offer the vendor exactly the codecs the caller offered (no transcoding).
-  -- PBX phones (WebRTC: Opus only) are transcoded instead: carriers rarely take Opus.
-  -- Transcoded calls are offered the full carrier list (PCMU first): without an
-  -- explicit list FreeSWITCH offers only the A-leg's codec, e.g. G.722 (488).
+  -- Fallback when a carrier has no codec list of its own (see leg_vars): offer
+  -- the vendor the codecs the caller offered, or for transcoded calls (PBX
+  -- port) the full carrier list (PCMU first): without an explicit list
+  -- FreeSWITCH offers only the A-leg's codec, e.g. G.722 (488).
   if not ctx.transcode then
     local offered = var("ep_codec_string")
     if offered then session:setVariable("absolute_codec_string", offered) end
@@ -106,6 +116,31 @@ function M.run(session, u, ctx)
   session:setVariable("execute_on_answer", "sched_hangup +" .. max_duration .. " ALLOTTED_TIMEOUT")
 
   local log_rows, last_cause, last_code, answered = {}, "NO_ROUTE_DESTINATION", nil, false
+
+  -- Variables for one vendor leg: the carrier's codecs (its order, e.g. PCMU
+  -- first) and how the caller ID is sent: Remote-Party-ID, P-Asserted-Identity,
+  -- both, or neither (From only).
+  local function leg_vars(gw_id)
+    local o = options[gw_id]
+    if not o then return "" end
+    local vars = {}
+    local codecs = o.codecs or ""
+    if codecs:match("^[%w%-,]+$") then table.insert(vars, "absolute_codec_string='" .. codecs .. "'") end
+    local rpid, pai = o.send_rpid == "t", o.send_pai == "t"
+    if pai and not rpid then
+      table.insert(vars, "sip_cid_type=pid")
+    elseif rpid then
+      table.insert(vars, "sip_cid_type=rpid")
+      local num = (var("effective_caller_id_number") or var("caller_id_number") or ""):gsub("[^%w%+]", "")
+      local host = (o.cid_host or ""):gsub("[^%w%.%-:%[%]]", "")
+      if pai and num ~= "" and host ~= "" then
+        table.insert(vars, "sip_h_P-Asserted-Identity=<sip:" .. num .. "@" .. host .. ">")
+      end
+    else
+      table.insert(vars, "sip_cid_type=none")
+    end
+    return "," .. table.concat(vars, ",")
+  end
 
   local function record(a, gw, started, cause, code, ok)
     table.insert(log_rows, string.format(
@@ -133,7 +168,7 @@ function M.run(session, u, ctx)
         if not session:ready() then stop = true; break end
         local started = os.time()
         -- Tag the vendor leg so its own CDR (exact timings, PDD) joins this attempt.
-        local leg = "{softswitch_gateway_id=" .. gw.id .. ",softswitch_parent_uuid=" .. uuid .. ",softswitch_attempt_no=" .. (#log_rows + 1) .. "}"
+        local leg = "{softswitch_gateway_id=" .. gw.id .. ",softswitch_parent_uuid=" .. uuid .. ",softswitch_attempt_no=" .. (#log_rows + 1) .. leg_vars(gw.id) .. "}"
         session:execute("bridge", leg .. "sofia/gateway/" .. gw.name .. "/" .. a.dial_number)
 
         local disposition = var("originate_disposition") or ""

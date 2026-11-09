@@ -140,8 +140,8 @@ function toggle(route: Route) {
                     <tbody>
                         <tr v-for="r in routes.data" :key="r.id" :class="{ 'opacity-50': !r.enabled || !r.trunk.enabled }">
                             <td>
-                                <Link :href="showTrunk(r.trunk.id)">{{ r.trunk.vendor }} / {{ r.trunk.name }}</Link>
-                                <Badge v-if="!r.trunk.enabled" variant="secondary" class="ms-2">trunk disabled</Badge>
+                                <Link :href="showTrunk(r.trunk.id)">{{ r.trunk.name }}</Link> <span class="text-secondary">{{ r.trunk.vendor }}</span>
+                                <Badge v-if="!r.trunk.enabled" variant="secondary" class="ms-2">carrier disabled</Badge>
                             </td>
                             <td><span v-if="r.prefix" class="font-monospace">{{ r.prefix }}…</span><span v-else class="text-secondary">All</span></td>
                             <td class="text-end tabular-nums">{{ r.priority }}</td>
@@ -155,7 +155,7 @@ function toggle(route: Route) {
                         </tr>
                         <tr v-if="routes.data.length === 0">
                             <td colspan="5" class="text-center text-secondary">
-                                {{ trunks.length === 0 ? 'Create a carrier trunk first, then add it here.' : 'No carriers in this group yet.' }}
+                                {{ trunks.length === 0 ? 'Create a carrier first (Routing → Carriers), then add it here.' : 'No carriers in this group yet.' }}
                             </td>
                         </tr>
                     </tbody>
