@@ -79,7 +79,7 @@ class CallCaptureTest extends TestCase
             [$t + 2, $this->frame('...rest of the SDP...', 77, 0x00B9)],                                 // its second fragment
             [$t + 2, $this->frame('unrelated fragment', 78, 0x00B9)],
         ]);
-        $this->writeCapture('sip-20261110120500.pcap', [
+        $this->writeCapture('sip-20261110120200.pcap', [
             [$t + 90, $this->frame("BYE sip:1@x SIP/2.0\r\nCall-ID: abc123@192.0.2.10\r\n")],
             [$t + 200, $this->frame("BYE sip:1@x SIP/2.0\r\nCall-ID: abc123@192.0.2.10\r\n")], // well after the end: left out
         ]);
