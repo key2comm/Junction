@@ -3,6 +3,7 @@
 use App\Http\Controllers\Settings\ApiTokenController;
 use App\Http\Controllers\Settings\BillingController;
 use App\Http\Controllers\Settings\BrandingController;
+use App\Http\Controllers\Settings\CaptureController;
 use App\Http\Controllers\Settings\CertificateController;
 use App\Http\Controllers\Settings\ClientDefaultsController;
 use App\Http\Controllers\Settings\EmailController;
@@ -60,6 +61,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('settings/report-files/{file}', [ReportController::class, 'download'])->name('reports.files.download');
         Route::delete('settings/report-files/{file}', [ReportController::class, 'destroyFile'])->name('reports.files.destroy');
     });
+
+    // Per-call SIP captures (PCAP): on/off and retention.
+    Route::get('settings/captures', [CaptureController::class, 'edit'])->middleware('admin')->name('captures.edit');
+    Route::put('settings/captures', [CaptureController::class, 'update'])->middleware('admin')->name('captures.update');
 
     // Company logo, icon and footer name.
     Route::get('settings/branding', [BrandingController::class, 'edit'])->middleware('admin')->name('branding.edit');

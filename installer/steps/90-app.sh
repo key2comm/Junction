@@ -106,12 +106,12 @@ admin_pw="$(secret ADMIN_INITIAL_PASSWORD)"
 artisan softswitch:admin "$admin_email" --password="$admin_pw" --if-none >/dev/null
 
 # --- Background services.
-for unit in softswitch-queue.service softswitch-scheduler.service; do
+for unit in softswitch-queue.service softswitch-scheduler.service softswitch-capture.service; do
 	render "$SS_ROOT/deploy/systemd/$unit" "/etc/systemd/system/$unit"
 done
 systemctl daemon-reload
-systemctl enable -q softswitch-queue softswitch-scheduler
-systemctl restart softswitch-queue softswitch-scheduler php-fpm
+systemctl enable -q softswitch-queue softswitch-scheduler softswitch-capture
+systemctl restart softswitch-queue softswitch-scheduler php-fpm softswitch-capture
 
 # Push gateways and the carrier allowlist from the database to the switch.
 artisan softswitch:sync --no-interaction || warn "switch sync failed; it will be retried by the scheduler"

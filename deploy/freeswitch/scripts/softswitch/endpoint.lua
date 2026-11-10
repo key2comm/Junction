@@ -37,18 +37,18 @@ end
 
 -- "sofia/carrier/<number>@host:port;transport=tcp|..." for each of its hosts,
 -- or, for a SIP trunk, the PBX's registration (the DID goes in the To header).
-local function dial_string(ep, number)
+local function dial_string(u, ep, number)
   local legs = {}
   if (ep.hosts or "") == "" and ep.sip_username and ep.sip_username:match("^[%w%._%-]+$") then
     local domain = freeswitch.getGlobalVariable("domain")
-    return "[sip_invite_to_uri=<sip:" .. number .. "@" .. domain .. ">]user/" .. ep.sip_username .. "@" .. domain
+    return "[sip_invite_to_uri=<sip:" .. number .. "@" .. domain .. ">," .. u.leg_call_id() .. "]user/" .. ep.sip_username .. "@" .. domain
   end
   local port = tonumber(ep.port) or 5060
   local transport = (ep.transport == "tcp" or ep.transport == "tls") and (";transport=" .. ep.transport) or ""
   for host in (ep.hosts or ""):gmatch("[^,]+") do
     if host:match("^[%w%.%-:]+$") then
       if host:find(":") then host = "[" .. host .. "]" end -- IPv6
-      table.insert(legs, "sofia/carrier/" .. number .. "@" .. host .. ":" .. port .. transport)
+      table.insert(legs, "[" .. u.leg_call_id() .. "]sofia/carrier/" .. number .. "@" .. host .. ":" .. port .. transport)
     end
   end
   return table.concat(legs, "|")
@@ -81,7 +81,7 @@ end
 
 -- Ring the hosts. Returns "answered", "busy", "no_answer" or "failed".
 local function ring(session, u, ep, number)
-  local dial = dial_string(ep, number)
+  local dial = dial_string(u, ep, number)
   if dial == "" then return "failed" end
   local seconds = ep.flow == "no_answer" and (tonumber(ep.ring_seconds) or 25)
     or tonumber(freeswitch.getGlobalVariable("softswitch_answer_timeout")) or 60

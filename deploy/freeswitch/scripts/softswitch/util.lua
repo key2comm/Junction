@@ -24,6 +24,14 @@ function M.new(session)
     session:setVariable(name, value ~= nil and tostring(value) or "")
   end
 
+  -- The Call-ID for a leg this call places: "<this call's uuid>-<n><random>".
+  -- The call's PCAP (Calls -> Call records) finds every leg by that prefix.
+  local legs = 0
+  function u.leg_call_id()
+    legs = legs + 1
+    return "sip_outgoing_call_id=" .. uuid .. "-" .. legs .. string.format("%04x", math.random(0, 0xffff))
+  end
+
   -- Reject reasons -> SIP response sent to the caller.
   local REJECT = {
     unknown_customer     = "403 Forbidden",

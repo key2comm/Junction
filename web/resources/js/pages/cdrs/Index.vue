@@ -7,9 +7,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { dateTime, money } from '@/lib/format';
+import { dateTime } from '@/lib/format';
 import { selectClass } from '@/lib/ui';
-import { download as exportCsv, index, show } from '@/routes/cdrs';
+import { download as exportCsv, index, pcap, show } from '@/routes/cdrs';
 
 type Flow = 'incoming' | 'incoming_forwarded' | 'outgoing' | 'internal';
 
@@ -26,6 +26,8 @@ type Row = {
     sell_cost: string | null;
     buy_cost: string | null;
     margin: string | null;
+    has_pcap: boolean;
+    pcap_pending: boolean;
     answered: boolean;
     flow: Flow;
     did: string | null;
@@ -89,7 +91,6 @@ function preset(hours: number) {
     apply();
 }
 
-const currency = props.currency;
 const outcome = (r: Row) => (r.answered ? 'answered' : r.attempts === 0 ? 'rejected' : 'failed');
 const variant = (r: Row) => (r.answered ? 'default' : r.attempts === 0 ? 'destructive' : 'secondary');
 const flows: Record<Flow, { label: string; variant: 'default' | 'secondary' | 'outline' }> = {
@@ -180,7 +181,7 @@ const duration = (s: number) => (s >= 60 ? `${Math.floor(s / 60)}m ${s % 60}s` :
             </div>
         </form>
 
-        <div class="ss-grid gap-3 ss-cols-sm-3 ss-cols-lg-6">
+        <div class="ss-grid gap-3 ss-cols-sm-2 ss-cols-lg-4">
             <div class="card card-body p-2">
                 <p class="small text-secondary">Calls</p>
                 <p class="fs-2 fw-semibold tabular-nums">{{ summary.calls.toLocaleString() }}</p>
@@ -199,15 +200,6 @@ const duration = (s: number) => (s >= 60 ? `${Math.floor(s / 60)}m ${s % 60}s` :
                 <p class="small text-secondary">Minutes</p>
                 <p class="fs-2 fw-semibold tabular-nums">{{ summary.minutes.toLocaleString() }}</p>
             </div>
-            <div class="card card-body p-2">
-                <p class="small text-secondary">Sell / buy</p>
-                <p class="fw-semibold tabular-nums">{{ money(summary.sell, currency) }}</p>
-                <p class="tabular-nums text-secondary">{{ money(summary.buy, currency) }}</p>
-            </div>
-            <div class="card card-body p-2">
-                <p class="small text-secondary">Margin</p>
-                <p class="fs-2 fw-semibold tabular-nums" :class="{ 'text-danger': Number(summary.margin) < 0 }">{{ money(summary.margin, currency) }}</p>
-            </div>
         </div>
 
         <div class="card table-responsive">
@@ -221,8 +213,7 @@ const duration = (s: number) => (s >= 60 ? `${Math.floor(s / 60)}m ${s % 60}s` :
                         <th>Outcome</th>
                         <th>Carrier</th>
                         <th class="text-end">Duration</th>
-                        <th class="text-end">Sell</th>
-                        <th class="text-end">Margin</th>
+                        <th class="text-end">PCAP</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -244,11 +235,13 @@ const duration = (s: number) => (s >= 60 ? `${Math.floor(s / 60)}m ${s % 60}s` :
                             <span v-else class="text-secondary">{{ r.attempts ? `${r.attempts} tried` : '—' }}</span>
                         </td>
                         <td class="text-end tabular-nums">{{ r.answered ? duration(r.billsec) : '—' }}</td>
-                        <td class="text-end tabular-nums">{{ r.answered ? money(r.sell_cost, currency) : '—' }}</td>
-                        <td class="text-end tabular-nums" :class="{ 'text-danger': Number(r.margin) < 0 }">{{ r.margin !== null ? money(r.margin, currency) : '—' }}</td>
+                        <td class="text-end">
+                            <a v-if="r.has_pcap" :href="pcap(r.id).url" :title="`SIP capture of this call (.pcap)`" class="text-nowrap"><Download class="icon" /> PCAP</a>
+                            <span v-else class="text-secondary" :title="r.pcap_pending ? 'Being prepared' : 'No capture for this call'">{{ r.pcap_pending ? '…' : '—' }}</span>
+                        </td>
                     </tr>
                     <tr v-if="cdrs.data.length === 0">
-                        <td colspan="9" class="text-center text-secondary">No calls in this range.</td>
+                        <td colspan="8" class="text-center text-secondary">No calls in this range.</td>
                     </tr>
                 </tbody>
             </table>

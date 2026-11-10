@@ -168,7 +168,7 @@ function M.run(session, u, ctx)
         if not session:ready() then stop = true; break end
         local started = os.time()
         -- Tag the vendor leg so its own CDR (exact timings, PDD) joins this attempt.
-        local leg = "{softswitch_gateway_id=" .. gw.id .. ",softswitch_parent_uuid=" .. uuid .. ",softswitch_attempt_no=" .. (#log_rows + 1) .. leg_vars(gw.id) .. "}"
+        local leg = "{softswitch_gateway_id=" .. gw.id .. ",softswitch_parent_uuid=" .. uuid .. ",softswitch_attempt_no=" .. (#log_rows + 1) .. "," .. u.leg_call_id() .. leg_vars(gw.id) .. "}"
         session:execute("bridge", leg .. "sofia/gateway/" .. gw.name .. "/" .. a.dial_number)
 
         local disposition = var("originate_disposition") or ""

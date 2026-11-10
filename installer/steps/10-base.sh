@@ -14,5 +14,5 @@ else
 	dnf config-manager --set-enabled crb
 fi
 
-pkg_install git tar curl ca-certificates chrony
+pkg_install git tar curl ca-certificates chrony tcpdump
 systemctl enable --now chronyd >/dev/null

@@ -63,7 +63,7 @@ local function ring(session, u, row)
   session:setVariable("hangup_after_bridge", "true")
   session:setVariable("call_timeout", tostring(seconds))
   -- softswitch_pbx_leg: the callee's leg is not a CDR of its own.
-  session:execute("bridge", "{softswitch_pbx_leg=true,leg_timeout=" .. seconds .. "}user/" .. row.sip_username .. "@" .. domain())
+  session:execute("bridge", "{softswitch_pbx_leg=true,leg_timeout=" .. seconds .. "," .. u.leg_call_id() .. "}user/" .. row.sip_username .. "@" .. domain())
 
   if not session:ready() then return end -- answered and finished, or the caller gave up
   local cause = u.var("originate_disposition") or u.var("last_bridge_hangup_cause") or "NO_ANSWER"

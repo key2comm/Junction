@@ -78,6 +78,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('cdrs', [CdrController::class, 'index'])->name('cdrs.index');
     Route::get('cdrs/export', [CdrController::class, 'export'])->middleware('throttle:10,1')->name('cdrs.download');
     Route::get('cdrs/{cdr}', [CdrController::class, 'show'])->whereNumber('cdr')->name('cdrs.show');
+    Route::get('cdrs/{cdr}/pcap', [CdrController::class, 'pcap'])->whereNumber('cdr')->name('cdrs.pcap');
 
     // Billing (unavailable while it is turned off in Settings → Billing).
     Route::middleware('billing')->group(function () {

@@ -100,6 +100,7 @@ class CdrIngestor
                 'caller' => mb_substr((string) ($profile->caller_id_number ?? $var('caller_id_number') ?? ''), 0, 64) ?: null,
                 'callee' => mb_substr((string) ($profile->destination_number ?? $var('destination_number') ?? ''), 0, 64),
                 'destination' => $var('softswitch_destination'),
+                'sip_call_id' => ($cid = $var('sip_call_id')) !== null ? mb_substr($cid, 0, 255) : null,
                 'did' => ($did = $var('softswitch_did')) && preg_match('/^\d{1,32}$/', $did) ? $did : null,
                 'started_at' => $started,
                 'answered_at' => $answered,

@@ -10,6 +10,7 @@ use App\Models\Trunk;
 use App\Services\Router;
 use App\Support\CdrFilters;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -39,6 +40,9 @@ class CdrController extends Controller
                 'vendor' => $c->vendor?->code,
                 'trunk' => $c->trunk?->name,
                 'margin' => $c->margin(),
+                'has_pcap' => $c->pcap_path !== null,
+                // Made about a minute after the call ends (Settings → Call captures).
+                'pcap_pending' => $c->pcap_path === null && $c->sip_call_id !== null && ($c->ended_at ?? $c->started_at)?->gt(now()->subMinutes(3)),
             ]);
 
         return Inertia::render('cdrs/Index', [
@@ -98,6 +102,15 @@ class CdrController extends Controller
             CdrCsv::write($out, $filters, fn () => flush());
             fclose($out);
         }, $name, ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    /** The call's SIP capture (Settings → Call captures), for Wireshark. */
+    public function pcap(Cdr $cdr): StreamedResponse
+    {
+        abort_unless($cdr->pcap_path && Storage::disk('local')->exists($cdr->pcap_path), 404, 'There is no capture for this call.');
+        $name = sprintf('call-%s-%s.pcap', $cdr->started_at->utc()->format('Ymd-His'), preg_replace('/[^0-9A-Za-z]/', '', (string) ($cdr->destination ?? $cdr->callee)));
+
+        return Storage::disk('local')->download($cdr->pcap_path, $name, ['Content-Type' => 'application/vnd.tcpdump.pcap']);
     }
 
     /**

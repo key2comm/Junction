@@ -1,13 +1,14 @@
 <script setup lang="ts">
 /** Server settings (admin only): the pages under the top menu's Settings item, as tabs of one card. */
 import { Link } from '@inertiajs/vue3';
-import { BrickWall, CalendarClock, KeyRound, Mail, Palette, Receipt, ShieldCheck, UserCog } from '@lucide/vue';
+import { BrickWall, CalendarClock, FileAudio, KeyRound, Mail, Palette, Receipt, ShieldCheck, UserCog } from '@lucide/vue';
 import { computed } from 'vue';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
 import { toUrl } from '@/lib/utils';
 import { index as apiTokens } from '@/routes/api-tokens';
 import { edit as editBilling } from '@/routes/billing';
 import { edit as editBranding } from '@/routes/branding';
+import { edit as editCaptures } from '@/routes/captures';
 import { edit as editCertificate } from '@/routes/certificate';
 import { edit as editClientDefaults } from '@/routes/client-defaults';
 import { edit as editEmail } from '@/routes/email';
@@ -20,6 +21,7 @@ const tabs = [
     { title: 'Firewall', href: firewall(), icon: BrickWall },
     { title: 'Billing', href: editBilling(), icon: Receipt },
     { title: 'Branding', href: editBranding(), icon: Palette },
+    { title: 'Call captures', href: editCaptures(), icon: FileAudio },
     { title: 'Client defaults', href: editClientDefaults(), icon: UserCog },
     { title: 'Email (SMTP)', href: editEmail(), icon: Mail },
     { title: 'Scheduled reports', href: reports(), icon: CalendarClock },

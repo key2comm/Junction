@@ -12,6 +12,7 @@ import {
     BrickWall,
     Building2,
     CalendarClock,
+    FileAudio,
     ChevronDown,
     FileText,
     Hash,
@@ -49,6 +50,7 @@ import { index as alerts } from '@/routes/alerts';
 import { index as apiTokens } from '@/routes/api-tokens';
 import { edit as billingSettings } from '@/routes/billing';
 import { edit as brandingSettings } from '@/routes/branding';
+import { edit as capturesSettings } from '@/routes/captures';
 import { index as reports } from '@/routes/reports';
 import { edit as certificate } from '@/routes/certificate';
 import { edit as clientDefaults } from '@/routes/client-defaults';
@@ -128,6 +130,7 @@ const adminNav = computed((): NavEntry[] => [
             { title: 'Firewall', href: firewall(), icon: BrickWall },
             { title: 'Billing', href: billingSettings(), icon: Receipt },
             { title: 'Branding', href: brandingSettings(), icon: Palette },
+            { title: 'Call captures', href: capturesSettings(), icon: FileAudio },
             { title: 'Client defaults', href: clientDefaults(), icon: UserCog },
             { title: 'Email (SMTP)', href: email(), icon: Mail },
             { title: 'Scheduled reports', href: reports(), icon: CalendarClock },

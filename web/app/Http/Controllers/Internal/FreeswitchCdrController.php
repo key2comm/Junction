@@ -7,6 +7,8 @@ use App\Services\CdrIngestor;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
+use App\Jobs\ExtractCallPcap;
+use App\Support\Captures;
 use InvalidArgumentException;
 
 class FreeswitchCdrController extends Controller
@@ -17,7 +19,11 @@ class FreeswitchCdrController extends Controller
         $xml = (string) ($request->input('cdr') ?? $request->getContent());
 
         try {
-            $ingestor->ingest($xml);
+            $cdr = $ingestor->ingest($xml);
+            // Its SIP capture, once the last BYE retransmissions are in (Settings → Call captures).
+            if ($cdr?->sip_call_id !== null && $cdr->pcap_path === null && Captures::enabled()) {
+                ExtractCallPcap::dispatch($cdr->id)->delay(now()->addSeconds(60));
+            }
         } catch (InvalidArgumentException $e) {
             Log::warning('Rejected FreeSWITCH CDR', ['error' => $e->getMessage()]);
 

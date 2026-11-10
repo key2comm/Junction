@@ -46,6 +46,9 @@ return [
     // Extra carrier IPs from the installer config, always allowed through the firewall.
     'static_carrier_ips' => env('SOFTSWITCH_STATIC_CARRIER_IPS', ''),
 
+    // Raw SIP capture written by softswitch-capture.service (Settings → Call captures).
+    'capture_dir' => env('SOFTSWITCH_CAPTURE_DIR', '/var/lib/softswitch/capture'),
+
     'firewall' => [
         'helper' => env('SOFTSWITCH_FIREWALL_HELPER', '/usr/local/sbin/softswitch-firewall'),
     ],

@@ -3,7 +3,9 @@
 use App\Jobs\RefreshFirewallStatus;
 use App\Jobs\SyncSwitchConfig;
 use App\Models\RateImport;
+use App\Support\Captures;
 use App\Services\LiveCalls;
+use App\Services\PcapExtractor;
 use App\Services\TrunkQuality;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -67,6 +69,16 @@ Schedule::call(function () {
 
 // Settings → Scheduled reports: each schedule's report once its day/week/month has ended.
 Schedule::command('softswitch:reports')->hourlyAt(10)->withoutOverlapping()->runInBackground();
+
+// Settings → Call captures: per-call PCAPs past their retention, raw capture files after a day,
+// and (every 5 minutes) whether the capture is running, for the settings page.
+Schedule::call(fn () => app(PcapExtractor::class)->prune())->name('softswitch:prune-pcaps')->dailyAt('03:30');
+Schedule::call(function () {
+    $files = glob(Captures::rawDirectory().'/sip-*.pcap') ?: [];
+    $latest = $files ? max(array_map(fn ($f) => (int) @filemtime($f), $files)) : null;
+    Cache::put('captures.status', ['raw_files' => count($files), 'raw_bytes' => array_sum(array_map(fn ($f) => (int) @filesize($f), $files)),
+        'latest' => $latest ? date(DATE_ATOM, $latest) : null, 'checked_at' => now()->toIso8601String()], now()->addHour());
+})->name('softswitch:capture-status')->everyFiveMinutes();
 
 // Fraud and operational alerts.
 Schedule::command('softswitch:check-alerts')->everyMinute()->withoutOverlapping();
