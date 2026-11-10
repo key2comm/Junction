@@ -236,7 +236,7 @@ const duration = (s: number) => (s >= 60 ? `${Math.floor(s / 60)}m ${s % 60}s` :
                         </td>
                         <td class="text-end tabular-nums">{{ r.answered ? duration(r.billsec) : '—' }}</td>
                         <td class="text-end">
-                            <a v-if="r.has_pcap" :href="pcap(r.id).url" :title="`SIP capture of this call (.pcap)`" class="text-nowrap"><Download class="icon" /> PCAP</a>
+                            <a v-if="r.has_pcap" :href="pcap(r.id).url" title="Download the SIP capture (PCAP)" aria-label="Download PCAP"><Download class="icon" /></a>
                             <span v-else class="text-secondary" :title="r.pcap_pending ? 'Being prepared' : 'No capture for this call'">{{ r.pcap_pending ? '…' : '—' }}</span>
                         </td>
                     </tr>
