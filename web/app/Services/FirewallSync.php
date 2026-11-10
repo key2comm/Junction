@@ -9,6 +9,7 @@ use App\Models\Gateway;
 use App\Support\Dns;
 use App\Support\IpNet;
 use App\Support\Settings;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Process;
 use RuntimeException;
 
@@ -98,6 +99,7 @@ class FirewallSync
             return ['skipped' => 'a change is waiting for confirmation'];
         }
         $this->resolveHostnames();
+        $this->refreshCarrierTrust();
 
         $args = $confirmWithin === null ? ['policy'] : ['policy', '--confirm-within', (string) $confirmWithin];
         $result = $this->helper($args, FirewallPolicy::helperInput());
@@ -177,6 +179,36 @@ class FirewallSync
         if ($changed) {
             FirewallPolicy::forgetTrusted();
         }
+    }
+
+    /**
+     * Carriers' enabled SIP trunks: their IPs (hostnames resolved) join the
+     * whitelist. A failed lookup keeps the last known addresses for that host.
+     *
+     * @return list<string>
+     */
+    public function refreshCarrierTrust(): array
+    {
+        $known = Cache::get(FirewallPolicy::CARRIER_TRUST.'.hosts', []);
+        $hosts = Gateway::query()->where('enabled', true)
+            ->whereHas('trunk', fn ($q) => $q->where('enabled', true)->whereHas('account', fn ($a) => $a->where('is_vendor', true)->where('status', '!=', 'closed')))
+            ->distinct()->pluck('host')->all();
+        $byHost = [];
+        foreach ($hosts as $host) {
+            $ips = filter_var($host, FILTER_VALIDATE_IP) ? [$host] : ($this->resolver)($host);
+            $ips = array_values(array_filter(array_map(fn ($ip) => IpNet::normalize($ip), $ips)));
+            // Only single addresses: a hostname never widens to a network.
+            $byHost[$host] = $ips !== [] ? array_values(array_filter($ips, fn ($ip) => ! str_contains($ip, '/'))) : ($known[$host] ?? []);
+        }
+        $ips = array_values(array_unique(array_merge(...array_values($byHost ?: [[]]))));
+        sort($ips);
+        if ($ips !== Cache::get(FirewallPolicy::CARRIER_TRUST)) {
+            Cache::forever(FirewallPolicy::CARRIER_TRUST, $ips);
+            FirewallPolicy::forgetTrusted();
+        }
+        Cache::forever(FirewallPolicy::CARRIER_TRUST.'.hosts', $byHost);
+
+        return $ips;
     }
 
     /** @return list<string> */

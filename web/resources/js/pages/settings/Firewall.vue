@@ -96,7 +96,7 @@ const expiry = (e: Entry) => (e.expires_at ? `until ${dateTime(e.expires_at)}` :
         <Heading
             variant="small"
             title="Firewall"
-            description="Who can reach this server. Whitelisted addresses can always connect and are never banned; blacklisted ones can't connect at all. Customer and carrier addresses are allowed on the carrier SIP port automatically, from their accounts and carrier SIP trunks (listed in the whitelist as Carrier: name, SIP ports only)."
+            description="Who can reach this server. Whitelisted addresses can always connect and are never banned; blacklisted ones can't connect at all. Customer and carrier addresses are allowed on the carrier SIP port automatically, from their accounts and carrier SIP trunks (carriers' SIP trunks are also on the whitelist, every port, listed as Carrier: name)."
         />
 
         <!-- A change waiting for confirmation -->
@@ -229,7 +229,7 @@ const expiry = (e: Entry) => (e.expires_at ? `until ${dateTime(e.expires_at)}` :
                                     <td><span class="font-monospace">{{ c.host }}</span></td>
                                     <td>
                                         Carrier: <Link :href="showAccount(c.account_id)">{{ c.carrier }}</Link>
-                                        <div class="small text-secondary">{{ c.label }} · SIP ports only, added automatically</div>
+                                        <div class="small text-secondary">{{ c.label }} · all ports, added automatically</div>
                                     </td>
                                     <td class="text-end small text-secondary">on the carrier</td>
                                 </tr>

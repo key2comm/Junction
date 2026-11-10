@@ -27,7 +27,7 @@ class GatewayController extends Controller
         abort_unless($account->is_vendor, 404);
         $trunk = $account->ensureCarrierTrunk();
         $gateway = $trunk->gateways()->create($this->validated($request, $trunk));
-        Inertia::flash('toast', ['type' => 'success', 'message' => "SIP trunk {$gateway->label} added. {$gateway->host} is allowed through the firewall."]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => "SIP trunk {$gateway->label} added. {$gateway->host} is whitelisted on the firewall."]);
 
         return to_route('accounts.show', $account);
     }

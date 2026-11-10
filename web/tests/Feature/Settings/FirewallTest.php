@@ -105,6 +105,35 @@ class FirewallTest extends TestCase
         $this->assertSame($this->admin->id, $ban->user_id);
     }
 
+    public function test_carrier_sip_trunks_are_whitelisted_on_every_port(): void
+    {
+        Dns::fake(['sip.carrier.example' => ['203.0.113.30']]);
+        $trunk = \App\Models\Trunk::factory()->create();
+        \App\Models\Gateway::factory()->create(['trunk_id' => $trunk->id, 'host' => 'sip.carrier.example']);
+        \App\Models\Gateway::factory()->create(['trunk_id' => $trunk->id, 'host' => '198.51.100.40']);
+        \App\Models\Gateway::factory()->create(['trunk_id' => $trunk->id, 'host' => '198.51.100.41', 'enabled' => false]);
+        $this->add('allow', '192.0.2.5', 'Office');
+
+        Process::fake(['*' => Process::result('3 trusted')]);
+        app(FirewallSync::class)->applyPolicy();
+        Process::assertRan(fn ($p) => $p->command[3] === 'policy' && str_contains($p->input, "trust 198.51.100.40
+")
+            && str_contains($p->input, "trust 203.0.113.30
+") && ! str_contains($p->input, '198.51.100.41'));
+        $this->assertTrue(FirewallPolicy::isTrusted('203.0.113.30'));
+        $this->assertTrue(FirewallPolicy::isTrusted('192.0.2.5'));
+
+        // A failed lookup keeps the carrier's last known address.
+        Dns::fake([]);
+        app(FirewallSync::class)->applyPolicy();
+        $this->assertTrue(FirewallPolicy::isTrusted('203.0.113.30'));
+
+        // Removing the SIP trunk takes it off.
+        \App\Models\Gateway::query()->where('host', '198.51.100.40')->delete();
+        app(FirewallSync::class)->applyPolicy();
+        $this->assertFalse(FirewallPolicy::isTrusted('198.51.100.40'));
+    }
+
     public function test_helper_input_has_lists_and_lockdown(): void
     {
         Dns::fake(['office.example.com' => ['203.0.113.5']]);

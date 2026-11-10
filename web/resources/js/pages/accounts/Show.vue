@@ -370,7 +370,7 @@ const select = 'form-select w-auto';
                 <Heading
                     variant="small"
                     title="SIP trunks"
-                    description="Where calls to this carrier are sent. Priority 1 is tried first; the others are failovers. Each IP/FQDN is allowed through the firewall (SIP only) as soon as it's saved."
+                    description="Where calls to this carrier are sent. Priority 1 is tried first; the others are failovers. Each IP/FQDN is whitelisted on the firewall (every port) as soon as it's saved."
                 />
                 <div class="card table-responsive">
                     <table class="table table-vcenter card-table table-tight">

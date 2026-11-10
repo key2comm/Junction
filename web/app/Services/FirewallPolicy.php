@@ -33,6 +33,13 @@ final class FirewallPolicy
 
     private const TRUSTED = 'softswitch.firewall.trusted';
 
+    /**
+     * Carriers' SIP trunk IPs (hostnames resolved by the queue worker in
+     * FirewallSync::applyPolicy): trusted like the whitelist, every port (the
+     * user's choice), and never banned by fail2ban.
+     */
+    public const CARRIER_TRUST = 'softswitch.firewall.carrier_trust';
+
     /** How long the admin has to confirm (the helper's timer gets the same, from when it applies). */
     public const CONFIRM_SECONDS = 180;
 
@@ -129,7 +136,9 @@ final class FirewallPolicy
     public static function trustedNets(): array
     {
         return Cache::remember(self::TRUSTED, 300, fn () => FirewallEntry::query()->where('list', 'allow')->orderBy('id')->get()
-            ->flatMap(fn (FirewallEntry $e) => $e->nets())->unique()->values()->all());
+            ->flatMap(fn (FirewallEntry $e) => $e->nets())
+            ->merge(Cache::get(self::CARRIER_TRUST, []))
+            ->unique()->values()->all());
     }
 
     /** @return list<string> */

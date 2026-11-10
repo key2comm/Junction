@@ -48,7 +48,7 @@ class FirewallController extends Controller
 
         return Inertia::render('settings/Firewall', [
             'allow' => $entries->where('list', 'allow')->values(),
-            // Carriers' SIP trunks: allowed on the SIP ports only (not SSH or admin), managed on the carrier.
+            // Carriers' SIP trunks: on the whitelist (every port), managed on the carrier.
             'carriers' => Gateway::query()->where('enabled', true)->whereHas('trunk', fn ($q) => $q->where('enabled', true))
                 ->with('trunk.account:id,name')->orderBy('host')->get()
                 ->map(fn (Gateway $g) => ['id' => $g->id, 'host' => $g->host, 'label' => $g->label, 'account_id' => $g->trunk->account_id, 'carrier' => $g->trunk->account?->name])
