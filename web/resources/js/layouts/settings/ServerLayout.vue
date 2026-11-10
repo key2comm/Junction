@@ -1,12 +1,13 @@
 <script setup lang="ts">
 /** Server settings (admin only): the pages under the top menu's Settings item, as tabs of one card. */
 import { Link } from '@inertiajs/vue3';
-import { BrickWall, KeyRound, Mail, Receipt, ShieldCheck, UserCog } from '@lucide/vue';
+import { BrickWall, KeyRound, Mail, Palette, Receipt, ShieldCheck, UserCog } from '@lucide/vue';
 import { computed } from 'vue';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
 import { toUrl } from '@/lib/utils';
 import { index as apiTokens } from '@/routes/api-tokens';
 import { edit as editBilling } from '@/routes/billing';
+import { edit as editBranding } from '@/routes/branding';
 import { edit as editCertificate } from '@/routes/certificate';
 import { edit as editClientDefaults } from '@/routes/client-defaults';
 import { edit as editEmail } from '@/routes/email';
@@ -17,6 +18,7 @@ const tabs = [
     { title: 'SSL certificate', href: editCertificate(), icon: ShieldCheck },
     { title: 'Firewall', href: firewall(), icon: BrickWall },
     { title: 'Billing', href: editBilling(), icon: Receipt },
+    { title: 'Branding', href: editBranding(), icon: Palette },
     { title: 'Client defaults', href: editClientDefaults(), icon: UserCog },
     { title: 'Email (SMTP)', href: editEmail(), icon: Mail },
     { title: 'API tokens', href: apiTokens(), icon: KeyRound },
