@@ -28,7 +28,7 @@ const footer = computed(() => props.settings.company);
         <section class="card card-body ss-stack-3">
             <div class="ss-grid gap-1">
                 <Label for="company_name">Company name</Label>
-                <Input id="company_name" name="company_name" :default-value="settings.company ?? ''" maxlength="100" placeholder="e.g. Key2 Comm Inc." />
+                <Input id="company_name" name="company_name" :default-value="settings.company ?? ''" maxlength="100" placeholder="ACME Inc" />
                 <p class="small text-secondary mb-0">
                     Shown at the bottom of every page as
                     <strong>© {{ year }} {{ footer || 'Company name' }}</strong>. The year is always the current one. Leave it blank for no footer.
