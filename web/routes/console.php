@@ -44,6 +44,15 @@ Schedule::call(function () {
     }
 })->name('softswitch:prune-rate-uploads')->daily();
 
+// DID import files uploaded but never imported: drop after a day.
+Schedule::call(function () {
+    foreach (Storage::disk('local')->files('did-imports') as $file) {
+        if (Storage::disk('local')->lastModified($file) < now()->subDay()->getTimestamp()) {
+            Storage::disk('local')->delete($file);
+        }
+    }
+})->name('softswitch:prune-did-uploads')->daily();
+
 // Vendor quality stats: rebuild the last few hours (catches late CDRs and leg timings).
 Schedule::command('softswitch:quality-rollup')->everyFiveMinutes()->withoutOverlapping();
 Schedule::call(fn () => DB::table('cdr_leg_timings')->where('created_at', '<', now()->subDays(2))->delete())

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
-import { Plus, Trash2 } from '@lucide/vue';
+import { Plus, Trash2, Upload } from '@lucide/vue';
 import { reactive } from 'vue';
 import DidController from '@/actions/App/Http/Controllers/Admin/DidController';
 import Heading from '@/components/Heading.vue';
@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import type { Paginated } from '@/lib/ui';
 import { selectClass } from '@/lib/ui';
 import { show as showAccount } from '@/routes/accounts';
+import { show as showImport } from '@/routes/did-import';
 import { create, edit, index } from '@/routes/dids';
 
 type Account = { id: number; name: string; code: string };
@@ -60,7 +61,10 @@ const badge = (s: string) => (s === 'banned' ? 'destructive' : s === 'active' ? 
     <div class="ss-stack-4">
         <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
             <Heading title="DIDs" description="Numbers providers deliver to this switch, and where each one goes. Inbound calls to DIDs are free for the customer." />
-            <Button as-child><Link :href="create({ query: { account: f.account || undefined } })"><Plus class="icon" /> Add DID</Link></Button>
+            <div class="d-flex gap-2">
+                <Button variant="outline" as-child><Link :href="showImport()"><Upload class="icon" /> Import</Link></Button>
+                <Button as-child><Link :href="create({ query: { account: f.account || undefined } })"><Plus class="icon" /> Add DID</Link></Button>
+            </div>
         </div>
 
         <p v-if="filters.endpoint" class="mb-0">

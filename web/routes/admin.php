@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\AccountIpController;
 use App\Http\Controllers\Admin\AlertController;
 use App\Http\Controllers\Admin\CdrController;
 use App\Http\Controllers\Admin\DidController;
+use App\Http\Controllers\Admin\DidImportController;
 use App\Http\Controllers\Admin\EndpointController;
 use App\Http\Controllers\Admin\GatewayController;
 use App\Http\Controllers\Admin\InvoiceController;
@@ -122,6 +123,12 @@ Route::middleware(['auth', 'admin'])->group(function () {
     // Routing -> PBX/Devices: where customers' calls are delivered.
     Route::resource('endpoints', EndpointController::class)->except(['show']);
     // Routing -> DIDs: numbers providers deliver to us, and where each one goes.
+    // DID import (before the resource, so "import" isn't taken for a DID id).
+    Route::get('dids/import', [DidImportController::class, 'show'])->name('did-import.show');
+    Route::get('dids/import/sample', [DidImportController::class, 'sample'])->name('did-import.sample');
+    Route::post('dids/import/upload', [DidImportController::class, 'upload'])->name('did-import.upload');
+    Route::post('dids/import', [DidImportController::class, 'store'])->name('did-import.store');
+    Route::post('dids/import/cancel', [DidImportController::class, 'cancel'])->name('did-import.cancel');
     Route::resource('dids', DidController::class)->except(['show']);
     // A carrier's SIP trunks (gateways), on the carrier page.
     Route::post('accounts/{account}/sip-trunks', [GatewayController::class, 'store'])->name('accounts.sip-trunks.store');
