@@ -11,6 +11,7 @@ import {
     BellRing,
     BrickWall,
     Building2,
+    CalendarClock,
     ChevronDown,
     FileText,
     Hash,
@@ -48,6 +49,7 @@ import { index as alerts } from '@/routes/alerts';
 import { index as apiTokens } from '@/routes/api-tokens';
 import { edit as billingSettings } from '@/routes/billing';
 import { edit as brandingSettings } from '@/routes/branding';
+import { index as reports } from '@/routes/reports';
 import { edit as certificate } from '@/routes/certificate';
 import { edit as clientDefaults } from '@/routes/client-defaults';
 import { index as carrierRates } from '@/routes/carrier-rates';
@@ -128,6 +130,7 @@ const adminNav = computed((): NavEntry[] => [
             { title: 'Branding', href: brandingSettings(), icon: Palette },
             { title: 'Client defaults', href: clientDefaults(), icon: UserCog },
             { title: 'Email (SMTP)', href: email(), icon: Mail },
+            { title: 'Scheduled reports', href: reports(), icon: CalendarClock },
             { title: 'API tokens', href: apiTokens(), icon: KeyRound },
         ],
     },

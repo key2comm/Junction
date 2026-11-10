@@ -8,6 +8,7 @@ use App\Http\Controllers\Settings\ClientDefaultsController;
 use App\Http\Controllers\Settings\EmailController;
 use App\Http\Controllers\Settings\FirewallController;
 use App\Http\Controllers\Settings\ProfileController;
+use App\Http\Controllers\Settings\ReportController;
 use App\Http\Controllers\Settings\SecurityController;
 use Illuminate\Auth\Middleware\RequirePassword;
 use Illuminate\Support\Facades\Route;
@@ -46,6 +47,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('settings/email', [EmailController::class, 'edit'])->middleware('admin')->name('email.edit');
     Route::put('settings/email', [EmailController::class, 'update'])->middleware(RequirePassword::class)->middleware('admin')->name('email.update');
     Route::post('settings/email/test', [EmailController::class, 'test'])->middleware('throttle:6,1')->middleware('admin')->name('email.test');
+
+    // Scheduled call record reports (saved on the server, emailed, SFTP). Saving SFTP credentials needs a recent password confirmation.
+    Route::middleware('admin')->group(function () {
+        Route::get('settings/reports', [ReportController::class, 'index'])->name('reports.index');
+        Route::get('settings/reports/create', [ReportController::class, 'create'])->name('reports.create');
+        Route::post('settings/reports', [ReportController::class, 'store'])->middleware(RequirePassword::class)->name('reports.store');
+        Route::get('settings/reports/{report}/edit', [ReportController::class, 'edit'])->name('reports.edit');
+        Route::put('settings/reports/{report}', [ReportController::class, 'update'])->middleware(RequirePassword::class)->name('reports.update');
+        Route::delete('settings/reports/{report}', [ReportController::class, 'destroy'])->name('reports.destroy');
+        Route::post('settings/reports/{report}/run', [ReportController::class, 'run'])->middleware('throttle:10,1')->name('reports.run');
+        Route::get('settings/report-files/{file}', [ReportController::class, 'download'])->name('reports.files.download');
+        Route::delete('settings/report-files/{file}', [ReportController::class, 'destroyFile'])->name('reports.files.destroy');
+    });
 
     // Company logo, icon and footer name.
     Route::get('settings/branding', [BrandingController::class, 'edit'])->middleware('admin')->name('branding.edit');

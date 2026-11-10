@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /** Server settings (admin only): the pages under the top menu's Settings item, as tabs of one card. */
 import { Link } from '@inertiajs/vue3';
-import { BrickWall, KeyRound, Mail, Palette, Receipt, ShieldCheck, UserCog } from '@lucide/vue';
+import { BrickWall, CalendarClock, KeyRound, Mail, Palette, Receipt, ShieldCheck, UserCog } from '@lucide/vue';
 import { computed } from 'vue';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
 import { toUrl } from '@/lib/utils';
@@ -12,6 +12,7 @@ import { edit as editCertificate } from '@/routes/certificate';
 import { edit as editClientDefaults } from '@/routes/client-defaults';
 import { edit as editEmail } from '@/routes/email';
 import { index as firewall } from '@/routes/firewall';
+import { index as reports } from '@/routes/reports';
 
 const tabs = [
     // Same order as the top menu's Settings dropdown.
@@ -21,11 +22,12 @@ const tabs = [
     { title: 'Branding', href: editBranding(), icon: Palette },
     { title: 'Client defaults', href: editClientDefaults(), icon: UserCog },
     { title: 'Email (SMTP)', href: editEmail(), icon: Mail },
+    { title: 'Scheduled reports', href: reports(), icon: CalendarClock },
     { title: 'API tokens', href: apiTokens(), icon: KeyRound },
 ];
 const { isCurrentOrParentUrl } = useCurrentUrl();
-// The firewall page has two lists side by side; the others are single forms.
-const wide = computed(() => isCurrentOrParentUrl(firewall()));
+// The firewall and reports pages have wide tables; the others are single forms.
+const wide = computed(() => isCurrentOrParentUrl(firewall()) || isCurrentOrParentUrl(reports()));
 </script>
 
 <template>

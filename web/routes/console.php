@@ -65,6 +65,9 @@ Schedule::call(function () {
     }
 })->name('softswitch:live-calls')->everyFiveSeconds()->withoutOverlapping();
 
+// Settings → Scheduled reports: each schedule's report once its day/week/month has ended.
+Schedule::command('softswitch:reports')->hourlyAt(10)->withoutOverlapping()->runInBackground();
+
 // Fraud and operational alerts.
 Schedule::command('softswitch:check-alerts')->everyMinute()->withoutOverlapping();
 
