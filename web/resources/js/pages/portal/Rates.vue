@@ -46,7 +46,7 @@ function search() {
                             <th>Destination</th>
                             <th class="text-end">Rate/min</th>
                             <th class="text-end">Connect</th>
-                            <th>Billing</th>
+                            <th>Interval</th>
                             <th>Until</th>
                         </tr>
                     </thead>
