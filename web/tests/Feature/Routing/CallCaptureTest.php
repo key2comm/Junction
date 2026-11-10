@@ -122,6 +122,7 @@ class CallCaptureTest extends TestCase
 
         $this->actingAs($admin)->get(route('cdrs.index', ['from' => now()->subDay()->toIso8601String()]))->assertInertia(fn (Assert $p) => $p
             ->where('cdrs.data.0.has_pcap', true)->missing('cdrs.data.0.sell')->has('summary'));
+        $this->actingAs($admin)->get(route('cdrs.show', $new))->assertInertia(fn (Assert $p) => $p->where('cdr.has_pcap', true));
         $this->actingAs($admin)->get(route('cdrs.pcap', $new))->assertOk()->assertHeader('Content-Type', 'application/vnd.tcpdump.pcap');
 
         Settings::put([Captures::RETENTION => 90]);

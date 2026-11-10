@@ -81,6 +81,8 @@ class CdrController extends Controller
                 'trunk' => $cdr->trunk?->only(['id', 'name']),
                 'gateway' => $cdr->gateway?->name,
                 'reason' => Router::REASONS[$cdr->hangup_cause] ?? null,
+                'has_pcap' => $cdr->pcap_path !== null,
+                'pcap_pending' => $cdr->pcap_path === null && $cdr->sip_call_id !== null && ($cdr->ended_at ?? $cdr->started_at)?->gt(now()->subMinutes(3)),
             ],
             'attempts' => $cdr->attemptLog->map(fn ($a) => [
                 ...$a->only(['attempt', 'buy_prefix', 'buy_rate', 'started_at', 'ended_at', 'sip_code', 'hangup_cause']),

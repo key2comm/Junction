@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
+import { Download } from '@lucide/vue';
 import Heading from '@/components/Heading.vue';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { dateTime, money } from '@/lib/format';
 import { show as showAccount } from '@/routes/accounts';
-import { index, show } from '@/routes/cdrs';
+import { index, pcap, show } from '@/routes/cdrs';
 import { show as showTrunk } from '@/routes/trunks';
 
 type Cdr = {
@@ -13,6 +15,8 @@ type Cdr = {
     direction: string;
     flow: 'incoming' | 'incoming_forwarded' | 'outgoing' | 'internal';
     did: string | null;
+    has_pcap: boolean;
+    pcap_pending: boolean;
     caller: string | null;
     callee: string;
     destination: string | null;
@@ -76,7 +80,13 @@ const outcome = c.answered_at ? 'Answered' : c.attempts === 0 ? 'Rejected before
 
     <div class="ss-maxw-4xl ss-stack-4">
         <div class="ss-stack-2">
-            <Heading :title="`${cdr.caller ?? 'Unknown'} → ${cdr.destination ?? cdr.callee}`" :description="dateTime(cdr.started_at)" />
+            <div class="d-flex flex-wrap align-items-start justify-content-between gap-2">
+                <Heading :title="`${cdr.caller ?? 'Unknown'} → ${cdr.destination ?? cdr.callee}`" :description="dateTime(cdr.started_at)" />
+                <Button v-if="cdr.has_pcap" variant="outline" as-child>
+                    <a :href="pcap(cdr.id).url" title="SIP capture of this call, for Wireshark"><Download class="icon" /> Download PCAP</a>
+                </Button>
+                <span v-else class="small text-secondary">{{ cdr.pcap_pending ? 'PCAP being prepared…' : 'No PCAP for this call' }}</span>
+            </div>
             <div class="d-flex flex-wrap align-items-center gap-2">
                 <Badge :variant="cdr.answered_at ? 'default' : cdr.attempts === 0 ? 'destructive' : 'secondary'">{{ outcome }}</Badge>
                 <Badge>{{ { incoming: 'Incoming', incoming_forwarded: 'Incoming (forwarded)', outgoing: 'Outgoing', internal: 'Internal' }[cdr.flow] }}</Badge>
