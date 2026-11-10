@@ -6,31 +6,13 @@ An open Class 4 (wholesale carrier) softswitch built on FreeSWITCH. It routes Vo
 
 ## Install
 
-Requirements: Rocky Linux, AlmaLinux, RHEL, or CentOS Stream 9/10. Use a fresh server with a public IP and root/sudo access. No SignalWire token is needed, because FreeSWITCH is built from public source.
+Requirements: Rocky Linux, AlmaLinux, RHEL, or CentOS Stream 9/10. Use a fresh server with a public IP and root/sudo access.
 
 ```sh
 git clone https://github.com/key2comm/Softswitch.git
 cd Softswitch
 sudo ./install.sh
 ```
-
-The first run creates `/etc/softswitch/softswitch.conf`. To change a setting (carrier IPs, ports, versions), edit that file and run `sudo ./install.sh` again. Every step can be safely re-run.
-
-Generated secrets (event socket password and others) are kept in `/etc/softswitch/secrets`, readable by root only.
-
-| Step | What it does |
-|---|---|
-| 10-base | Enables EPEL and CRB, and installs base tools |
-| 20-firewall | Sets up the nftables firewall, with an automatic 3-minute rollback until you confirm SSH still works |
-| 30-fail2ban | Bans repeated SSH and SIP login failures |
-| 40-ssh | Turns off SSH password and root login (only when you already log in with a key) |
-| 50-freeswitch | Builds FreeSWITCH, sofia-sip, and spandsp from source |
-| 60-freeswitch-config | Secures the stock config and starts FreeSWITCH |
-| 70-postgresql | Sets up PostgreSQL on localhost: database, user, and a generated password |
-| 80-web | Sets up nginx and PHP-FPM, a self-signed certificate, and the Let's Encrypt helper |
-| 90-app | Deploys the admin UI (Laravel + Vue + Inertia) to `/var/www/html`, runs migrations, starts the queue worker and scheduler, creates the first admin, and syncs gateways and the firewall |
-| 95-selftest | Places real test calls through the switch and checks routing, failover, rejections, the funds cut-off, and billing |
-
 ### Customer portal
 
 Customers can sign in at the same address and land in `/portal`. There they see their balance, calls, invoices, rates, and their own API tokens; never vendors or costs. Add portal logins from the customer's account page. If email is set up, they get a link to set their password.
@@ -43,27 +25,18 @@ Create a token in **Settings → API tokens**, then call `https://<your-server>/
 curl -H "Authorization: Bearer $TOKEN" https://switch.example.com/api/v1/cdrs/summary
 ```
 
-### Self-test
+### Carriers
 
-The switch can test itself without any external tools. A loopback-only SIP profile acts as a fake customer and fake vendors, and every call goes through the real routing engine and billing:
+Add your Carriers, Currency, Time Zone,  Billing email, NOC email, set inbound and outbound limits. Select the codecs you wish to use. Add Carrier rates so you know how much calls are costing you. Strip leading digits or prefix if needed. 
 
-```sh
-sudo -u softswitch bash -c 'cd /var/www/html && php artisan softswitch:selftest'
-```
+<img width="1140" height="1802" alt="image" src="https://github.com/user-attachments/assets/905e75d2-18ab-4702-9559-0e8c827ecb7e" />
 
-It creates temporary `SELFTEST-*` records and removes them afterwards. Run it after changing FreeSWITCH config or upgrading.
+Add your carrier rates. Upload and choose columns. Min needed, Prefix, Destination, Rate per Min and Interval. Delete all rates and start over. Manually add rates as needed. 
 
-After installing, open `https://<your-server>` and sign in as `admin@<hostname>`. Get the initial password with `sudo grep ADMIN_INITIAL_PASSWORD /etc/softswitch/secrets`. To switch to a trusted certificate, go to **Settings → SSL certificate**. Public sign-up is disabled, so add more admins with:
+<img width="1100" height="804" alt="image" src="https://github.com/user-attachments/assets/6ace45ab-78b1-4276-a017-ea53033dae2d" />
 
-```sh
-sudo -u softswitch bash -c 'cd /var/www/html && php artisan softswitch:admin someone@example.com'
-```
+Build tariffs off of your carrier rates by markup or by a fixed amount per min. Assign different rates to different customers. Manually add rates in. 
 
-## Development
 
-The repo is synced across devices through GitHub. `git pull` before you start; commit and `git push` when you're done.
+<img width="1636" height="1172" alt="image" src="https://github.com/user-attachments/assets/25caba0b-244d-46db-ab87-5c64a1492e46" />
 
-- `scripts/push-to-server.sh theswitch -- --steps 90` copies the committed code to the test server and runs the chosen installer steps there.
-- `scripts/test-on-server.sh theswitch` runs the Laravel tests, frontend build, and type check on the server. It works from devices that don't have PHP or Node installed.
-
-See [docs/PLAN.md](docs/PLAN.md) for the architecture and roadmap.
