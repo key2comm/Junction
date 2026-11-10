@@ -16,6 +16,8 @@ const props = defineProps<{
     /** Offer "nothing" (e.g. an IVR's no-key-pressed action). */
     optional?: boolean;
     id?: string;
+    /** Show each PBX/Device's ID (the DID form: needed for imports). */
+    showIds?: boolean;
 }>();
 
 const type = ref(props.value?.type ?? (props.optional ? '' : 'number'));
@@ -37,8 +39,9 @@ const endpointTarget = ref(props.value?.type === 'endpoint' ? String(props.value
         </select>
         <select v-if="type === 'endpoint'" v-model="endpointTarget" :name="`${name}[target]`" :class="selectClass" class="w-auto ss-minw-48" :aria-label="`${name} PBX/Device`">
             <option value="" disabled>Choose…</option>
-            <option v-for="e in endpoints" :key="e.id" :value="String(e.id)">{{ e.label }}</option>
+            <option v-for="e in endpoints" :key="e.id" :value="String(e.id)">{{ e.label }}{{ showIds ? ` (ID ${e.id})` : '' }}</option>
         </select>
+        <span v-if="showIds && type === 'endpoint' && endpointTarget" class="align-self-center text-secondary">Device ID <span class="font-monospace fw-medium text-body">{{ endpointTarget }}</span></span>
         <select v-if="needsTarget" v-model="target" :name="`${name}[target]`" :class="selectClass" class="w-auto ss-minw-48" :aria-label="`${name} target`">
             <option value="" disabled>Choose…</option>
             <option v-for="n in targets" :key="n.number" :value="n.number">{{ n.label }}</option>

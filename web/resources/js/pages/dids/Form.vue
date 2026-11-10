@@ -107,7 +107,7 @@ const action = props.did ? DidController.update.form(props.did.id) : DidControll
                     <p class="text-secondary mb-0">Choose the customer first.</p>
                 </template>
                 <template v-else-if="hasTargets">
-                    <DestinationPicker id="destination" :key="String(account)" name="destination" :numbers="target.numbers" :endpoints="target.endpoints" :value="initial" />
+                    <DestinationPicker id="destination" :key="String(account)" name="destination" :numbers="target.numbers" :endpoints="target.endpoints" :value="initial" show-ids />
                     <p class="small text-secondary mb-0">
                         One of the customer's PBX/Devices, or an extension, IVR or voicemail on this switch's PBX.
                     </p>
