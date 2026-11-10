@@ -83,12 +83,12 @@ class DidImportController extends Controller
             'existing' => ['required', Rule::in(['skip', 'update'])],
             'columns' => ['required', 'array'],
             'columns.*' => ['nullable', 'integer', 'min:0', 'max:200'],
-            'defaults' => ['array'],
-            'defaults.account_id' => ['nullable', 'integer'],
-            'defaults.provider_account_id' => ['nullable', 'integer'],
-            'defaults.device_id' => ['nullable', 'integer'],
-            'defaults.language' => ['nullable', Rule::in(array_keys(Languages::ALL))],
-            'defaults.status' => ['nullable', Rule::in(array_keys(PbxDid::STATUSES))],
+            'fallback' => ['array'],
+            'fallback.account_id' => ['nullable', 'integer'],
+            'fallback.provider_account_id' => ['nullable', 'integer'],
+            'fallback.device_id' => ['nullable', 'integer'],
+            'fallback.language' => ['nullable', Rule::in(array_keys(Languages::ALL))],
+            'fallback.status' => ['nullable', Rule::in(array_keys(PbxDid::STATUSES))],
         ]);
         $columns = array_intersect_key($data['columns'], DidImporter::FIELDS);
 
@@ -97,7 +97,7 @@ class DidImportController extends Controller
             'add_one' => $request->boolean('add_one'),
             'existing' => $data['existing'],
             'columns' => array_map(fn ($v) => $v === null ? null : (int) $v, $columns),
-            'defaults' => $data['defaults'] ?? [],
+            'defaults' => $data['fallback'] ?? [],
         ]);
         $this->forget($request);
 

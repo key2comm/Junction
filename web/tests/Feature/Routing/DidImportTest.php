@@ -45,7 +45,7 @@ class DidImportTest extends TestCase
         return $this->actingAs($this->admin)->post(route('did-import.store'), [
             'has_header' => true, 'add_one' => true, 'existing' => 'skip',
             'columns' => ['number' => 0, 'customer' => 1, 'provider' => 2, 'device_id' => 3, 'extension' => null, 'language' => 4, 'status' => null, 'status_reason' => null, 'comment' => 5],
-            'defaults' => ['language' => 'en', 'status' => 'active'],
+            'fallback' => ['language' => 'en', 'status' => 'active'],
             ...$over,
         ]);
     }
@@ -100,13 +100,13 @@ class DidImportTest extends TestCase
         $defaults = ['account_id' => $this->customer->id, 'provider_account_id' => $this->carrier->id, 'device_id' => $this->device->id, 'language' => 'en', 'status' => 'deactivated'];
 
         $this->upload("14165550100\n14165550199\n");
-        $this->import(['has_header' => false, 'columns' => $columns, 'defaults' => $defaults])->assertSessionHasNoErrors();
+        $this->import(['has_header' => false, 'columns' => $columns, 'fallback' => $defaults])->assertSessionHasNoErrors();
         $this->assertSame(['type' => 'hangup'], PbxDid::query()->where('number', '14165550100')->sole()->destination); // skipped
         $new = PbxDid::query()->where('number', '14165550199')->sole();
         $this->assertSame(['deactivated', (string) $this->device->id], [$new->status, $new->destination['target']]);
 
         $this->upload("14165550100\n");
-        $this->import(['has_header' => false, 'columns' => $columns, 'defaults' => $defaults, 'existing' => 'update'])->assertSessionHasNoErrors();
+        $this->import(['has_header' => false, 'columns' => $columns, 'fallback' => $defaults, 'existing' => 'update'])->assertSessionHasNoErrors();
         $did = PbxDid::query()->where('number', '14165550100')->sole();
         $this->assertSame([(string) $this->device->id, 'deactivated', 'keep me'], [$did->destination['target'], $did->status, $did->description]);
     }

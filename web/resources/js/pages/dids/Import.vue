@@ -48,7 +48,7 @@ const form = useForm({
     add_one: true,
     existing: 'skip',
     columns: Object.fromEntries(fields.map(([f]) => [f, preview?.suggested[f] ?? null])) as Record<Field, number | null>,
-    defaults: { account_id: null as number | null, provider_account_id: null as number | null, device_id: '' as string, language: 'en', status: 'active' },
+    fallback: { account_id: null as number | null, provider_account_id: null as number | null, device_id: '' as string, language: 'en', status: 'active' },
 });
 
 const dataRows = computed(() => (!preview ? [] : form.has_header ? preview.rows : [preview.header, ...preview.rows]));
@@ -74,11 +74,11 @@ const rows = computed(() =>
         const extension = cell(row, 'extension');
         return {
             number: numberOf(row),
-            customer: cell(row, 'customer') || nameOf(props.customers, form.defaults.account_id),
-            provider: cell(row, 'provider') || nameOf(props.providers, form.defaults.provider_account_id),
-            destination: device ? `Device ID ${device}` : extension ? `Extension ${extension}` : form.defaults.device_id ? `Device ID ${form.defaults.device_id}` : '',
-            language: (cell(row, 'language') || form.defaults.language).toLowerCase(),
-            status: (cell(row, 'status') || form.defaults.status).toLowerCase(),
+            customer: cell(row, 'customer') || nameOf(props.customers, form.fallback.account_id),
+            provider: cell(row, 'provider') || nameOf(props.providers, form.fallback.provider_account_id),
+            destination: device ? `Device ID ${device}` : extension ? `Extension ${extension}` : form.fallback.device_id ? `Device ID ${form.fallback.device_id}` : '',
+            language: (cell(row, 'language') || form.fallback.language).toLowerCase(),
+            status: (cell(row, 'status') || form.fallback.status).toLowerCase(),
             comment: cell(row, 'comment'),
         };
     }),
@@ -156,32 +156,32 @@ function cancel() {
             <div class="ss-grid gap-2 ss-cols-sm-3">
                 <div class="ss-grid gap-1">
                     <Label for="def_customer">Customer</Label>
-                    <select id="def_customer" v-model="form.defaults.account_id" :class="selectClass" :disabled="!noCustomer">
+                    <select id="def_customer" v-model="form.fallback.account_id" :class="selectClass" :disabled="!noCustomer">
                         <option :value="null">{{ noCustomer ? '— Choose —' : 'From the file' }}</option>
                         <option v-for="c in customers" :key="c.id" :value="c.id">{{ c.name }} ({{ c.code }})</option>
                     </select>
                 </div>
                 <div class="ss-grid gap-1">
                     <Label for="def_provider">Provider</Label>
-                    <select id="def_provider" v-model="form.defaults.provider_account_id" :class="selectClass" :disabled="!noProvider">
+                    <select id="def_provider" v-model="form.fallback.provider_account_id" :class="selectClass" :disabled="!noProvider">
                         <option :value="null">{{ noProvider ? '— Choose —' : 'From the file' }}</option>
                         <option v-for="p in providers" :key="p.id" :value="p.id">{{ p.name }} ({{ p.code }})</option>
                     </select>
                 </div>
                 <div class="ss-grid gap-1">
                     <Label for="def_device">PBX/Device ID</Label>
-                    <Input id="def_device" v-model="form.defaults.device_id" type="number" min="1" placeholder="None" />
-                    <InputError :message="(form.errors as Record<string, string>)['defaults.device_id']" />
+                    <Input id="def_device" v-model="form.fallback.device_id" type="number" min="1" placeholder="None" />
+                    <InputError :message="(form.errors as Record<string, string>)['fallback.device_id']" />
                 </div>
                 <div class="ss-grid gap-1">
                     <Label for="def_language">Language</Label>
-                    <select id="def_language" v-model="form.defaults.language" :class="selectClass">
+                    <select id="def_language" v-model="form.fallback.language" :class="selectClass">
                         <option v-for="l in languages" :key="l.code" :value="l.code">{{ l.name }}</option>
                     </select>
                 </div>
                 <div class="ss-grid gap-1">
                     <Label for="def_status">Status</Label>
-                    <select id="def_status" v-model="form.defaults.status" :class="selectClass">
+                    <select id="def_status" v-model="form.fallback.status" :class="selectClass">
                         <option value="active">{{ statuses.active }}</option>
                         <option value="deactivated">{{ statuses.deactivated }}</option>
                     </select>
