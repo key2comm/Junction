@@ -106,6 +106,14 @@ admin_pw="$(secret ADMIN_INITIAL_PASSWORD)"
 artisan softswitch:admin "$admin_email" --password="$admin_pw" --if-none >/dev/null
 
 # --- Background services.
+# SIP capture (Settings -> Call captures): tcpdump runs confined (netutils_t)
+# and may only write netutils_tmp_t; the queue worker reads and prunes the files.
+install -d -o "$SS_APP_USER" -g "$SS_APP_USER" -m 0750 /var/lib/softswitch/capture
+if command -v semanage >/dev/null 2>&1; then
+	semanage fcontext -a -t netutils_tmp_t '/var/lib/softswitch/capture(/.*)?' 2>/dev/null 		|| semanage fcontext -m -t netutils_tmp_t '/var/lib/softswitch/capture(/.*)?'
+	restorecon -R /var/lib/softswitch/capture
+fi
+
 for unit in softswitch-queue.service softswitch-scheduler.service softswitch-capture.service; do
 	render "$SS_ROOT/deploy/systemd/$unit" "/etc/systemd/system/$unit"
 done

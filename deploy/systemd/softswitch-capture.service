@@ -9,7 +9,7 @@ Wants=network-online.target
 
 [Service]
 Environment=TZ=UTC
-ExecStartPre=/usr/bin/install -d -o @SS_APP_USER@ -g @SS_APP_USER@ -m 0750 /var/lib/softswitch/capture
+ExecStartPre=/usr/bin/install -Z -d -o @SS_APP_USER@ -g @SS_APP_USER@ -m 0750 /var/lib/softswitch/capture
 # -Z: tcpdump drops to the app user, so the files are its own. Fragments of
 # large SIP messages (no ports after the first) come along too.
 ExecStart=/usr/sbin/tcpdump -i any -nn -s 0 -U -G 300 -Z @SS_APP_USER@ -w /var/lib/softswitch/capture/sip-%%Y%%m%%d%%H%%M%%S.pcap "port @SS_PBX_PORT@ or port @SS_CARRIER_PORT@ or (ip[6:2] & 0x1fff != 0) or (ip[6] & 0x20 != 0)"
