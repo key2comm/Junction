@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\Alert;
 use App\Support\Billing;
+use App\Support\Branding;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -49,6 +50,8 @@ class HandleInertiaRequests extends Middleware
             'openAlerts' => fn () => $request->user()?->isAdmin() ? Alert::query()->where('status', 'open')->count() : null,
             // Settings → Billing: hides billing pages and figures when off.
             'billing' => fn () => Billing::enabled(),
+            // Settings → Branding: logo, icon and the footer's company name.
+            'branding' => fn () => Branding::shared(),
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
     }

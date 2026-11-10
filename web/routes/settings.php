@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Settings\ApiTokenController;
 use App\Http\Controllers\Settings\BillingController;
+use App\Http\Controllers\Settings\BrandingController;
 use App\Http\Controllers\Settings\CertificateController;
 use App\Http\Controllers\Settings\ClientDefaultsController;
 use App\Http\Controllers\Settings\EmailController;
@@ -45,6 +46,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('settings/email', [EmailController::class, 'edit'])->middleware('admin')->name('email.edit');
     Route::put('settings/email', [EmailController::class, 'update'])->middleware(RequirePassword::class)->middleware('admin')->name('email.update');
     Route::post('settings/email/test', [EmailController::class, 'test'])->middleware('throttle:6,1')->middleware('admin')->name('email.test');
+
+    // Company logo, icon and footer name.
+    Route::get('settings/branding', [BrandingController::class, 'edit'])->middleware('admin')->name('branding.edit');
+    Route::post('settings/branding', [BrandingController::class, 'update'])->middleware('admin')->name('branding.update');
 
     // Built-in billing on/off and invoice options. Changing them requires a recent password confirmation.
     Route::get('settings/billing', [BillingController::class, 'edit'])->middleware('admin')->name('billing.edit');

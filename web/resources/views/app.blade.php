@@ -25,9 +25,15 @@
             html[data-bs-theme="dark"] { background-color: #151f2c; }
         </style>
 
-        <link rel="icon" href="/favicon.ico" sizes="any">
-        <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+        @if ($brandIcon = \App\Support\Branding::url('icon'))
+            {{-- Settings → Branding --}}
+            <link rel="icon" href="{{ $brandIcon }}">
+            <link rel="apple-touch-icon" href="{{ $brandIcon }}">
+        @else
+            <link rel="icon" href="/favicon.ico" sizes="any">
+            <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+            <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+        @endif
 
         @fonts
 

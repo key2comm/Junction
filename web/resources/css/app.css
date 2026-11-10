@@ -169,6 +169,8 @@ details.card[open] > summary::before {
 .ss-maxw-xl { max-width: 36rem; }
 .ss-maxw-2xl { max-width: 42rem; }
 .ss-maxw-3xl { max-width: 48rem; }
+/* Settings → Branding logo: fits the top bar and sign-in page. */
+.ss-brand-logo { max-height: 2.5rem; max-width: 14rem; width: auto; object-fit: contain; }
 .ss-maxw-4xl { max-width: 56rem; }
 .ss-maxw-5xl { max-width: 64rem; }
 @media (min-width: 576px) {

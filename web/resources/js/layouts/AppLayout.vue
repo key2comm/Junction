@@ -19,6 +19,7 @@ import {
     LayoutGrid,
     LogOut,
     Mail,
+    Palette,
     Menu,
     Moon,
     Phone,
@@ -35,6 +36,7 @@ import {
 } from '@lucide/vue';
 import { onClickOutside } from '@vueuse/core';
 import { computed, ref, useTemplateRef } from 'vue';
+import AppFooter from '@/components/AppFooter.vue';
 import AppLogo from '@/components/AppLogo.vue';
 import { Toaster } from '@/components/ui/sonner';
 import { useAppearance } from '@/composables/useAppearance';
@@ -45,6 +47,7 @@ import { index as accounts } from '@/routes/accounts';
 import { index as alerts } from '@/routes/alerts';
 import { index as apiTokens } from '@/routes/api-tokens';
 import { edit as billingSettings } from '@/routes/billing';
+import { edit as brandingSettings } from '@/routes/branding';
 import { edit as certificate } from '@/routes/certificate';
 import { edit as clientDefaults } from '@/routes/client-defaults';
 import { index as carrierRates } from '@/routes/carrier-rates';
@@ -122,6 +125,7 @@ const adminNav = computed((): NavEntry[] => [
             { title: 'SSL certificate', href: certificate(), icon: ShieldCheck },
             { title: 'Firewall', href: firewall(), icon: BrickWall },
             { title: 'Billing', href: billingSettings(), icon: Receipt },
+            { title: 'Branding', href: brandingSettings(), icon: Palette },
             { title: 'Client defaults', href: clientDefaults(), icon: UserCog },
             { title: 'Email (SMTP)', href: email(), icon: Mail },
             { title: 'API tokens', href: apiTokens(), icon: KeyRound },
@@ -257,6 +261,7 @@ const initials = computed(() =>
                     <slot />
                 </div>
             </div>
+            <AppFooter />
         </div>
         <Toaster />
     </div>

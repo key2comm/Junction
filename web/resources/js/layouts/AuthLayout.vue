@@ -1,5 +1,6 @@
 <script setup lang="ts">
 /** Sign-in pages: Tabler's centred card. */
+import AppFooter from '@/components/AppFooter.vue';
 import AppLogo from '@/components/AppLogo.vue';
 import { Toaster } from '@/components/ui/sonner';
 
@@ -20,6 +21,7 @@ const { title = '', description = '' } = defineProps<{ title?: string; descripti
                 </div>
             </div>
         </div>
+        <AppFooter />
         <Toaster />
     </div>
 </template>
