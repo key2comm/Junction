@@ -103,6 +103,7 @@ class SelfTest extends Command
                 'Busy is final (no failover)' => fn () => $this->busy($esl, $ip),
                 'Unknown customer is refused (403)' => fn () => $this->unknownCustomer($esl, $ip),
                 'Blocked destination is refused (403)' => fn () => $this->blocked($esl, $ip),
+                'Dialing rules refuse other countries (403)' => fn () => $this->dialingRules($esl, $ip),
                 // Funds checks only apply while the built-in billing is on (Settings → Billing).
                 ...(Billing::enabled() ? [
                     'No funds: call refused (402)' => fn () => $this->noFunds($esl, $ip),
@@ -223,6 +224,24 @@ class SelfTest extends Command
         $this->check($cdr->sip_code === 403, "SIP {$cdr->sip_code}");
 
         return '403, reason blocked_destination';
+    }
+
+    private function dialingRules(EventSocket $esl, string $ip): string
+    {
+        $this->routes(['ok']);
+        // The test number (990...) is in no country, so Canada/USA only refuses it.
+        $customer = $this->f['customer'];
+        $customer->update(['dialing_scope' => 'nanp']);
+        try {
+            $cdr = $this->placeCall($esl, $ip, self::TECH.self::DEST, hold: 0, expectAnswer: false);
+        } finally {
+            $customer->update(['dialing_scope' => 'international']);
+        }
+        $this->check($cdr->hangup_cause === 'destination_not_allowed', "reason {$cdr->hangup_cause}");
+        $this->check($cdr->sip_code === 403, "SIP {$cdr->sip_code}");
+        $this->check($cdr->attempts === 0, 'a carrier was tried');
+
+        return '403, reason destination_not_allowed';
     }
 
     private function noFunds(EventSocket $esl, string $ip): string

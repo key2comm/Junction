@@ -90,6 +90,43 @@ class AccountsTest extends TestCase
         $this->assertSame(1, Account::query()->count());
     }
 
+    public function test_dialing_rules_start_at_canada_and_usa_and_can_add_countries(): void
+    {
+        $this->actingAs($this->admin)->post(route('accounts.store'), $this->validAccount())->assertSessionHasNoErrors();
+        $account = Account::query()->sole();
+        $this->assertSame('nanp', $account->dialing_scope);
+        $this->assertSame([], $account->dialing_countries);
+
+        $this->actingAs($this->admin)->get(route('accounts.edit', $account))
+            ->assertInertia(fn (Assert $page) => $page->where('account.dialing_scope', 'nanp')
+                ->where('options.countries', fn ($c) => collect($c)->contains('code', 'GB') && ! collect($c)->contains('code', 'NANP')));
+
+        $this->actingAs($this->admin)
+            ->put(route('accounts.update', $account), $this->validAccount(['dialing_scope' => 'countries', 'dialing_countries' => ['GB', 'FR']]))
+            ->assertSessionHasNoErrors();
+        $this->assertSame(['GB', 'FR'], $account->fresh()->dialing_countries);
+        $this->actingAs($this->admin)->get(route('accounts.show', $account))
+            ->assertInertia(fn (Assert $page) => $page->where('account.dialing_country_names', ['France', 'United Kingdom']));
+
+        // Countries mode needs at least one; unknown codes are refused.
+        $this->actingAs($this->admin)
+            ->put(route('accounts.update', $account), $this->validAccount(['dialing_scope' => 'countries']))
+            ->assertSessionHasErrors('dialing_countries');
+        $this->actingAs($this->admin)
+            ->put(route('accounts.update', $account), $this->validAccount(['dialing_scope' => 'countries', 'dialing_countries' => ['ZZ']]))
+            ->assertSessionHasErrors('dialing_countries.0');
+        $this->actingAs($this->admin)
+            ->put(route('accounts.update', $account), $this->validAccount(['dialing_scope' => 'everywhere']))
+            ->assertSessionHasErrors('dialing_scope');
+
+        $this->actingAs($this->admin)
+            ->put(route('accounts.update', $account), $this->validAccount(['dialing_scope' => 'international']))
+            ->assertSessionHasNoErrors();
+        $account->refresh();
+        $this->assertSame('international', $account->dialing_scope);
+        $this->assertSame([], $account->dialing_countries);
+    }
+
     public function test_balance_cannot_be_set_through_the_form(): void
     {
         $this->actingAs($this->admin)->post(route('accounts.store'), $this->validAccount(['balance' => '1000000']));

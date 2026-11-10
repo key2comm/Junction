@@ -51,7 +51,8 @@ class AccountsController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $account = Account::create(AccountRequest::validateData($request->all()));
+        // New customers may call Canada and the USA only, unless dialing_scope says otherwise.
+        $account = Account::create(['dialing_scope' => 'nanp', ...AccountRequest::validateData($request->all())]);
 
         return response()->json(['data' => Present::account($account->fresh())], 201);
     }
@@ -61,7 +62,8 @@ class AccountsController extends Controller
     {
         $current = [
             ...$account->only(['name', 'code', 'is_customer', 'is_vendor', 'currency', 'credit_limit', 'low_balance_threshold', 'timezone',
-                'billing_email', 'noc_email', 'sell_rate_deck_id', 'routing_plan_id', 'max_channels', 'max_cps', 'notes']),
+                'billing_email', 'noc_email', 'sell_rate_deck_id', 'routing_plan_id', 'max_channels', 'max_cps', 'notes',
+                'dialing_scope', 'dialing_countries']),
             'status' => $account->status->value,
             'billing_type' => $account->billing_type->value,
         ];

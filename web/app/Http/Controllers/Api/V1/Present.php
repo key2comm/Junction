@@ -41,6 +41,8 @@ final class Present
             'available_funds' => $a->availableFundsNow(),
             'timezone' => $a->timezone,
             'billing_email' => $a->billing_email,
+            'dialing_scope' => $a->dialing_scope,
+            'dialing_countries' => $a->dialing_countries ?? [],
         ];
         if ($customerView) {
             return $base;

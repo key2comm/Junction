@@ -24,7 +24,7 @@ use Illuminate\Support\Facades\DB;
 #[Fillable([
     'name', 'code', 'is_customer', 'is_vendor', 'status', 'currency', 'billing_type',
     'credit_limit', 'low_balance_threshold', 'timezone', 'billing_email', 'noc_email', 'sell_rate_deck_id',
-    'routing_plan_id', 'max_channels', 'max_cps', 'notes',
+    'routing_plan_id', 'max_channels', 'max_cps', 'notes', 'dialing_scope', 'dialing_countries',
 ])]
 class Account extends Model
 {
@@ -50,6 +50,7 @@ class Account extends Model
             'vendor_balance' => 'decimal:6',
             'max_channels' => 'integer',
             'max_cps' => 'decimal:2',
+            'dialing_countries' => 'array',
         ];
     }
 

@@ -174,6 +174,37 @@ class RouterTest extends TestCase
         $this->assertSame('account_inactive', $this->route()['reason']);
     }
 
+    public function test_dialing_rules_limit_where_a_customer_can_call(): void
+    {
+        $this->rate($this->sell, '1', '0.010');
+        $this->vendor('V', '0.005', prefix: '1');
+        $this->vendor('W', '0.01');
+        $reason = fn (string $n) => $this->route($n)['reason'];
+
+        // Existing accounts keep calling anywhere.
+        $this->assertSame('international', $this->customer->fresh()->dialing_scope);
+        $this->assertSame('ok', $this->route()['status']);
+
+        // Canada/USA only: +1 passes (US territories too), the UK and Jamaica (1-876) don't.
+        $this->customer->update(['dialing_scope' => 'nanp']);
+        $this->assertSame('ok', $this->route('14165550100')['status']);
+        $this->assertSame('ok', $this->route('17875550100')['status']); // Puerto Rico
+        $this->assertSame('destination_not_allowed', $reason('442079460000'));
+        $this->assertSame('destination_not_allowed', $reason('18765550100'));
+        $this->assertSame('destination_not_allowed', $reason('99012345'));   // no country at all
+
+        // Chosen countries: the longest prefix decides (Jersey isn't the UK).
+        $this->customer->update(['dialing_scope' => 'countries', 'dialing_countries' => ['GB', 'JM']]);
+        $this->assertSame('ok', $this->route()['status']);
+        $this->assertSame('ok', $this->route('18765550100')['status']);
+        $this->assertSame('ok', $this->route('14165550100')['status']);
+        $this->assertSame('destination_not_allowed', $reason('441534123456'));
+        $this->assertSame('destination_not_allowed', $reason('18095550100')); // Dominican Republic
+
+        $this->assertSame('KZ', DB::scalar("SELECT softswitch_dial_country('77012345678')"));
+        $this->assertSame('RU', DB::scalar("SELECT softswitch_dial_country('74951234567')"));
+    }
+
     public function test_max_duration_comes_from_available_funds_in_whole_increments(): void
     {
         $this->vendor('V', '0.01');

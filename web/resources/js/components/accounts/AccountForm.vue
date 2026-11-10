@@ -2,6 +2,8 @@
 import type { Method } from '@inertiajs/core';
 import { Form, Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
+import type { DialCountry, DialingScope } from '@/components/accounts/DialingRules.vue';
+import DialingRules from '@/components/accounts/DialingRules.vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,6 +20,7 @@ export type AccountFormOptions = {
     currencies: { code: string; name: string; top: boolean }[];
     carrierRates: { id: number; name: string; currency: string }[];
     codecs: Record<string, string>;
+    countries: DialCountry[];
 };
 
 export type AccountFormValues = {
@@ -38,6 +41,8 @@ export type AccountFormValues = {
     max_channels: number | null;
     max_cps: string | null;
     notes: string | null;
+    dialing_scope: DialingScope;
+    dialing_countries: string[];
     // Carriers
     carrier_rate_deck_id: number | null;
     max_inbound: number | null;
@@ -204,6 +209,8 @@ const customerBilling = computed(() => billing.value && props.role === 'customer
                 <Input id="max_cps" name="max_cps" type="number" step="0.1" min="0.1" :default-value="v.max_cps ?? ''" placeholder="Unlimited" />
                 <InputError :message="errors.max_cps" />
             </div>
+
+            <DialingRules :countries="options.countries" :scope="v.dialing_scope" :selected="v.dialing_countries" :errors="errors" />
         </section>
 
         <section v-if="role === 'carrier'" class="ss-grid gap-4 ss-cols-sm-2">

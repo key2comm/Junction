@@ -49,6 +49,8 @@ type Account = {
     max_channels: number | null;
     max_cps: string | null;
     notes: string | null;
+    dialing_scope: 'nanp' | 'international' | 'countries';
+    dialing_country_names: string[];
     sell_rate_deck: { id: number; name: string } | null;
     routing_plan: { id: number; name: string } | null;
 };
@@ -163,6 +165,15 @@ const select = 'form-select w-auto';
                     <dd>{{ account.routing_plan?.name ?? '— not set —' }}</dd>
                     <dt class="text-secondary">Limits</dt>
                     <dd>{{ account.max_channels ?? '∞' }} channels, {{ account.max_cps ?? '∞' }} CPS</dd>
+                    <dt class="text-secondary">May call</dt>
+                    <dd>
+                        <template v-if="account.dialing_scope === 'international'">Canada, USA and all international</template>
+                        <template v-else-if="account.dialing_scope === 'countries'">
+                            Canada, USA and {{ account.dialing_country_names.length }} more
+                            <span class="d-block small text-secondary">{{ account.dialing_country_names.join(', ') }}</span>
+                        </template>
+                        <template v-else>Canada and USA only</template>
+                    </dd>
                 </dl>
 
                 <div class="card table-responsive">

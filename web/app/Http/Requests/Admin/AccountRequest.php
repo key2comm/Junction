@@ -6,6 +6,7 @@ use App\Enums\AccountStatus;
 use App\Enums\BillingType;
 use App\Models\Account;
 use App\Support\Currencies;
+use App\Support\DialCountries;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Validator as ValidatorFactory;
 use Illuminate\Validation\Rule;
@@ -44,7 +45,11 @@ class AccountRequest extends FormRequest
         // The admin form sends role=customer|carrier; the API sends the two flags.
         $role = $input['role'] ?? null;
 
+        // Dialing rules: a form that sends a scope but no countries means none.
+        $dialing = array_key_exists('dialing_scope', $input) && ! isset($input['dialing_countries']) ? ['dialing_countries' => []] : [];
+
         return [
+            ...$dialing,
             'code' => strtoupper(trim((string) ($input['code'] ?? ''))),
             'currency' => strtoupper(trim((string) ($input['currency'] ?? Currencies::DEFAULT))),
             'is_customer' => $role !== null ? $role === 'customer' : $bool($input['is_customer'] ?? false),
@@ -72,12 +77,16 @@ class AccountRequest extends FormRequest
             'max_channels' => ['nullable', 'integer', 'min:1', 'max:100000'],
             'max_cps' => ['nullable', 'numeric', 'min:0.1', 'max:10000'],
             'notes' => ['nullable', 'string', 'max:5000'],
+            // Dialing rules (customers): Canada/USA only, anywhere, or Canada/USA plus chosen countries.
+            'dialing_scope' => ['sometimes', 'required', Rule::in(['nanp', 'international', 'countries'])],
+            'dialing_countries' => ['sometimes', 'array', 'max:300'],
+            'dialing_countries.*' => ['string', 'distinct', Rule::in(array_column(DialCountries::selectable(), 'code'))],
         ];
     }
 
     public static function messagesFor(): array
     {
-        return ['code.regex' => 'Use letters, digits, dashes and underscores only.', 'currency.in' => 'Choose a currency from the list.', 'sell_rate_deck_id.exists' => 'Choose a tariff (not carrier rates).'];
+        return ['dialing_countries.*.in' => 'Unknown country.', 'code.regex' => 'Use letters, digits, dashes and underscores only.', 'currency.in' => 'Choose a currency from the list.', 'sell_rate_deck_id.exists' => 'Choose a tariff (not carrier rates).'];
     }
 
     public static function checkRoles(Validator $validator): void
@@ -86,6 +95,9 @@ class AccountRequest extends FormRequest
         // An account is either a customer or a carrier (vendor), never both.
         if (empty($data['is_customer']) === empty($data['is_vendor'])) {
             $validator->errors()->add('is_customer', 'Choose whether the account is a customer or a carrier.');
+        }
+        if (($data['dialing_scope'] ?? null) === 'countries' && empty($data['dialing_countries'])) {
+            $validator->errors()->add('dialing_countries', 'Choose at least one country.');
         }
     }
 

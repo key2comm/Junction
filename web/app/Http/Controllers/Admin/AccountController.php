@@ -17,6 +17,7 @@ use App\Models\User;
 use App\Services\Router;
 use App\Support\ClientDefaults;
 use App\Support\Currencies;
+use App\Support\DialCountries;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -96,6 +97,8 @@ class AccountController extends Controller
     public function store(AccountRequest $request): RedirectResponse
     {
         $data = $request->validated();
+        // New customers may call Canada and the USA only, unless the form says otherwise.
+        $data['dialing_scope'] ??= 'nanp';
         $carrier = $data['is_vendor'] ? $this->carrierSettings($request) : null;
         $account = DB::transaction(function () use ($data, $carrier) {
             $account = Account::create($data);
@@ -120,7 +123,8 @@ class AccountController extends Controller
         return Inertia::render('accounts/Show', [
             'account' => [
                 ...$account->only(['id', 'name', 'code', 'is_customer', 'is_vendor', 'currency', 'credit_limit',
-                    'balance', 'vendor_balance', 'timezone', 'billing_email', 'noc_email', 'max_channels', 'max_cps', 'notes']),
+                    'balance', 'vendor_balance', 'timezone', 'billing_email', 'noc_email', 'max_channels', 'max_cps', 'notes',
+                    'dialing_scope', 'dialing_countries']),
                 'status' => $account->status->value,
                 'billing_type' => $account->billing_type->value,
                 'available' => $account->availableFunds(),
@@ -129,6 +133,8 @@ class AccountController extends Controller
                 'low_balance_alerted_at' => $account->low_balance_alerted_at,
                 'sell_rate_deck' => $account->sellRateDeck?->only(['id', 'name']),
                 'routing_plan' => $account->routingPlan?->only(['id', 'name']),
+                'dialing_country_names' => collect($account->dialing_countries ?? [])
+                    ->map(fn ($code) => DialCountries::ALL[$code][0] ?? $code)->sort()->values(),
             ],
             'ips' => $account->ips()->orderBy('ip')->get(['id', 'ip', 'tech_prefix', 'description', 'enabled']),
             'carrier' => $account->is_vendor ? $this->carrierShow($account) : null,
@@ -186,7 +192,7 @@ class AccountController extends Controller
             'account' => [
                 ...$account->only(['id', 'name', 'code', 'is_customer', 'is_vendor', 'currency', 'credit_limit', 'low_balance_threshold',
                     'timezone', 'billing_email', 'noc_email', 'sell_rate_deck_id', 'routing_plan_id',
-                    'max_channels', 'max_cps', 'notes']),
+                    'max_channels', 'max_cps', 'notes', 'dialing_scope', 'dialing_countries']),
                 'status' => $account->status->value,
                 'billing_type' => $account->billing_type->value,
                 ...($account->is_vendor ? self::carrierValues($account) : []),
@@ -290,6 +296,7 @@ class AccountController extends Controller
                 'currencies' => Currencies::options(),
                 'carrierRates' => RateDeck::query()->where('kind', 'carrier')->orderBy('name')->get(['id', 'name', 'currency']),
                 'codecs' => Endpoint::CODECS,
+                'countries' => DialCountries::selectable(),
             ],
         ];
     }

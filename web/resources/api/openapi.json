@@ -224,6 +224,28 @@
           "updated_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "dialing_scope": {
+            "type": "string",
+            "enum": [
+              "nanp",
+              "international",
+              "countries"
+            ],
+            "description": "Where the customer may call: nanp = Canada and the USA only (the default for new accounts), international = anywhere, countries = Canada/USA plus dialing_countries."
+          },
+          "dialing_countries": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "examples": [
+              [
+                "GB",
+                "FR"
+              ]
+            ],
+            "description": "Country codes allowed with dialing_scope=countries (ISO 3166 two-letter codes; XS = satellite and global services)."
           }
         }
       },
@@ -322,6 +344,28 @@
               "string",
               "null"
             ]
+          },
+          "dialing_scope": {
+            "type": "string",
+            "enum": [
+              "nanp",
+              "international",
+              "countries"
+            ],
+            "description": "Where the customer may call: nanp = Canada and the USA only (the default for new accounts), international = anywhere, countries = Canada/USA plus dialing_countries."
+          },
+          "dialing_countries": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "examples": [
+              [
+                "GB",
+                "FR"
+              ]
+            ],
+            "description": "Country codes allowed with dialing_scope=countries (ISO 3166 two-letter codes; XS = satellite and global services)."
           }
         }
       },
@@ -954,7 +998,7 @@
               "string",
               "null"
             ],
-            "description": "unknown_customer, account_inactive, invalid_number, blocked_destination, no_sell_rate, no_routing_plan, insufficient_funds, no_route, negative_margin"
+            "description": "unknown_customer, account_inactive, invalid_number, blocked_destination, destination_not_allowed, no_sell_rate, no_routing_plan, insufficient_funds, no_route, negative_margin"
           },
           "message": {
             "type": [

@@ -38,6 +38,7 @@ function M.new(session)
     account_inactive     = "403 Forbidden",
     invalid_number       = "484 Address Incomplete",
     blocked_destination  = "403 Forbidden",
+    destination_not_allowed = "403 Forbidden",
     insufficient_funds   = "402 Payment Required",
     no_sell_rate         = "503 Service Unavailable",
     no_routing_plan      = "503 Service Unavailable",
