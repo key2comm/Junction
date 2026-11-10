@@ -43,6 +43,27 @@ class ProfileUpdateTest extends TestCase
         $this->assertNull($user->email_verified_at);
     }
 
+    public function test_users_start_in_utc_and_can_choose_a_time_zone()
+    {
+        $user = User::factory()->create();
+        $this->assertSame('UTC', $user->fresh()->timezone);
+
+        $this->actingAs($user)
+            ->get(route('profile.edit'))
+            ->assertInertia(fn ($page) => $page->where('auth.user.timezone', 'UTC')
+                ->where('timezones', fn ($zones) => collect($zones)->contains('America/Toronto')));
+
+        $this->actingAs($user)
+            ->patch(route('profile.update'), ['name' => $user->name, 'email' => $user->email, 'timezone' => 'America/Toronto'])
+            ->assertSessionHasNoErrors();
+        $this->assertSame('America/Toronto', $user->fresh()->timezone);
+
+        $this->actingAs($user)
+            ->patch(route('profile.update'), ['name' => $user->name, 'email' => $user->email, 'timezone' => 'Mars/Olympus'])
+            ->assertSessionHasErrors('timezone');
+        $this->assertSame('America/Toronto', $user->fresh()->timezone);
+    }
+
     public function test_email_verification_status_is_unchanged_when_the_email_address_is_unchanged()
     {
         $user = User::factory()->create();

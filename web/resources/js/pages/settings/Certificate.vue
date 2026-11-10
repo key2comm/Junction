@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
+import { date } from '@/lib/format';
 import { edit } from '@/routes/certificate';
 
 type Status = {
@@ -47,7 +48,7 @@ const { start, stop } = usePoll(3000, { only: ['status', 'task', 'busy'] }, { au
 watch(waiting, (value) => (value ? start() : stop()), { immediate: true });
 
 const expires = computed(() =>
-    props.status?.expires ? new Date(props.status.expires).toLocaleDateString() : null,
+    props.status?.expires ? date(props.status.expires) : null,
 );
 const actionLabel: Record<Task['action'], string> = {
     status: 'Checking certificate',

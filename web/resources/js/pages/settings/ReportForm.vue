@@ -7,6 +7,7 @@ import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { timeZone } from '@/lib/format';
 import { selectClass } from '@/lib/ui';
 import { edit as editEmail } from '@/routes/email';
 import { create, index } from '@/routes/reports';
@@ -55,8 +56,8 @@ const s = props.schedule;
 const f = s?.filters ?? {};
 const sftp = ref(s?.sftp_enabled ?? false);
 const action = s ? ReportController.update.form(s.id) : ReportController.store.form();
-const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-const tz = s?.timezone ?? (props.timezones.includes(browserTz) ? browserTz : 'UTC');
+// New schedules start in the user's own time zone (Settings → Profile).
+const tz = s?.timezone ?? (props.timezones.includes(timeZone.value) ? timeZone.value : 'UTC');
 </script>
 
 <template>

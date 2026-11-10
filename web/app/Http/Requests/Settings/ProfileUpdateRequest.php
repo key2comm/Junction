@@ -17,6 +17,10 @@ class ProfileUpdateRequest extends FormRequest
      */
     public function rules(): array
     {
-        return $this->profileRules($this->user()->id);
+        return [
+            ...$this->profileRules($this->user()->id),
+            // The zone the site shows times in; stored times stay UTC.
+            'timezone' => ['sometimes', 'required', 'timezone:all'],
+        ];
     }
 }

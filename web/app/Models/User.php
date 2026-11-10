@@ -27,12 +27,15 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'email', 'password', 'account_id'])]
+#[Fillable(['name', 'email', 'password', 'account_id', 'timezone'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements PasskeyUser
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
+
+    /** The zone the site shows times in (Settings → Profile); stored times stay UTC. */
+    protected $attributes = ['timezone' => 'UTC'];
 
     /**
      * Get the attributes that should be cast.

@@ -5,6 +5,7 @@ import Heading from '@/components/Heading.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { dateTime } from '@/lib/format';
 import { selectClass } from '@/lib/ui';
 import { show as showAccount } from '@/routes/accounts';
 import { index } from '@/routes/quality';
@@ -137,7 +138,7 @@ const cell = (asr: number | null, attempts: number) =>
                                     :key="h.hour"
                                     class="d-inline-block ss-w-1-5 rounded-1"
                                     :class="cell(h.asr, h.attempts)"
-                                    :title="`${new Date(h.hour).toLocaleString()}: ${h.attempts} attempts, ASR ${h.asr ?? '—'}%`"
+                                    :title="`${dateTime(h.hour)}: ${h.attempts} attempts, ASR ${h.asr ?? '—'}%`"
                                 />
                             </div>
                         </td>

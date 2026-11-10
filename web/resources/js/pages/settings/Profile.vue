@@ -8,6 +8,7 @@ import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { selectClass } from '@/lib/ui';
 import { edit } from '@/routes/profile';
 
 defineOptions({
@@ -21,7 +22,10 @@ defineOptions({
     },
 });
 
+defineProps<{ timezones: string[] }>();
+
 const page = usePage();
+const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
 const user = computed(() => page.props.auth.user);
 </script>
 
@@ -34,7 +38,7 @@ const user = computed(() => page.props.auth.user);
         <Heading
             variant="small"
             title="Profile"
-            description="Update your name and email address"
+            description="Update your name, email address and time zone"
         />
 
         <Form
@@ -69,6 +73,18 @@ const user = computed(() => page.props.auth.user);
                     placeholder="Email address"
                 />
                 <InputError class="mt-2" :message="errors.email" />
+            </div>
+
+            <div class="ss-grid gap-2">
+                <Label for="timezone">Time zone</Label>
+                <select id="timezone" name="timezone" :class="selectClass" :value="user.timezone ?? 'UTC'">
+                    <option v-for="tz in timezones" :key="tz" :value="tz">{{ tz }}</option>
+                </select>
+                <p class="small text-secondary mb-0">
+                    Times across the site are shown in this zone. Calls are recorded in UTC.
+                    <template v-if="browserTz && browserTz !== user.timezone">This browser is set to {{ browserTz }}.</template>
+                </p>
+                <InputError class="mt-2" :message="errors.timezone" />
             </div>
 
 

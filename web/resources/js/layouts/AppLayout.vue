@@ -37,13 +37,14 @@ import {
     UserRound,
 } from '@lucide/vue';
 import { onClickOutside } from '@vueuse/core';
-import { computed, ref, useTemplateRef } from 'vue';
+import { computed, ref, useTemplateRef, watchEffect } from 'vue';
 import AppFooter from '@/components/AppFooter.vue';
 import AppLogo from '@/components/AppLogo.vue';
 import { Toaster } from '@/components/ui/sonner';
 import { useAppearance } from '@/composables/useAppearance';
 import { useBilling } from '@/composables/useBilling';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
+import { setTimeZone } from '@/lib/format';
 import { dashboard, logout } from '@/routes';
 import { index as accounts } from '@/routes/accounts';
 import { index as alerts } from '@/routes/alerts';
@@ -78,6 +79,8 @@ import type { BreadcrumbItem, NavItem, User } from '@/types';
 const { breadcrumbs = [] } = defineProps<{ breadcrumbs?: BreadcrumbItem[] }>();
 
 const page = usePage();
+// Every time on the site is shown in the user's time zone (Settings → Profile).
+watchEffect(() => setTimeZone(page.props.auth.user?.timezone));
 const user = computed(() => (page.props.auth as { user: User & { account_id?: number | null } }).user);
 const isPortal = computed(() => Boolean(user.value?.account_id));
 const billing = useBilling();

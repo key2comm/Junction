@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { dateTime, money } from '@/lib/format';
+import { dateTime, fromZonedInput, money, timeZone, toZonedInput } from '@/lib/format';
 import { selectClass } from '@/lib/ui';
 import { download, index } from '@/routes/portal/calls';
 
@@ -36,22 +36,16 @@ const props = defineProps<{
 
 defineOptions({ layout: { breadcrumbs: [{ title: 'Calls', href: index() }] } });
 
-const toLocalInput = (iso?: string | number) => {
-    if (!iso) return '';
-    const d = new Date(String(iso));
-    const pad = (n: number) => String(n).padStart(2, '0');
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-};
 const f = reactive({
-    from: toLocalInput(props.filters.from),
-    to: toLocalInput(props.filters.to),
+    from: toZonedInput(props.filters.from),
+    to: toZonedInput(props.filters.to),
     status: String(props.filters.status ?? ''),
     number: String(props.filters.number ?? ''),
 });
 const query = computed(() => {
     const q: Record<string, string> = {};
     for (const [k, v] of Object.entries(f)) {
-        if (v !== '') q[k] = k === 'from' || k === 'to' ? new Date(v).toISOString() : v;
+        if (v !== '') q[k] = k === 'from' || k === 'to' ? fromZonedInput(v) : v;
     }
     return q;
 });
@@ -70,8 +64,8 @@ const duration = (s: number) => (s >= 60 ? `${Math.floor(s / 60)}m ${s % 60}s` :
         </div>
 
         <form class="ss-grid gap-2 rounded border p-3 ss-cols-sm-2 ss-cols-lg-5" @submit.prevent="apply">
-            <div class="ss-grid gap-1"><Label for="from">From</Label><Input id="from" v-model="f.from" type="datetime-local" /></div>
-            <div class="ss-grid gap-1"><Label for="to">To</Label><Input id="to" v-model="f.to" type="datetime-local" /></div>
+            <div class="ss-grid gap-1"><Label for="from">From ({{ timeZone }})</Label><Input id="from" v-model="f.from" type="datetime-local" /></div>
+            <div class="ss-grid gap-1"><Label for="to">To ({{ timeZone }})</Label><Input id="to" v-model="f.to" type="datetime-local" /></div>
             <div class="ss-grid gap-1">
                 <Label for="status">Outcome</Label>
                 <select id="status" v-model="f.status" :class="selectClass">
