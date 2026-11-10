@@ -83,7 +83,7 @@ const outcome = c.answered_at ? 'Answered' : c.attempts === 0 ? 'Rejected before
             <div class="d-flex flex-wrap align-items-start justify-content-between gap-2">
                 <Heading :title="`${cdr.caller ?? 'Unknown'} → ${cdr.destination ?? cdr.callee}`" :description="dateTime(cdr.started_at)" />
                 <Button v-if="cdr.has_pcap" variant="outline" as-child>
-                    <a :href="pcap(cdr.id).url" title="SIP capture of this call, for Wireshark"><Download class="icon" /> Download PCAP</a>
+                    <a :href="pcap(cdr.id).url" title="Download the SIP capture of this call (for Wireshark)"><Download class="icon" /> PCAP</a>
                 </Button>
                 <span v-else class="small text-secondary">{{ cdr.pcap_pending ? 'PCAP being prepared…' : 'No PCAP for this call' }}</span>
             </div>
