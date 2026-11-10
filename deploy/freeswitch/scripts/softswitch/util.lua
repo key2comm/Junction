@@ -29,7 +29,7 @@ function M.new(session)
   local legs = 0
   function u.leg_call_id()
     legs = legs + 1
-    return "sip_outgoing_call_id=" .. uuid .. "-" .. legs .. string.format("%04x", math.random(0, 0xffff))
+    return "sip_invite_call_id=" .. uuid .. "-" .. legs .. string.format("%04x", math.random(0, 0xffff))
   end
 
   -- Reject reasons -> SIP response sent to the caller.
