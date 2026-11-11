@@ -1,6 +1,6 @@
 # Rendered by install.sh to /etc/systemd/system/softswitch-scheduler.service
 [Unit]
-Description=Softswitch task scheduler (Laravel)
+Description=Junction task scheduler (Laravel)
 After=network.target postgresql.service
 Wants=postgresql.service
 

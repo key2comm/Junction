@@ -236,7 +236,7 @@ class ApiTest extends TestCase
         }
         $this->assertSame([], $missing, 'Undocumented API routes: '.implode(', ', $missing));
 
-        $this->get('/api/v1/openapi.json')->assertOk()->assertJsonPath('info.title', 'Softswitch API');
+        $this->get('/api/v1/openapi.json')->assertOk()->assertJsonPath('info.title', 'Junction API');
     }
 
     public function test_tokens_are_managed_in_settings(): void

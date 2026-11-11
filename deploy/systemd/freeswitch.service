@@ -1,6 +1,6 @@
 # Rendered by install.sh to /etc/systemd/system/freeswitch.service
 [Unit]
-Description=FreeSWITCH (Softswitch)
+Description=FreeSWITCH (Junction)
 Wants=network-online.target
 After=network-online.target
 

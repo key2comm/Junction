@@ -1,9 +1,9 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Softswitch API",
+    "title": "Junction API",
     "version": "1.0.0",
-    "description": "REST API for the Softswitch Class 4 switch. Authenticate with a bearer token from Settings → API tokens. Each operation lists the token ability it needs (x-ability). Money is a decimal string; times are UTC ISO 8601. Rate limit: 120 requests per minute per token."
+    "description": "REST API for Junction, the Class 4 softswitch. Authenticate with a bearer token from Settings → API tokens. Each operation lists the token ability it needs (x-ability). Money is a decimal string; times are UTC ISO 8601. Rate limit: 120 requests per minute per token."
   },
   "servers": [
     {

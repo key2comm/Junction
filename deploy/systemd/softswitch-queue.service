@@ -1,6 +1,6 @@
 # Rendered by install.sh to /etc/systemd/system/softswitch-queue.service
 [Unit]
-Description=Softswitch queue worker (Laravel)
+Description=Junction queue worker (Laravel)
 After=network.target postgresql.service
 Wants=postgresql.service
 

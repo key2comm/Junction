@@ -4,7 +4,7 @@
 pkg_install nftables
 
 if systemctl is-active -q firewalld 2>/dev/null; then
-	warn "firewalld is running; disabling it (Softswitch manages nftables directly)"
+	warn "firewalld is running; disabling it (Junction manages nftables directly)"
 	systemctl disable --now firewalld
 fi
 

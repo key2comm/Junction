@@ -94,7 +94,7 @@ class SipWebSocketProbe
             ."Contact: <sip:{$user}@{$this->instance}.invalid;transport=ws>;expires={$expires}\r\n"
             ."Expires: {$expires}\r\n"
             .($authorization ? "Authorization: {$authorization}\r\n" : '')
-            ."User-Agent: Softswitch self-test\r\n"
+            ."User-Agent: Junction self-test\r\n"
             ."Content-Length: 0\r\n\r\n";
     }
 

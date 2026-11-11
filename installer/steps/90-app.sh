@@ -37,7 +37,11 @@ set_env() { # set_env KEY VALUE - replace (or append) KEY=VALUE, also if comment
 		printf '%s=%s\n' "$key" "$val" >> "$env_file"
 	fi
 }
-set_env APP_NAME Softswitch
+set_env APP_NAME Junction
+# Internal names stay "softswitch" whatever the product is called, so a rename
+# never empties the cache or signs everyone out.
+set_env CACHE_PREFIX softswitch-cache-
+set_env SESSION_COOKIE softswitch-session
 set_env APP_ENV production
 set_env APP_DEBUG false
 set_env APP_URL "https://$SS_HOSTNAME"

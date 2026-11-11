@@ -3,7 +3,7 @@
 # 5-minute files (UTC names). The app cuts each call out of them into its own
 # PCAP (PcapExtractor) and deletes the raw files after a day.
 [Unit]
-Description=Softswitch SIP capture (per-call PCAPs)
+Description=Junction SIP capture (per-call PCAPs)
 After=network-online.target
 Wants=network-online.target
 

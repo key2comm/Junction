@@ -83,7 +83,7 @@ function connect() {
         display_name: c.name ?? c.extension,
         register: true,
         session_timers: false,
-        user_agent: 'Softswitch web phone',
+        user_agent: 'Junction web phone',
     });
     // JsSIP's event typings are stricter than useful here.
     const on = (event: string, cb: (e: any) => void) => (agent as unknown as { on: (ev: string, cb: (e: any) => void) => void }).on(event, cb); // eslint-disable-line @typescript-eslint/no-explicit-any
