@@ -36,6 +36,7 @@ const props = defineProps<{
     week: { day: string; calls: number; answered: number }[];
     hours: { hour: string; calls: number; answered: number }[];
     system: System | null;
+    host: { hostname: string; ip: string | null; os: string | null; version: string };
     last24h: { calls: number; answered: number; rejected: number; asr: number | null; acd: number | null; minutes: number; sell: string; buy: string; margin: string };
     activeCalls: number;
     lowBalance: { id: number; code: string; name: string; currency: string; low_balance_threshold: string; low_balance_alerted_at: string; available: string }[];
@@ -203,6 +204,17 @@ const stale = computed(() => (props.system ? Date.now() - new Date(props.system.
                     <div v-if="stale" class="card-actions"><Badge variant="destructive">Not updating</Badge></div>
                 </div>
                 <div class="card-body ss-stack-3">
+                    <dl class="ss-grid ss-gtc-auto-1fr gap-1 column-gap-3 small mb-0">
+                        <dt class="text-secondary fw-normal">Hostname</dt>
+                        <dd class="mb-0 text-break">{{ host.hostname }}</dd>
+                        <dt class="text-secondary fw-normal">IP address</dt>
+                        <dd class="mb-0 font-monospace">{{ host.ip ?? '—' }}</dd>
+                        <dt class="text-secondary fw-normal">OS</dt>
+                        <dd class="mb-0">{{ host.os ?? '—' }}</dd>
+                        <dt class="text-secondary fw-normal">App version</dt>
+                        <dd class="mb-0">Junction v{{ host.version.replace(/-(\w+)$/, ' $1') }}</dd>
+                    </dl>
+                    <hr class="my-0" />
                     <p v-if="!system" class="text-secondary mb-0">The scheduler reads the server's stats once a minute; they'll appear shortly.</p>
                     <div v-for="m in meters" :key="m.key">
                         <div class="d-flex align-items-center gap-2 mb-1">

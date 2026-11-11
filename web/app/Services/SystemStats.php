@@ -19,7 +19,29 @@ class SystemStats
     /** One hour of one-minute CPU samples for the sparkline. */
     public const HISTORY = 60;
 
-    public function __construct(private string $proc = '/proc', private string $disk = '/') {}
+    public function __construct(private string $proc = '/proc', private string $disk = '/', private string $etc = '/etc') {}
+
+    /**
+     * What this server is: hostname, public IP, OS and the app release.
+     * Static facts, read on each request (no scheduler needed).
+     *
+     * @return array{hostname: string, ip: string|null, os: string|null, version: string}
+     */
+    public function host(): array
+    {
+        $os = null;
+        $release = @file_get_contents($this->etc.'/os-release');
+        if ($release !== false && preg_match('/^PRETTY_NAME="?([^"\n]+)"?$/m', $release, $m)) {
+            $os = $m[1];
+        }
+
+        return [
+            'hostname' => config('softswitch.hostname') ?: (gethostname() ?: 'unknown'),
+            'ip' => config('softswitch.public_ip') ?: null,
+            'os' => $os ?? (PHP_OS_FAMILY.' '.php_uname('r')),
+            'version' => (string) config('softswitch.version'),
+        ];
+    }
 
     /** @return array<string, mixed>|null the last sample, or null before the first one */
     public static function current(): ?array

@@ -76,6 +76,14 @@ class DashboardTest extends TestCase
         $this->assertSame(90061, $second['uptime']);
         $this->assertCount(1, $second['cpu_history']);
 
+        // Static facts: hostname and IP from the install, OS from os-release.
+        config(['softswitch.hostname' => 'switch.example.net', 'softswitch.public_ip' => '192.0.2.5']);
+        File::ensureDirectoryExists($proc);
+        file_put_contents("{$proc}/os-release", "NAME=\"Rocky Linux\"\nPRETTY_NAME=\"Rocky Linux 10.2 (Red Quartz)\"\n");
+        $this->assertSame(['hostname' => 'switch.example.net', 'ip' => '192.0.2.5', 'os' => 'Rocky Linux 10.2 (Red Quartz)', 'version' => config('softswitch.version')],
+            (new SystemStats($proc, sys_get_temp_dir(), $proc))->host());
+        File::deleteDirectory($proc);
+
         $this->actingAs(User::factory()->create())->get(route('dashboard'))->assertInertia(fn (Assert $p) => $p
             ->where('system.cpu', 25)->where('system.cores', 2)->missing('system.raw_cpu'));
     }

@@ -37,6 +37,7 @@ class DashboardController extends Controller
             // activeCalls, today, month, week, hours: in the viewer's own time zone (Settings → Profile).
             ...(new CallStats($request->user()->timezone ?: 'UTC'))->all(),
             'system' => SystemStats::current(),
+            'host' => app(SystemStats::class)->host(),
             'lowBalance' => $low,
             'unpaid' => ! $billing ? [] : Invoice::query()->where('status', 'issued')->where('amount_due', '>', 0)->orderBy('due_at')->limit(10)
                 ->get(['id', 'number', 'account_code', 'account_name', 'currency', 'amount_due', 'due_at']),
