@@ -2,7 +2,7 @@
 
 An open Class 4 (wholesale carrier) softswitch built on FreeSWITCH. It routes VoIP traffic between customer and vendor carriers using least-cost routing, and includes a few light PBX features.
 
-> Status: early development. Not ready for production traffic.
+> Status: **v0.1.0 beta**. Test on your own traffic before relying on it. See [CHANGELOG.md](CHANGELOG.md) for what's included.
 
 ## Install
 

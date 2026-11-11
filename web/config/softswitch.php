@@ -1,6 +1,9 @@
 <?php
 
 return [
+    // Release (web/VERSION; see CHANGELOG.md at the repository root).
+    'version' => trim((string) @file_get_contents(base_path('VERSION'))) ?: 'dev',
+
     // Public IPv4 of this switch (set by the installer). Used to sanity-check
     // DNS before requesting a Let's Encrypt certificate.
     'public_ip' => env('SOFTSWITCH_PUBLIC_IP'),

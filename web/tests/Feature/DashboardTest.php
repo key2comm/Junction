@@ -79,4 +79,13 @@ class DashboardTest extends TestCase
         $this->actingAs(User::factory()->create())->get(route('dashboard'))->assertInertia(fn (Assert $p) => $p
             ->where('system.cpu', 25)->where('system.cores', 2)->missing('system.raw_cpu'));
     }
+
+    public function test_admins_see_the_release_in_the_footer_and_customers_do_not(): void
+    {
+        $this->assertSame(trim(file_get_contents(base_path('VERSION'))), config('softswitch.version'));
+        $this->actingAs(User::factory()->create())->get(route('dashboard'))
+            ->assertInertia(fn (Assert $p) => $p->where('version', config('softswitch.version')));
+        $customer = User::factory()->create(['account_id' => \App\Models\Account::factory()->create()->id]);
+        $this->actingAs($customer)->get('/portal')->assertInertia(fn (Assert $p) => $p->where('version', null));
+    }
 }

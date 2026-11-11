@@ -128,4 +128,4 @@ code="$(curl -sk -o /dev/null -w '%{http_code}' --resolve "$SS_HOSTNAME:443:127.
 [ "$code" = 200 ] || die "admin UI did not respond (HTTP $code); see $app/storage/logs and /var/log/php-fpm/softswitch-error.log"
 
 info "Admin UI: https://$SS_HOSTNAME"
-info "First admin login: $admin_email (initial password: sudo grep ADMIN_INITIAL_PASSWORD /etc/softswitch/secrets)"
+info "First admin login: $admin_email (the password is shown when the install finishes)"

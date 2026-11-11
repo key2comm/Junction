@@ -52,6 +52,8 @@ class HandleInertiaRequests extends Middleware
             'billing' => fn () => Billing::enabled(),
             // Settings → Branding: logo, icon and the footer's company name.
             'branding' => fn () => Branding::shared(),
+            // Admins see the release in the footer; customers don't.
+            'version' => $request->user()?->isAdmin() ? config('softswitch.version') : null,
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
     }
