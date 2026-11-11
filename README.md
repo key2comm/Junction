@@ -1,6 +1,8 @@
-# Softswitch
+# Junction
 
-An open Class 4 (wholesale carrier) softswitch built on FreeSWITCH. It routes VoIP traffic between customer and vendor carriers using least-cost routing, and includes a few light PBX features.
+Class 4 Softswitch based on FreeSWITCH.
+
+An open Class 4 (wholesale carrier) switch: it routes VoIP traffic between customer and vendor carriers using least-cost routing, and includes a few light PBX features.
 
 > Status: **v0.1.0 beta**. Test on your own traffic before relying on it. See [CHANGELOG.md](CHANGELOG.md) for what's included.
 
@@ -9,8 +11,8 @@ An open Class 4 (wholesale carrier) softswitch built on FreeSWITCH. It routes Vo
 Requirements: Rocky Linux, AlmaLinux, RHEL, or CentOS Stream 9/10. Use a fresh server with a public IP and root/sudo access.
 
 ```sh
-git clone https://github.com/key2comm/Softswitch.git
-cd Softswitch
+git clone https://github.com/key2comm/Junction.git
+cd Junction
 sudo ./install.sh
 ```
 ### Customer portal
