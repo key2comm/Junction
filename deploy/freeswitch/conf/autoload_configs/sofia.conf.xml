@@ -102,6 +102,10 @@
         <param name="aggressive-nat-detection" value="true"/>
         <param name="nat-options-ping" value="true"/>
         <param name="NDLB-received-in-nat-reg-contact" value="true"/>
+        <!-- Web phones (WebRTC) behind NAT only offer private ICE candidates (no STUN server is used).
+             Accept them: the browser's connectivity checks then reach us and FreeSWITCH latches on to
+             the public address they come from. The default (wan.auto) drops them all → 488. -->
+        <param name="apply-candidate-acl" value="any_v4.auto"/>
 
         <!-- Our order wins (PCMU first), not the caller's: "greedy". -->
         <param name="inbound-codec-negotiation" value="greedy"/>
