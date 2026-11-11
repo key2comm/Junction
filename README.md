@@ -15,6 +15,37 @@ git clone https://github.com/key2comm/Junction.git
 cd Junction
 sudo ./install.sh
 ```
+### Admin Dashboard.
+
+The Admin UI is a web dashboard that shows the server's health and call activity at a glance. Open it at `https://<your-server>/<admin-path>` and sign in with an admin account.
+
+<img width="1660" height="1830" alt="image" src="https://github.com/user-attachments/assets/70b7d387-0163-4899-ae02-16e94992df91" />
+
+| Field | Description |
+|-------|-------------|
+| Hostname | The server's host name |
+| IP Address | The server's primary IP address |
+| Operating System | OS name and version |
+| Uptime | How long since the server last rebooted |
+| App Version | The version of this application that is installed |
+
+Live usage for the server's main resources, refreshed every 30 seconds.
+
+- **CPU usage**: current load as a percentage of all cores. The core count is shown under it.
+- **RAM usage**: memory used against total memory, for example `3.2 GB / 8 GB (40%)`.
+- **Disk space**: space used against total space on `<mount, e.g. />`, with a percentage bar.
+
+### Call Statistics
+
+Call counts come from the call detail records (CDR).
+
+| Card | What it counts |
+|------|----------------|
+| Calls Today | Calls since midnight in the server's time zone |
+| Last 7 Days | Calls in the past 7 days, today included |
+| This Month | Calls since the 1st of the current month |
+
+
 ### Customer portal
 
 Customers can sign in at the same address and land in `/portal`. There they see their balance, calls, invoices, rates, and their own API tokens; never vendors or costs. Add portal logins from the customer's account page. If email is set up, they get a link to set their password.
@@ -29,7 +60,7 @@ curl -H "Authorization: Bearer $TOKEN" https://switch.example.com/api/v1/cdrs/su
 
 ### Carriers
 
-Add your Carriers, Currency, Time Zone,  Billing email, NOC email, set inbound and outbound limits. Select the codecs you wish to use. Add Carrier rates so you know how much calls are costing you. Strip leading digits or prefix if needed. 
+Add your Carriers, Currency, Time Zone,  Billing email, NOC email, and set inbound and outbound limits. Select the codecs you wish to use. Add Carrier rates so you know how much calls are costing you. Strip leading digits or prefix if needed. 
 
 <img width="1140" height="1802" alt="image" src="https://github.com/user-attachments/assets/905e75d2-18ab-4702-9559-0e8c827ecb7e" />
 
