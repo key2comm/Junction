@@ -85,3 +85,6 @@ Schedule::command('softswitch:check-alerts')->everyMinute()->withoutOverlapping(
 
 // Quality-aware routing reads the last hour's per-trunk figures, refreshed every minute.
 Schedule::call(fn () => app(TrunkQuality::class)->refresh())->name('softswitch:trunk-quality')->everyMinute()->withoutOverlapping();
+
+// Dashboard → System: CPU (averaged over the minute), memory, disk, load.
+Schedule::call(fn () => app(\App\Services\SystemStats::class)->sample())->name('softswitch:system-stats')->everyMinute();
