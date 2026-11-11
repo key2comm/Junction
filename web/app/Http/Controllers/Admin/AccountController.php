@@ -136,7 +136,6 @@ class AccountController extends Controller
                 'dialing_country_names' => collect($account->dialing_countries ?? [])
                     ->map(fn ($code) => DialCountries::ALL[$code][0] ?? $code)->sort()->values(),
             ],
-            'ips' => $account->ips()->orderBy('ip')->get(['id', 'ip', 'tech_prefix', 'description', 'enabled']),
             'carrier' => $account->is_vendor ? $this->carrierShow($account) : null,
             'ledger' => $account->ledgerEntries()->latest('id')->limit(50)
                 ->get(['id', 'type', 'amount', 'balance_after', 'description', 'created_at', 'effective_at']),

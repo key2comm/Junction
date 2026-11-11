@@ -2,7 +2,6 @@
 import { Form, Head, Link, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import { Pencil, Trash2 } from '@lucide/vue';
-import AccountIpController from '@/actions/App/Http/Controllers/Admin/AccountIpController';
 import InvoiceController from '@/actions/App/Http/Controllers/Admin/InvoiceController';
 import PortalUserController from '@/actions/App/Http/Controllers/Admin/PortalUserController';
 import LedgerEntryController from '@/actions/App/Http/Controllers/Admin/LedgerEntryController';
@@ -13,7 +12,6 @@ import InputError from '@/components/InputError.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { useBilling } from '@/composables/useBilling';
 import { billingMonth, dateTime, money, titleCase } from '@/lib/format';
 import { edit, index, show } from '@/routes/accounts';
@@ -57,7 +55,6 @@ type Account = {
 
 const props = defineProps<{
     account: Account;
-    ips: { id: number; ip: string; tech_prefix: string; description: string | null; enabled: boolean }[];
     carrier: {
         trunk_id: number | null;
         rate_deck: { id: number; name: string; currency: string } | null;
@@ -151,13 +148,9 @@ const select = 'form-select w-auto';
         </div>
 
         <div class="ss-grid gap-4 ss-cols-lg-2">
-            <!-- Customer ingress -->
+            <!-- Customer routing -->
             <section v-if="account.is_customer" class="ss-stack-3">
-                <Heading
-                    variant="small"
-                    title="Customer IPs"
-                    description="Traffic from these addresses is identified as this customer. They are also allowed through the firewall."
-                />
+                <Heading variant="small" title="Routing" description="How this customer's calls are rated and routed. Devices (and their IP authentication) are under PBX." />
                 <dl class="ss-grid ss-cols-2 gap-2">
                     <dt class="text-secondary">Tariffs</dt>
                     <dd>{{ account.sell_rate_deck?.name ?? '— not set —' }}</dd>
@@ -175,61 +168,6 @@ const select = 'form-select w-auto';
                         <template v-else>Canada and USA only</template>
                     </dd>
                 </dl>
-
-                <div class="card table-responsive">
-                    <table class="table table-vcenter card-table table-tight">
-                        <thead>
-                            <tr>
-                                <th>IP / range</th>
-                                <th>Tech prefix</th>
-                                <th>Description</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="ip in ips" :key="ip.id" :class="{ 'opacity-50': !ip.enabled }">
-                                <td class="font-monospace">{{ ip.ip }}</td>
-                                <td class="font-monospace">{{ ip.tech_prefix || '—' }}</td>
-                                <td>{{ ip.description }}</td>
-                                <td class="text-end text-nowrap">
-                                    <Form v-bind="AccountIpController.update.form([account.id, ip.id])" class="d-inline" v-slot="{ processing }">
-                                        <input type="hidden" name="enabled" :value="ip.enabled ? 0 : 1" />
-                                        <Button size="sm" variant="ghost" :disabled="processing">{{ ip.enabled ? 'Disable' : 'Enable' }}</Button>
-                                    </Form>
-                                    <Form v-bind="AccountIpController.destroy.form([account.id, ip.id])" class="d-inline" v-slot="{ processing }">
-                                        <Button size="sm" variant="ghost" :disabled="processing" :aria-label="`Remove ${ip.ip}`"><Trash2 class="icon" /></Button>
-                                    </Form>
-                                </td>
-                            </tr>
-                            <tr v-if="ips.length === 0">
-                                <td colspan="4" class="text-center text-secondary">No IPs yet. This customer can't send traffic until one is added.</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <Form
-                    v-bind="AccountIpController.store.form(account.id)"
-                    reset-on-success
-                    class="ss-grid gap-2 ss-gtc-sm-2fr-1fr-2fr-auto align-items-sm-start"
-                    v-slot="{ errors, processing }"
-                >
-                    <div class="ss-grid gap-1">
-                        <Label for="ip" class="visually-hidden">IP or range</Label>
-                        <Input id="ip" name="ip" placeholder="198.51.100.7 or /24" required class="font-monospace" />
-                        <InputError :message="errors.ip" />
-                    </div>
-                    <div class="ss-grid gap-1">
-                        <Label for="tech_prefix" class="visually-hidden">Tech prefix</Label>
-                        <Input id="tech_prefix" name="tech_prefix" placeholder="Tech prefix" class="font-monospace" />
-                        <InputError :message="errors.tech_prefix" />
-                    </div>
-                    <div class="ss-grid gap-1">
-                        <Label for="ip_description" class="visually-hidden">Description</Label>
-                        <Input id="ip_description" name="description" placeholder="Description" />
-                    </div>
-                    <Button :disabled="processing">Add IP</Button>
-                </Form>
             </section>
 
             <RouteTester v-if="account.is_customer" :account-id="account.id" :currency="account.currency" />

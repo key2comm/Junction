@@ -196,7 +196,7 @@ class AccountsTest extends TestCase
         $this->assertTrue(Account::query()->sole()->is_customer);
     }
 
-    public function test_show_page_includes_ips_and_ledger(): void
+    public function test_show_page_has_no_customer_ip_section(): void
     {
         $account = Account::factory()->create();
         AccountIp::factory()->for($account)->create(['ip' => '198.51.100.0/24']);
@@ -205,8 +205,7 @@ class AccountsTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->component('accounts/Show')
                 ->where('account.code', $account->code)
-                ->has('ips', 1)
-                ->where('ips.0.ip', '198.51.100.0/24'));
+                ->missing('ips'));
     }
 
     public function test_customer_ips_are_validated_and_unique(): void
