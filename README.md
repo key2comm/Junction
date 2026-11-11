@@ -19,7 +19,7 @@ sudo ./install.sh
 
 The Admin UI is a web dashboard that shows the server's health and call activity at a glance. Open it at `https://<your-server>/<admin-path>` and sign in with an admin account.
 
-<img width="1660" height="1830" alt="image" src="https://github.com/user-attachments/assets/70b7d387-0163-4899-ae02-16e94992df91" />
+<img width="1660" height="1820" alt="image" src="https://github.com/user-attachments/assets/565302ce-6b80-449a-8f8b-622b0e0343ac" />
 
 | Field | Description |
 |-------|-------------|
