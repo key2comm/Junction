@@ -11,6 +11,7 @@ use App\Models\Cdr;
 use App\Models\Invoice;
 use App\Models\Rate;
 use App\Support\Billing;
+use App\Support\CallStats;
 use App\Support\CdrFilters;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
@@ -46,7 +47,9 @@ class PortalController extends Controller
                 'billing_type' => $account->billing_type->value,
                 'available_now' => $account->availableFundsNow(),
             ],
-            'last24h' => array_intersect_key($summary, array_flip(['calls', 'answered', 'asr', 'acd', 'minutes', 'sell'])),
+            'last24h' => array_intersect_key($summary, array_flip(['calls', 'answered', 'rejected', 'asr', 'acd', 'minutes', 'sell'])),
+            // activeCalls, today, month, week, hours: this customer's calls only, in the user's time zone.
+            ...(new CallStats($request->user()->timezone ?: 'UTC', $account->id))->all(),
             // Not shown while billing is off (Settings → Billing).
             'payments' => Billing::enabled() ? $account->ledgerEntries()->whereIn('type', ['payment', 'adjustment'])->latest('id')->limit(10)
                 ->get(['id', 'type', 'amount', 'description', 'effective_at']) : [],

@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Support\Settings;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -79,11 +80,20 @@ class PortalTest extends TestCase
 
     public function test_overview_and_calls_only_show_their_own_data_without_costs(): void
     {
+        $this->travelTo('2026-11-10 15:30:00');
         $this->cdr($this->customer);
         $this->cdr($this->other);
+        $this->cdr($this->other);
+        foreach ([$this->customer, $this->other, $this->other] as $a) {
+            DB::table('active_calls')->insert(['uuid' => (string) Str::uuid(), 'account_id' => $a->id, 'reserved' => 0, 'max_duration' => 60]);
+        }
 
+        // The dashboard figures count only their own calls.
         $this->actingAs($this->portalUser)->get('/portal')->assertInertia(fn (Assert $p) => $p
-            ->component('portal/Overview')->where('account.code', 'MINE')->where('last24h.calls', 1)->missing('last24h.margin'));
+            ->component('portal/Overview')->where('account.code', 'MINE')->where('last24h.calls', 1)->missing('last24h.margin')
+            ->where('activeCalls', 1)->where('today.calls', 1)->where('month.calls', 1)
+            ->where('week.6.calls', 1)->where('hours.22', ['hour' => '2026-11-10 14', 'calls' => 1, 'answered' => 1])
+            ->missing('system'));
 
         $this->actingAs($this->portalUser)->get("/portal/calls?customer={$this->other->id}&vendor=1")->assertInertia(fn (Assert $p) => $p
             ->component('portal/Calls')->has('calls.data', 1)->where('summary.calls', 1)->missing('summary.buy')

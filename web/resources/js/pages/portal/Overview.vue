@@ -1,12 +1,19 @@
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, usePoll } from '@inertiajs/vue3';
+import { computed } from 'vue';
+import { Activity, CalendarDays, PhoneCall, PhoneIncoming } from '@lucide/vue';
+import CallBars from '@/components/dashboard/CallBars.vue';
+import CallLegend from '@/components/dashboard/CallLegend.vue';
 import Heading from '@/components/Heading.vue';
 import { Badge } from '@/components/ui/badge';
 import { useBilling } from '@/composables/useBilling';
+import { dayBars, hourBars } from '@/lib/callBars';
 import { billingMonth, date, money, titleCase } from '@/lib/format';
 import { home } from '@/routes/portal';
 import { index as calls } from '@/routes/portal/calls';
 import { show as showInvoice } from '@/routes/portal/invoices';
+
+type Counts = { calls: number; answered: number; minutes: number };
 
 const props = defineProps<{
     account: {
@@ -24,7 +31,12 @@ const props = defineProps<{
         max_channels: number | null;
         max_cps: string | null;
     };
-    last24h: { calls: number; answered: number; asr: number | null; acd: number | null; minutes: number; sell: string };
+    activeCalls: number;
+    today: Counts;
+    month: Counts;
+    week: { day: string; calls: number; answered: number }[];
+    hours: { hour: string; calls: number; answered: number }[];
+    last24h: { calls: number; answered: number; rejected: number; asr: number | null; acd: number | null; minutes: number; sell: string };
     payments: { id: number; type: string; amount: string; description: string; effective_at: string }[];
     invoices: { id: number; number: string; period_start: string; timezone: string; currency: string; usage_total: string; amount_due: string; due_at: string | null }[];
 }>();
@@ -34,6 +46,16 @@ defineOptions({ layout: { breadcrumbs: [{ title: 'Overview', href: home() }] } }
 const billing = useBilling();
 const m = (v: string) => money(v, props.account.currency);
 const duration = (s: number | null) => (s === null ? '—' : s >= 60 ? `${Math.floor(s / 60)}m ${s % 60}s` : `${s}s`);
+const n = (v: number) => v.toLocaleString();
+const pct = (part: number, whole: number) => (whole > 0 ? Math.round((part / whole) * 100) : 0);
+
+// Call figures refresh on their own.
+usePoll(30000, { only: ['activeCalls', 'today', 'month', 'week', 'hours', 'last24h'] });
+
+const weekBars = computed(() => dayBars(props.week));
+const hourChart = computed(() => hourBars(props.hours));
+const weekTotal = computed(() => props.week.reduce((t, d) => t + d.calls, 0));
+const failed24h = computed(() => props.last24h.calls - props.last24h.answered);
 </script>
 
 <template>
@@ -77,17 +99,99 @@ const duration = (s: number | null) => (s === null ? '—' : s >= 60 ? `${Math.f
             </div>
         </div>
 
-        <section class="ss-stack-2">
-            <div class="d-flex align-items-baseline justify-content-between">
-                <Heading variant="small" title="Last 24 hours" />
-                <Link :href="calls()">All calls →</Link>
+        <!-- Headline numbers -->
+        <div class="ss-grid gap-3 ss-cols-sm-2 ss-cols-xl-4">
+            <div class="card card-body">
+                <div class="d-flex align-items-center gap-3">
+                    <span class="avatar avatar-md bg-green-lt"><Activity class="icon" /></span>
+                    <div>
+                        <p class="small text-secondary mb-1">Calls in progress</p>
+                        <p class="fs-1 fw-semibold tabular-nums lh-1 mb-1">{{ n(activeCalls) }}</p>
+                        <p v-if="account.max_channels" class="small text-secondary mb-0">of {{ n(account.max_channels) }} allowed</p>
+                    </div>
+                </div>
             </div>
-            <div class="ss-grid gap-3 ss-cols-sm-5">
-                <div class="card card-body p-2"><p class="small text-secondary">Calls</p><p class="fs-2 fw-semibold tabular-nums">{{ last24h.calls.toLocaleString() }}</p></div>
-                <div class="card card-body p-2"><p class="small text-secondary">Answered</p><p class="fs-2 fw-semibold tabular-nums">{{ last24h.answered.toLocaleString() }}</p></div>
-                <div class="card card-body p-2"><p class="small text-secondary">ACD</p><p class="fs-2 fw-semibold tabular-nums">{{ duration(last24h.acd) }}</p></div>
-                <div class="card card-body p-2"><p class="small text-secondary">Minutes</p><p class="fs-2 fw-semibold tabular-nums">{{ last24h.minutes.toLocaleString() }}</p></div>
-                <div class="card card-body p-2"><p class="small text-secondary">Spend</p><p class="fs-2 fw-semibold tabular-nums">{{ m(last24h.sell) }}</p></div>
+            <div class="card card-body">
+                <div class="d-flex align-items-center gap-3">
+                    <span class="avatar avatar-md bg-primary-lt"><PhoneCall class="icon" /></span>
+                    <div>
+                        <p class="small text-secondary mb-1">Calls today</p>
+                        <p class="fs-1 fw-semibold tabular-nums lh-1 mb-1">{{ n(today.calls) }}</p>
+                        <p class="small text-secondary mb-0">{{ n(today.answered) }} answered · {{ n(today.minutes) }} min</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card card-body">
+                <div class="d-flex align-items-center gap-3">
+                    <span class="avatar avatar-md bg-azure-lt"><CalendarDays class="icon" /></span>
+                    <div>
+                        <p class="small text-secondary mb-1">Calls this month</p>
+                        <p class="fs-1 fw-semibold tabular-nums lh-1 mb-1">{{ n(month.calls) }}</p>
+                        <p class="small text-secondary mb-0">{{ n(month.answered) }} answered · {{ n(month.minutes) }} min</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card card-body">
+                <div class="d-flex align-items-center gap-3">
+                    <span class="avatar avatar-md bg-purple-lt"><PhoneIncoming class="icon" /></span>
+                    <div>
+                        <p class="small text-secondary mb-1" title="Answer Seizure Ratio: the share of calls that were answered">ASR, last 24 hours</p>
+                        <p class="fs-1 fw-semibold tabular-nums lh-1 mb-1">{{ last24h.asr === null ? '—' : `${last24h.asr}%` }}</p>
+                        <p class="small text-secondary mb-0" title="Average Call Duration of answered calls">ACD {{ duration(last24h.acd) }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Last 24 hours -->
+        <section class="card">
+            <div class="card-header">
+                <div>
+                    <h3 class="card-title">Last 24 hours</h3>
+                    <p class="card-subtitle mb-0"><Link :href="calls()">All calls →</Link></p>
+                </div>
+                <CallLegend class="card-actions" />
+            </div>
+            <div class="card-body ss-stack-3">
+                <div class="ss-grid gap-3 ss-cols-2 ss-cols-md-4">
+                    <div class="rounded border p-2">
+                        <p class="small text-secondary mb-1">Total calls</p>
+                        <p class="fs-2 fw-semibold tabular-nums lh-1 mb-0">{{ n(last24h.calls) }}</p>
+                    </div>
+                    <div class="rounded border p-2">
+                        <p class="small text-secondary mb-1">Answered</p>
+                        <p class="fs-2 fw-semibold tabular-nums lh-1 mb-1">{{ n(last24h.answered) }}</p>
+                        <p class="small text-secondary mb-0">{{ pct(last24h.answered, last24h.calls) }}% of calls · {{ n(last24h.minutes) }} min</p>
+                    </div>
+                    <div class="rounded border p-2">
+                        <p class="small text-secondary mb-1">Failed</p>
+                        <p class="fs-2 fw-semibold tabular-nums lh-1 mb-1">{{ n(failed24h) }}</p>
+                        <p class="small text-secondary mb-0">{{ n(last24h.rejected) }} refused before routing</p>
+                    </div>
+                    <div v-if="billing" class="rounded border p-2">
+                        <p class="small text-secondary mb-1">Spend</p>
+                        <p class="fs-2 fw-semibold tabular-nums lh-1 mb-0">{{ m(last24h.sell) }}</p>
+                    </div>
+                    <div v-else class="rounded border p-2">
+                        <p class="small text-secondary mb-1">ACD</p>
+                        <p class="fs-2 fw-semibold tabular-nums lh-1 mb-0">{{ duration(last24h.acd) }}</p>
+                    </div>
+                </div>
+                <CallBars :items="hourChart" title="Calls per hour, last 24 hours" :height="180" :label-every="3" />
+            </div>
+        </section>
+
+        <!-- Last 7 days -->
+        <section class="card">
+            <div class="card-header">
+                <div>
+                    <h3 class="card-title">Calls, last 7 days</h3>
+                    <p class="card-subtitle mb-0">{{ n(weekTotal) }} calls</p>
+                </div>
+                <CallLegend class="card-actions" />
+            </div>
+            <div class="card-body">
+                <CallBars :items="weekBars" title="Calls per day, last 7 days" />
             </div>
         </section>
 

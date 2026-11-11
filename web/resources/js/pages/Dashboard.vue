@@ -3,11 +3,11 @@ import { Head, Link, usePoll } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import { Activity, CalendarDays, Cpu, HardDrive, MemoryStick, PhoneCall, PhoneIncoming } from '@lucide/vue';
 import CallBars from '@/components/dashboard/CallBars.vue';
-import type { CallBar } from '@/components/dashboard/CallBars.vue';
 import CallLegend from '@/components/dashboard/CallLegend.vue';
 import Heading from '@/components/Heading.vue';
 import { Badge } from '@/components/ui/badge';
 import { useBilling } from '@/composables/useBilling';
+import { dayBars, hourBars } from '@/lib/callBars';
 import { date, money } from '@/lib/format';
 import { dashboard } from '@/routes';
 import { show as showAccount } from '@/routes/accounts';
@@ -59,38 +59,8 @@ usePoll(30000, { only: ['activeCalls', 'today', 'month', 'week', 'hours', 'last2
 
 // --- Charts: days and hours in the viewer's own time zone (the server buckets them). ---
 const weekTotal = computed(() => props.week.reduce((t, d) => t + d.calls, 0));
-const weekBars = computed<CallBar[]>(() =>
-    props.week.map((d, i) => {
-        const day = new Date(`${d.day}T12:00:00Z`);
-        const today = i === props.week.length - 1;
-
-        return {
-            key: d.day,
-            calls: d.calls,
-            answered: d.answered,
-            label: today ? 'Today' : day.toLocaleDateString(undefined, { weekday: 'short', timeZone: 'UTC' }),
-            long: day.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric', timeZone: 'UTC' }),
-            highlight: today,
-        };
-    }),
-);
-const hourBars = computed<CallBar[]>(() =>
-    props.hours.map((d, i) => {
-        const [day, hh] = d.hour.split(' ');
-        const now = i === props.hours.length - 1;
-        const at = new Date(`${day}T${hh}:00:00Z`);
-        const time = at.toLocaleTimeString(undefined, { hour: 'numeric', timeZone: 'UTC' });
-
-        return {
-            key: d.hour,
-            calls: d.calls,
-            answered: d.answered,
-            label: now ? 'Now' : time,
-            long: `${at.toLocaleDateString(undefined, { weekday: 'short', timeZone: 'UTC' })} ${time} – ${new Date(at.getTime() + 3600000).toLocaleTimeString(undefined, { hour: 'numeric', timeZone: 'UTC' })}`,
-            highlight: now,
-        };
-    }),
-);
+const weekBars = computed(() => dayBars(props.week));
+const hourChart = computed(() => hourBars(props.hours));
 const failed24h = computed(() => props.last24h.calls - props.last24h.answered);
 
 // --- Server ---
@@ -299,7 +269,7 @@ const stale = computed(() => (props.system ? Date.now() - new Date(props.system.
                         <p class="fs-2 fw-semibold tabular-nums lh-1 mb-0">{{ duration(last24h.acd) }}</p>
                     </div>
                 </div>
-                <CallBars :items="hourBars" title="Calls per hour, last 24 hours" :height="180" :label-every="3" />
+                <CallBars :items="hourChart"title="Calls per hour, last 24 hours" :height="180" :label-every="3" />
             </div>
         </section>
 
