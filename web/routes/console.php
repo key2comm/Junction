@@ -88,3 +88,6 @@ Schedule::call(fn () => app(TrunkQuality::class)->refresh())->name('softswitch:t
 
 // Dashboard → System: CPU (averaged over the minute), memory, disk, load.
 Schedule::call(fn () => app(\App\Services\SystemStats::class)->sample())->name('softswitch:system-stats')->everyMinute();
+
+// Billing profiles: monthly plan items are charged in advance as each customer's month starts.
+Schedule::call(fn () => app(\App\Services\BillingCharges::class)->runMonthly())->name('softswitch:billing-charges')->hourly()->withoutOverlapping();

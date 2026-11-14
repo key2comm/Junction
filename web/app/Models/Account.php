@@ -24,7 +24,7 @@ use Illuminate\Support\Facades\DB;
 #[Fillable([
     'name', 'code', 'is_customer', 'is_vendor', 'status', 'currency', 'billing_type',
     'credit_limit', 'low_balance_threshold', 'timezone', 'billing_email', 'noc_email', 'sell_rate_deck_id',
-    'routing_plan_id', 'max_channels', 'max_cps', 'notes', 'dialing_scope', 'dialing_countries',
+    'routing_plan_id', 'max_channels', 'max_cps', 'notes', 'dialing_scope', 'dialing_countries', 'billing_profile_id',
 ])]
 class Account extends Model
 {
@@ -110,6 +110,17 @@ class Account extends Model
     public function sellRateDeck(): BelongsTo
     {
         return $this->belongsTo(RateDeck::class, 'sell_rate_deck_id');
+    }
+
+    public function billingProfile(): BelongsTo
+    {
+        return $this->belongsTo(BillingProfile::class);
+    }
+
+    /** What's on this customer's bill (Billing profiles and extra items). */
+    public function charges(): HasMany
+    {
+        return $this->hasMany(AccountCharge::class)->orderBy('id');
     }
 
     public function routingPlan(): BelongsTo

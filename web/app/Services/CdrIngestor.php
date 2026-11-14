@@ -126,6 +126,9 @@ class CdrIngestor
                 'buy_cost' => $answered && $buyRate ? $buyRate->costFor($billsec) : null,
                 'rated_at' => now(),
             ]);
+            // Billing profile: Canada/USA calls the customer's plan includes cost nothing.
+            [$included, $sellCost] = app(IncludedMinutes::class)->rate($cdr, $sellRate, $billsec);
+            $cdr->forceFill(['included_seconds' => $included, 'sell_cost' => $sellCost]);
             $cdr->save();
 
             $cdr->attemptLog()->delete();

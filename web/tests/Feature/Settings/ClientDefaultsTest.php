@@ -29,7 +29,7 @@ class ClientDefaultsTest extends TestCase
         $this->actingAs($admin)->put(route('client-defaults.update'), [...$form, 'sell_rate_deck_id' => $carrierRates->id])->assertSessionHasErrors('sell_rate_deck_id');
         $this->actingAs($admin)->put(route('client-defaults.update'), $form)->assertSessionHasNoErrors()->assertRedirect(route('client-defaults.edit'));
 
-        $this->assertSame([...$form, 'sell_rate_deck_id' => $tariff->id, 'routing_plan_id' => $plan->id, 'max_channels' => 30], ClientDefaults::get());
+        $this->assertSame([...$form, 'sell_rate_deck_id' => $tariff->id, 'routing_plan_id' => $plan->id, 'max_channels' => 30, 'billing_profile_id' => null], ClientDefaults::get());
 
         $this->actingAs($admin)->get(route('accounts.create'))->assertInertia(fn (Assert $p) => $p
             ->where('defaults.sell_rate_deck_id', $tariff->id)->where('defaults.routing_plan_id', $plan->id)

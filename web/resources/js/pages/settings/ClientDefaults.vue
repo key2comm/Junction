@@ -22,6 +22,7 @@ type Defaults = {
     routing_plan_id: number | null;
     max_channels: number | null;
     max_cps: string | null;
+    billing_profile_id: number | null;
 };
 
 const props = defineProps<{
@@ -31,6 +32,7 @@ const props = defineProps<{
         billingTypes: string[];
         rateDecks: { id: number; name: string; currency: string }[];
         routingPlans: { id: number; name: string }[];
+        billingProfiles: { id: number; name: string }[];
         timezones: string[];
         currencies: { code: string; name: string; top: boolean }[];
     };
@@ -131,6 +133,7 @@ const tariffCurrency = computed(() => props.options.rateDecks.find((d) => d.id =
             <input type="hidden" name="billing_type" :value="defaults.billing_type" />
             <input type="hidden" name="credit_limit" :value="defaults.credit_limit" />
             <input type="hidden" name="low_balance_threshold" :value="defaults.low_balance_threshold ?? ''" />
+            <input type="hidden" name="billing_profile_id" :value="defaults.billing_profile_id ?? ''" />
         </template>
         <section v-else class="ss-grid gap-4 ss-cols-sm-2">
             <h2 class="fw-semibold ss-span-sm-2 mb-0">Billing</h2>
@@ -153,6 +156,16 @@ const tariffCurrency = computed(() => props.options.rateDecks.find((d) => d.id =
                 <Label for="low_balance_threshold">Low-balance alert below</Label>
                 <Input id="low_balance_threshold" name="low_balance_threshold" type="number" step="0.01" min="0" :default-value="defaults.low_balance_threshold ?? ''" placeholder="No alerts" />
                 <InputError :message="errors.low_balance_threshold" />
+            </div>
+
+            <div class="ss-grid gap-2">
+                <Label for="billing_profile_id">Billing profile</Label>
+                <select id="billing_profile_id" name="billing_profile_id" :class="select">
+                    <option value="">— None —</option>
+                    <option v-for="p in options.billingProfiles" :key="p.id" :value="p.id" :selected="p.id === defaults.billing_profile_id">{{ p.name }}</option>
+                </select>
+                <p class="small text-secondary mb-0">Its items go on a new customer's bill from the day they're created (prorated).</p>
+                <InputError :message="errors.billing_profile_id" />
             </div>
         </section>
 

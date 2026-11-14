@@ -1,6 +1,9 @@
 <?php
 
+use App\Http\Controllers\Admin\AccountChargeController;
 use App\Http\Controllers\Admin\AccountController;
+use App\Http\Controllers\Admin\BillingItemController;
+use App\Http\Controllers\Admin\BillingProfileController;
 use App\Http\Controllers\Admin\AccountIpController;
 use App\Http\Controllers\Admin\AlertController;
 use App\Http\Controllers\Admin\CdrController;
@@ -88,6 +91,16 @@ Route::middleware(['auth', 'admin'])->group(function () {
         Route::post('invoices/{invoice}/void', [InvoiceController::class, 'void'])->name('invoices.void');
         Route::post('invoices/{invoice}/email', [InvoiceController::class, 'email'])->middleware('throttle:10,1')->name('invoices.email');
         Route::post('accounts/{account}/invoices', [InvoiceController::class, 'store'])->middleware('throttle:20,1')->name('accounts.invoices.store');
+
+        // Billing items and profiles; a customer's plan and the items on their bill.
+        Route::resource('billing-items', BillingItemController::class)->only(['index', 'store', 'update', 'destroy']);
+        Route::resource('billing-profiles', BillingProfileController::class)->except(['show']);
+        Route::put('accounts/{account}/billing-profile', [AccountChargeController::class, 'profile'])->name('accounts.billing-profile.update');
+        Route::scopeBindings()->group(function () {
+            Route::post('accounts/{account}/charges', [AccountChargeController::class, 'store'])->name('accounts.charges.store');
+            Route::patch('accounts/{account}/charges/{charge}', [AccountChargeController::class, 'update'])->name('accounts.charges.update');
+            Route::delete('accounts/{account}/charges/{charge}', [AccountChargeController::class, 'destroy'])->name('accounts.charges.destroy');
+        });
 
         // Vendor payables and vendor invoice reconciliation
         Route::post('accounts/{account}/vendor-ledger', [VendorBillingController::class, 'storeEntry'])->middleware('throttle:30,1')->name('accounts.vendor-ledger.store');

@@ -128,8 +128,9 @@ class PortalController extends Controller
 
         return Inertia::render('portal/Invoice', [
             'invoice' => $invoice->only(['id', 'number', 'account_code', 'account_name', 'billing_email', 'billing_type', 'status', 'period_start',
-                'period_end', 'timezone', 'currency', 'opening_balance', 'usage_total', 'payments_total', 'adjustments_total', 'closing_balance',
-                'amount_due', 'calls', 'billsec', 'issued_at', 'due_at', 'void_reason', 'voided_at']),
+                'period_end', 'timezone', 'currency', 'opening_balance', 'usage_total', 'payments_total', 'adjustments_total', 'charges_total',
+                'included_seconds', 'closing_balance', 'amount_due', 'calls', 'billsec', 'issued_at', 'due_at', 'void_reason', 'voided_at']),
+            'charges' => $invoice->charges()->get(['position', 'description', 'quantity', 'unit_price', 'amount']),
             'lines' => $invoice->lines()->get(['position', 'prefix', 'destination', 'calls', 'billsec', 'rate', 'amount']),
             'issuer' => ['name' => config('app.name'), 'host' => parse_url((string) config('app.url'), PHP_URL_HOST)],
         ]);

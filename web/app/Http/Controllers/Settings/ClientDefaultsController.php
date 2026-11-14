@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Settings;
 use App\Enums\AccountStatus;
 use App\Enums\BillingType;
 use App\Http\Controllers\Controller;
+use App\Models\BillingProfile;
 use App\Models\RateDeck;
 use App\Models\RoutingPlan;
 use App\Support\ClientDefaults;
@@ -26,6 +27,7 @@ class ClientDefaultsController extends Controller
                 'billingTypes' => BillingType::values(),
                 'rateDecks' => RateDeck::query()->where('kind', 'tariff')->orderBy('name')->get(['id', 'name', 'currency']),
                 'routingPlans' => RoutingPlan::query()->orderBy('name')->get(['id', 'name']),
+                'billingProfiles' => BillingProfile::query()->orderBy('name')->get(['id', 'name']),
                 'timezones' => timezone_identifiers_list(),
                 'currencies' => Currencies::options(),
             ],

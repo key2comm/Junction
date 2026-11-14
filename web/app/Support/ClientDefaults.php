@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Enums\AccountStatus;
 use App\Enums\BillingType;
+use App\Models\BillingProfile;
 use App\Models\RateDeck;
 use App\Models\RoutingPlan;
 use Illuminate\Validation\Rule;
@@ -29,6 +30,7 @@ final class ClientDefaults
         'routing_plan_id' => null,
         'max_channels' => null,
         'max_cps' => null,
+        'billing_profile_id' => null,
     ];
 
     /** @return array<string, mixed> the saved defaults; a deleted tariff or LCR group is dropped */
@@ -42,6 +44,9 @@ final class ClientDefaults
         }
         if ($values['routing_plan_id'] && ! RoutingPlan::query()->whereKey($values['routing_plan_id'])->exists()) {
             $values['routing_plan_id'] = null;
+        }
+        if ($values['billing_profile_id'] && ! BillingProfile::query()->whereKey($values['billing_profile_id'])->exists()) {
+            $values['billing_profile_id'] = null;
         }
 
         return $values;
@@ -61,6 +66,7 @@ final class ClientDefaults
             'routing_plan_id' => ['nullable', 'integer', 'exists:routing_plans,id'],
             'max_channels' => ['nullable', 'integer', 'min:1', 'max:100000'],
             'max_cps' => ['nullable', 'numeric', 'min:0.1', 'max:10000'],
+            'billing_profile_id' => ['nullable', 'integer', 'exists:billing_profiles,id'],
         ];
     }
 
@@ -72,7 +78,7 @@ final class ClientDefaults
             $value = $data[$field] ?? null;
             $values[$field] = $value === '' ? null : $value;
         }
-        foreach (['sell_rate_deck_id', 'routing_plan_id', 'max_channels'] as $int) {
+        foreach (['sell_rate_deck_id', 'routing_plan_id', 'max_channels', 'billing_profile_id'] as $int) {
             $values[$int] = $values[$int] === null ? null : (int) $values[$int];
         }
         foreach (['credit_limit', 'low_balance_threshold', 'max_cps'] as $number) {

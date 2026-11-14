@@ -8,13 +8,19 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\AccountRequest;
 use App\Enums\Transport;
 use App\Models\Account;
+use App\Models\BillingCharge;
+use App\Models\BillingItem;
+use App\Models\BillingProfile;
 use App\Models\Endpoint;
 use App\Models\Invoice;
 use App\Models\RateDeck;
 use App\Models\RoutingPlan;
 use App\Models\Trunk;
 use App\Models\User;
+use App\Services\BillingCharges;
+use App\Services\IncludedMinutes;
 use App\Services\Router;
+use App\Support\Billing;
 use App\Support\ClientDefaults;
 use App\Support\Currencies;
 use App\Support\DialCountries;
@@ -100,10 +106,15 @@ class AccountController extends Controller
         // New customers may call Canada and the USA only, unless the form says otherwise.
         $data['dialing_scope'] ??= 'nanp';
         $carrier = $data['is_vendor'] ? $this->carrierSettings($request) : null;
-        $account = DB::transaction(function () use ($data, $carrier) {
+        $profileId = $data['is_customer'] ? ($data['billing_profile_id'] ?? null) : null;
+        unset($data['billing_profile_id']);
+        $account = DB::transaction(function () use ($data, $carrier, $profileId, $request) {
             $account = Account::create($data);
             if ($carrier !== null) {
                 $account->ensureCarrierTrunk()->update(['name' => $account->name, ...$carrier]);
+            }
+            if ($profileId) {
+                app(BillingCharges::class)->assignProfile($account, BillingProfile::findOrFail($profileId), $request->user());
             }
 
             return $account;
@@ -137,6 +148,7 @@ class AccountController extends Controller
                     ->map(fn ($code) => DialCountries::ALL[$code][0] ?? $code)->sort()->values(),
             ],
             'carrier' => $account->is_vendor ? $this->carrierShow($account) : null,
+            'plan' => $account->is_customer && Billing::enabled() ? $this->planShow($account) : null,
             'ledger' => $account->ledgerEntries()->latest('id')->limit(50)
                 ->get(['id', 'type', 'amount', 'balance_after', 'description', 'created_at', 'effective_at']),
             'portalUsers' => $account->is_customer
@@ -249,10 +261,17 @@ class AccountController extends Controller
     {
         $data = $request->validated();
         $carrier = $data['is_vendor'] ? $this->carrierSettings($request) : null;
-        DB::transaction(function () use ($account, $data, $carrier) {
+        $profileChange = $data['is_customer'] && array_key_exists('billing_profile_id', $data)
+            && (int) $data['billing_profile_id'] !== (int) $account->billing_profile_id;
+        $profileId = $data['billing_profile_id'] ?? null;
+        unset($data['billing_profile_id']);
+        DB::transaction(function () use ($account, $data, $carrier, $profileChange, $profileId, $request) {
             $account->update($data);
             if ($carrier !== null) {
                 $account->ensureCarrierTrunk()->update(['name' => $account->name, ...$carrier]);
+            }
+            if ($profileChange) {
+                app(BillingCharges::class)->assignProfile($account, $profileId ? BillingProfile::findOrFail($profileId) : null, $request->user());
             }
         });
 
@@ -283,6 +302,32 @@ class AccountController extends Controller
         return response()->json($result);
     }
 
+    /** Billing plan section of a customer's page (Billing → Billing profiles). */
+    private function planShow(Account $account): array
+    {
+        $profile = $account->billingProfile;
+
+        return [
+            'profile' => $profile ? [...$profile->only(['id', 'name', 'nanp_plan', 'nanp_minutes']), 'label' => $profile->planLabel()] : null,
+            'included_used' => $profile?->nanp_plan === 'bundle' ? IncludedMinutes::usedThisMonth($account) : null,
+            'charges' => $account->charges()->with('item')->get()->map(fn ($c) => [
+                'id' => $c->id,
+                'item' => $c->item->only(['id', 'name', 'unit', 'frequency']),
+                'quantity' => (string) $c->quantity,
+                'price' => $c->price === null ? null : (string) $c->price,
+                'unit_price' => $c->unitPrice(),
+                'total' => $c->total(),
+                'from_profile' => $c->from_profile,
+            ]),
+            'monthly_total' => $account->charges()->with('item')->get()->filter(fn ($c) => $c->item->isMonthly())
+                ->reduce(fn (string $t, $c) => bcadd($t, $c->total(), 6), '0'),
+            'profiles' => BillingProfile::query()->orderBy('name')->get(['id', 'name']),
+            'items' => BillingItem::query()->where('active', true)->orderBy('name')->get(['id', 'name', 'unit', 'price', 'frequency']),
+            'recent' => BillingCharge::query()->where('account_id', $account->id)->latest('id')->limit(10)
+                ->get(['id', 'kind', 'description', 'amount', 'effective_at']),
+        ];
+    }
+
     private function formOptions(): array
     {
         return [
@@ -296,6 +341,7 @@ class AccountController extends Controller
                 'carrierRates' => RateDeck::query()->where('kind', 'carrier')->orderBy('name')->get(['id', 'name', 'currency']),
                 'codecs' => Endpoint::CODECS,
                 'countries' => DialCountries::selectable(),
+                'billingProfiles' => BillingProfile::query()->orderBy('name')->get(['id', 'name']),
             ],
         ];
     }

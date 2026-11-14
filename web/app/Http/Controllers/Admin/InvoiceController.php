@@ -44,8 +44,9 @@ class InvoiceController extends Controller
         return Inertia::render('invoices/Show', [
             'invoice' => $invoice->only(['id', 'number', 'account_id', 'account_code', 'account_name', 'billing_email', 'billing_type',
                 'status', 'period_start', 'period_end', 'timezone', 'currency', 'opening_balance', 'usage_total', 'payments_total',
-                'adjustments_total', 'closing_balance', 'amount_due', 'calls', 'billsec', 'issued_at', 'due_at', 'void_reason', 'voided_at',
-                'emailed_at', 'emailed_to']),
+                'adjustments_total', 'charges_total', 'included_seconds', 'closing_balance', 'amount_due', 'calls', 'billsec', 'issued_at', 'due_at',
+                'void_reason', 'voided_at', 'emailed_at', 'emailed_to']),
+            'charges' => $invoice->charges()->get(['position', 'description', 'quantity', 'unit_price', 'amount']),
             'mailConfigured' => MailSettings::configured(),
             'lines' => $invoice->lines()->get(['position', 'prefix', 'destination', 'calls', 'billsec', 'rate', 'amount']),
             'issuer' => ['name' => config('app.name'), 'host' => parse_url((string) config('app.url'), PHP_URL_HOST)],
@@ -101,6 +102,12 @@ class InvoiceController extends Controller
         return response()->streamDownload(function () use ($invoice) {
             $out = fopen('php://output', 'w');
             fputcsv($out, ['invoice', 'account', 'period_start', 'period_end', 'prefix', 'destination', 'calls', 'minutes', 'rate_per_min', 'amount', 'currency'], escape: '');
+            foreach ($invoice->charges()->get() as $c) {
+                fputcsv($out, array_map([CdrController::class, 'cell'], [
+                    $invoice->number, $invoice->account_code, $invoice->period_start->toIso8601String(), $invoice->period_end->toIso8601String(),
+                    '', $c->description, '', $c->quantity, $c->unit_price, $c->amount, $invoice->currency,
+                ]), escape: '');
+            }
             foreach ($invoice->lines()->get() as $l) {
                 fputcsv($out, array_map([CdrController::class, 'cell'], [
                     $invoice->number, $invoice->account_code, $invoice->period_start->toIso8601String(), $invoice->period_end->toIso8601String(),

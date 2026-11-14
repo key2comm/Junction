@@ -46,8 +46,10 @@ class InvoiceGenerator
             throw new RuntimeException('The period has not ended yet.');
         }
 
-        // Every rated call in the period must be on the ledger first.
+        // Every rated call in the period must be on the ledger first, and next
+        // month's plan charges (billed in advance) go on this invoice.
         Artisan::call('softswitch:post-usage', ['--account' => $account->id]);
+        app(BillingCharges::class)->runMonthly($account);
 
         return DB::transaction(function () use ($account, $start, $end) {
             $existing = Invoice::query()->where('account_id', $account->id)
@@ -65,7 +67,19 @@ class InvoiceGenerator
             $usageLedger = bcmul($sum('usage'), '-1', 6);    // positive charge
             $payments = $sum('payment');
             $adjustments = $sum('adjustment');
-            $closing = bcadd(bcadd(bcadd($opening, $payments, 6), $adjustments, 6), $sum('usage'), 6);
+            $chargesLedger = bcmul($sum('charge'), '-1', 6);  // positive charge; credits lower it
+            $closing = bcadd(bcadd(bcadd(bcadd($opening, $payments, 6), $adjustments, 6), $sum('usage'), 6), $sum('charge'), 6);
+
+            // Plan items (Billing profiles), each as posted.
+            $charges = DB::table('billing_charges')->where('account_id', $account->id)
+                ->where('effective_at', '>=', $start)->where('effective_at', '<', $end)->whereNotNull('ledger_entry_id')
+                ->orderBy('effective_at')->orderBy('id')->get(['description', 'quantity', 'unit_price', 'amount']);
+            $chargeLines = $charges->reduce(fn (string $t, $c) => bcadd($t, (string) $c->amount, 6), '0');
+            if (bccomp($chargeLines, $chargesLedger, 6) !== 0) {
+                throw new RuntimeException("Plan charges on the ledger ({$chargesLedger}) do not match the billing charges ({$chargeLines}) for this period; not issuing.");
+            }
+            $includedSeconds = (int) DB::table('cdrs')->where('customer_account_id', $account->id)
+                ->where('started_at', '>=', $start)->where('started_at', '<', $end)->sum('included_seconds');
 
             $lines = DB::table('cdrs')
                 ->where('customer_account_id', $account->id)
@@ -100,6 +114,8 @@ class InvoiceGenerator
                 'usage_total' => $usageLedger,
                 'payments_total' => $payments,
                 'adjustments_total' => $adjustments,
+                'charges_total' => $chargesLedger,
+                'included_seconds' => $includedSeconds,
                 'closing_balance' => $closing,
                 // Postpaid customers owe a negative closing balance; prepaid accounts pay in advance.
                 'amount_due' => $postpaid && bccomp($closing, '0', 6) < 0 ? bcmul($closing, '-1', 6) : '0',
@@ -118,6 +134,16 @@ class InvoiceGenerator
                     'billsec' => (int) $l->billsec,
                     'rate' => $l->rate,
                     'amount' => $l->amount,
+                ]);
+            }
+
+            foreach ($charges->values() as $i => $c) {
+                $invoice->charges()->create([
+                    'position' => $i + 1,
+                    'description' => $c->description,
+                    'quantity' => $c->quantity,
+                    'unit_price' => $c->unit_price,
+                    'amount' => $c->amount,
                 ]);
             }
 

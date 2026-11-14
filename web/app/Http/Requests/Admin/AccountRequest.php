@@ -77,6 +77,8 @@ class AccountRequest extends FormRequest
             'max_channels' => ['nullable', 'integer', 'min:1', 'max:100000'],
             'max_cps' => ['nullable', 'numeric', 'min:0.1', 'max:10000'],
             'notes' => ['nullable', 'string', 'max:5000'],
+            // Billing → Billing profiles (customers): the plan whose items go on their bill.
+            'billing_profile_id' => ['sometimes', 'nullable', 'integer', 'exists:billing_profiles,id'],
             // Dialing rules (customers): Canada/USA only, anywhere, or Canada/USA plus chosen countries.
             'dialing_scope' => ['sometimes', 'required', Rule::in(['nanp', 'international', 'countries'])],
             'dialing_countries' => ['sometimes', 'array', 'max:300'],

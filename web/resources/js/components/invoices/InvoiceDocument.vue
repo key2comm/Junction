@@ -18,6 +18,8 @@ export type InvoiceDoc = {
     usage_total: string;
     payments_total: string;
     adjustments_total: string;
+    charges_total: string;
+    included_seconds: number;
     closing_balance: string;
     amount_due: string;
     calls: number;
@@ -28,10 +30,13 @@ export type InvoiceDoc = {
     voided_at: string | null;
 };
 
+export type InvoiceCharge = { position: number; description: string; quantity: string; unit_price: string; amount: string };
+
 const props = defineProps<{
     invoice: InvoiceDoc;
     lines: { position: number; prefix: string | null; destination: string | null; calls: number; billsec: number; rate: string | null; amount: string }[];
     issuer: { name: string; host: string | null };
+    charges?: InvoiceCharge[];
 }>();
 
 const m = (v: string) => money(v, props.invoice.currency);
@@ -79,6 +84,35 @@ const lastDay = new Date(new Date(props.invoice.period_end).getTime() - 1000).to
         </dl>
     </section>
 
+    <section v-if="charges?.length">
+        <h2 class="mb-2 fw-semibold">Plan charges</h2>
+        <table class="w-100">
+            <thead>
+                <tr>
+                    <th class="fw-medium">Item</th>
+                    <th class="text-end fw-medium">Qty</th>
+                    <th class="text-end fw-medium">Price</th>
+                    <th class="text-end fw-medium">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="c in charges" :key="c.position" class="border-bottom ss-border-dashed">
+                    <td>{{ c.description }}</td>
+                    <td class="text-end tabular-nums">{{ Number(c.quantity).toLocaleString() }}</td>
+                    <td class="text-end tabular-nums">{{ m(c.unit_price) }}</td>
+                    <td class="text-end tabular-nums">{{ m(c.amount) }}</td>
+                </tr>
+            </tbody>
+            <tfoot>
+                <tr class="fw-medium">
+                    <td class="pt-2" colspan="3">Total plan charges</td>
+                    <td class="pt-2 text-end tabular-nums">{{ m(invoice.charges_total) }}</td>
+                </tr>
+            </tfoot>
+        </table>
+        <p class="mt-1 small text-secondary">Monthly items are billed in advance, so next month's plan appears on this invoice.</p>
+    </section>
+
     <section>
         <h2 class="mb-2 fw-semibold">Usage by destination</h2>
         <table class="w-100">
@@ -115,6 +149,9 @@ const lastDay = new Date(new Date(props.invoice.period_end).getTime() - 1000).to
                 </tr>
             </tfoot>
         </table>
+        <p v-if="invoice.included_seconds > 0" class="mt-1 small text-secondary">
+            Includes {{ minutes(invoice.included_seconds) }} Canada/USA minutes covered by your plan at no charge.
+        </p>
     </section>
 
     <section class="ms-sm-auto ss-w-sm-80">
@@ -128,6 +165,10 @@ const lastDay = new Date(new Date(props.invoice.period_end).getTime() - 1000).to
                 <dt class="text-secondary">Adjustments</dt>
                 <dd class="text-end tabular-nums">{{ m(invoice.adjustments_total) }}</dd>
             </template>
+            <template v-if="Number(invoice.charges_total)">
+                <dt class="text-secondary">Plan charges</dt>
+                <dd class="text-end tabular-nums">−{{ m(invoice.charges_total) }}</dd>
+            </template>
             <dt class="text-secondary">Usage charges</dt>
             <dd class="text-end tabular-nums">−{{ m(invoice.usage_total) }}</dd>
             <dt class="border-top pt-1 fw-medium">Closing balance</dt>
@@ -137,7 +178,7 @@ const lastDay = new Date(new Date(props.invoice.period_end).getTime() - 1000).to
                 <dd class="pt-2 text-end fs-4 fw-semibold tabular-nums">{{ m(invoice.amount_due) }}</dd>
             </template>
         </dl>
-        <p v-if="invoice.billing_type === 'prepaid'" class="mt-2 small text-secondary">Prepaid account: usage is deducted from your balance; nothing is due.</p>
+        <p v-if="invoice.billing_type === 'prepaid'" class="mt-2 small text-secondary">Prepaid account: usage and plan charges are deducted from your balance; nothing is due.</p>
     </section>
 </article>
 </template>

@@ -1,5 +1,32 @@
 # Changelog
 
+## Unreleased
+
+### Billing items and billing profiles
+- **Billing → Billing items:** a shared catalog of things to put on any customer's bill.
+  - Each item has a name, a price, what it's charged "per" (ext, DID…), and monthly or one-time.
+  - Prices are in each customer's own currency.
+- **Billing → Billing profiles:** named plans made from items, plus how Canada/USA calls are charged:
+  - pay per minute;
+  - unlimited Canada/USA;
+  - a monthly pool of included Canada/USA minutes, then the tariff rate.
+
+  International calls always pay the tariff rate. Canada/USA means +1 except the Caribbean.
+- **Billing plan on each customer's page:**
+  - choose the profile;
+  - change quantities or set the customer's own price;
+  - add extra items;
+  - see the included minutes used this month and the recent plan charges.
+- **New customers:**
+  - the New customer form has a Billing profile field;
+  - Settings → Client defaults can pre-select one.
+- **How charging works:**
+  - Monthly items are charged in advance on the 1st, in the customer's time zone.
+  - Adding, changing or removing an item mid-month is prorated by days.
+  - One-time items are charged when added.
+  - Invoices list the plan charges, including next month's, and note the Canada/USA minutes the plan covered.
+- **Routing:** calls covered by the plan don't need funds, so prepaid customers on unlimited Canada/USA aren't refused for a low balance. International calls still are.
+
 ## v0.1.0-beta (2026-11-10)
 
 First public beta. Softswitch is a Class 4 (wholesale) softswitch built on FreeSWITCH, with light PBX features, a web admin UI, a customer portal and a REST API. It installs on one Rocky Linux / RHEL-family server with `install.sh`.

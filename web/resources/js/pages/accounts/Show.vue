@@ -5,6 +5,8 @@ import { Pencil, Trash2 } from '@lucide/vue';
 import InvoiceController from '@/actions/App/Http/Controllers/Admin/InvoiceController';
 import PortalUserController from '@/actions/App/Http/Controllers/Admin/PortalUserController';
 import LedgerEntryController from '@/actions/App/Http/Controllers/Admin/LedgerEntryController';
+import BillingPlan from '@/components/accounts/BillingPlan.vue';
+import type { Plan } from '@/components/accounts/BillingPlan.vue';
 import RouteTester from '@/components/accounts/RouteTester.vue';
 import VendorPayables from '@/components/accounts/VendorPayables.vue';
 import Heading from '@/components/Heading.vue';
@@ -68,6 +70,7 @@ const props = defineProps<{
         sip_trunks: (SipTrunkValues & { id: number; name: string })[];
         transports: string[];
     } | null;
+    plan: Plan | null;
     ledger: { id: number; type: string; amount: string; balance_after: string; description: string; created_at: string; effective_at: string }[];
     timezones: string[];
     portalUsers: { id: number; name: string; email: string; created_at: string }[];
@@ -171,6 +174,8 @@ const select = 'form-select w-auto';
             </section>
 
             <RouteTester v-if="account.is_customer" :account-id="account.id" :currency="account.currency" />
+
+            <BillingPlan v-if="plan" :account-id="account.id" :currency="account.currency" :timezone="account.timezone" :plan="plan" />
 
             <!-- Money movements -->
             <section v-if="billing && account.is_customer" class="ss-stack-3">

@@ -21,6 +21,7 @@ export type AccountFormOptions = {
     carrierRates: { id: number; name: string; currency: string }[];
     codecs: Record<string, string>;
     countries: DialCountry[];
+    billingProfiles: { id: number; name: string }[];
 };
 
 export type AccountFormValues = {
@@ -41,6 +42,7 @@ export type AccountFormValues = {
     max_channels: number | null;
     max_cps: string | null;
     notes: string | null;
+    billing_profile_id: number | null;
     dialing_scope: DialingScope;
     dialing_countries: string[];
     // Carriers
@@ -81,6 +83,8 @@ const otherCurrencies = props.options.currencies.filter((c) => !c.top);
 const billing = useBilling();
 // Balance, credit and alerts are customer billing; carriers are paid through carrier payables.
 const customerBilling = computed(() => billing.value && props.role === 'customer');
+// A new customer can start on a billing profile; afterwards it's changed on the customer's page.
+const isNew = !props.account || !('id' in props.account);
 </script>
 
 <template>
@@ -141,6 +145,16 @@ const customerBilling = computed(() => billing.value && props.role === 'customer
                 <Input id="low_balance_threshold" name="low_balance_threshold" type="number" step="0.01" min="0" :default-value="v.low_balance_threshold ?? ''" placeholder="No alerts" />
                 <p class="small text-secondary">Emails the customer (and you) once when funds available for calls drop below this.</p>
                 <InputError :message="errors.low_balance_threshold" />
+            </div>
+
+            <div v-if="customerBilling && isNew" class="ss-grid gap-2">
+                <Label for="billing_profile_id">Billing profile</Label>
+                <select id="billing_profile_id" name="billing_profile_id" :class="select">
+                    <option value="">— None (pay per minute) —</option>
+                    <option v-for="p in options.billingProfiles" :key="p.id" :value="p.id" :selected="p.id === v.billing_profile_id">{{ p.name }}</option>
+                </select>
+                <p class="small text-secondary">Its items go on the customer's bill from today (prorated). Change it later on the customer's page.</p>
+                <InputError :message="errors.billing_profile_id" />
             </div>
 
             <div class="ss-grid gap-2">
