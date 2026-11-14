@@ -25,6 +25,7 @@ class BillingController extends Controller
                 'enabled' => Billing::enabled(),
                 'auto_email_invoices' => Billing::autoEmailInvoices(),
                 'invoice_due_days' => Billing::dueDays(),
+                'tax_numbers' => Billing::taxNumbers() ?? '',
             ],
             'mailConfigured' => MailSettings::configured(),
         ]);
@@ -36,6 +37,7 @@ class BillingController extends Controller
             'enabled' => ['required', 'boolean'],
             'auto_email_invoices' => ['nullable', 'boolean'],
             'invoice_due_days' => ['nullable', 'integer', 'between:0,365'],
+            'tax_numbers' => ['nullable', 'string', 'max:500'],
         ]);
         $enabled = $request->boolean('enabled');
         $wasEnabled = Billing::enabled();
@@ -45,6 +47,7 @@ class BillingController extends Controller
         if ($enabled && $request->has('invoice_due_days')) {
             $values[Billing::AUTO_EMAIL] = $request->boolean('auto_email_invoices');
             $values[Billing::DUE_DAYS] = (int) ($data['invoice_due_days'] ?? Billing::dueDays());
+            $values[Billing::TAX_NUMBERS] = trim((string) ($data['tax_numbers'] ?? ''));
         }
         Settings::put($values);
 

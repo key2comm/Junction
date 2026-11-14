@@ -10,6 +10,7 @@ use App\Models\RateDeck;
 use App\Models\RoutingPlan;
 use App\Support\ClientDefaults;
 use App\Support\Currencies;
+use App\Support\TaxRegions;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -28,6 +29,7 @@ class ClientDefaultsController extends Controller
                 'rateDecks' => RateDeck::query()->where('kind', 'tariff')->orderBy('name')->get(['id', 'name', 'currency']),
                 'routingPlans' => RoutingPlan::query()->orderBy('name')->get(['id', 'name']),
                 'billingProfiles' => BillingProfile::query()->orderBy('name')->get(['id', 'name']),
+                'taxRegions' => TaxRegions::options(),
                 'timezones' => timezone_identifiers_list(),
                 'currencies' => Currencies::options(),
             ],

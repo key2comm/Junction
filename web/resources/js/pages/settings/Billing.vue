@@ -12,7 +12,7 @@ import { edit } from '@/routes/billing';
 import { edit as editEmail } from '@/routes/email';
 
 const props = defineProps<{
-    settings: { enabled: boolean; auto_email_invoices: boolean; invoice_due_days: number };
+    settings: { enabled: boolean; auto_email_invoices: boolean; invoice_due_days: number; tax_numbers: string };
     mailConfigured: boolean;
 }>();
 
@@ -81,6 +81,20 @@ const on = ref(props.settings.enabled);
                     <Input id="invoice_due_days" name="invoice_due_days" type="number" min="0" max="365" :default-value="settings.invoice_due_days" required class="ss-w-24" />
                     <p class="small text-secondary">When postpaid invoices are due. Prepaid accounts pay in advance.</p>
                     <InputError :message="errors.invoice_due_days" />
+                </div>
+                <div class="ss-grid gap-1">
+                    <Label for="tax_numbers">Your tax registration numbers</Label>
+                    <textarea
+                        id="tax_numbers"
+                        name="tax_numbers"
+                        rows="3"
+                        class="form-control"
+                        maxlength="500"
+                        placeholder="GST/HST 123456789 RT0001&#10;QST 1234567890 TQ0001"
+                        :value="settings.tax_numbers"
+                    ></textarea>
+                    <p class="small text-secondary">One per line, printed on every invoice. Rates are set in Billing → Taxes.</p>
+                    <InputError :message="errors.tax_numbers" />
                 </div>
             </div>
             <label class="d-flex align-items-center gap-2">

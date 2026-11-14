@@ -22,6 +22,7 @@ export type AccountFormOptions = {
     codecs: Record<string, string>;
     countries: DialCountry[];
     billingProfiles: { id: number; name: string }[];
+    taxRegions: { country: string; regions: { code: string; name: string }[] }[];
 };
 
 export type AccountFormValues = {
@@ -43,6 +44,7 @@ export type AccountFormValues = {
     max_cps: string | null;
     notes: string | null;
     billing_profile_id: number | null;
+    tax_region: string | null;
     dialing_scope: DialingScope;
     dialing_countries: string[];
     // Carriers
@@ -122,6 +124,7 @@ const isNew = !props.account || !('id' in props.account);
                 <input type="hidden" name="billing_type" :value="v.billing_type" />
                 <input type="hidden" name="credit_limit" :value="v.credit_limit" />
                 <input type="hidden" name="low_balance_threshold" :value="v.low_balance_threshold ?? ''" />
+                <input type="hidden" name="tax_region" :value="v.tax_region ?? ''" />
             </template>
             <input v-if="!billing" type="hidden" name="billing_email" :value="v.billing_email ?? ''" />
 
@@ -155,6 +158,18 @@ const isNew = !props.account || !('id' in props.account);
                 </select>
                 <p class="small text-secondary">Its items go on the customer's bill from today (prorated). Change it later on the customer's page.</p>
                 <InputError :message="errors.billing_profile_id" />
+            </div>
+
+            <div v-if="customerBilling" class="ss-grid gap-2">
+                <Label for="tax_region">Tax region</Label>
+                <select id="tax_region" name="tax_region" :class="select">
+                    <option value="">— None (no tax) —</option>
+                    <optgroup v-for="g in options.taxRegions" :key="g.country" :label="g.country">
+                        <option v-for="r in g.regions" :key="r.code" :value="r.code" :selected="r.code === v.tax_region">{{ r.name }}</option>
+                    </optgroup>
+                </select>
+                <p class="small text-secondary mb-0">Where the customer is taxed (Billing → Taxes). Plan items and calls are taxed at that region's rates.</p>
+                <InputError :message="errors.tax_region" />
             </div>
 
             <div class="ss-grid gap-2">

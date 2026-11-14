@@ -21,6 +21,7 @@ use App\Http\Controllers\Admin\RateController;
 use App\Http\Controllers\Admin\RateDeckController;
 use App\Http\Controllers\Admin\RateImportController;
 use App\Http\Controllers\Admin\TariffController;
+use App\Http\Controllers\Admin\TaxController;
 use App\Http\Controllers\Admin\RoutingPlanController;
 use App\Http\Controllers\Admin\TrunkController;
 use App\Http\Controllers\Admin\VendorBillingController;
@@ -95,6 +96,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
         // Billing items and profiles; a customer's plan and the items on their bill.
         Route::resource('billing-items', BillingItemController::class)->only(['index', 'store', 'update', 'destroy']);
         Route::resource('billing-profiles', BillingProfileController::class)->except(['show']);
+        Route::resource('taxes', TaxController::class)->only(['index', 'store', 'update', 'destroy']);
         Route::put('accounts/{account}/billing-profile', [AccountChargeController::class, 'profile'])->name('accounts.billing-profile.update');
         Route::scopeBindings()->group(function () {
             Route::post('accounts/{account}/charges', [AccountChargeController::class, 'store'])->name('accounts.charges.store');

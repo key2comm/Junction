@@ -27,6 +27,20 @@
   - Invoices list the plan charges, including next month's, and note the Canada/USA minutes the plan covered.
 - **Routing:** calls covered by the plan don't need funds, so prepaid customers on unlimited Canada/USA aren't refused for a low balance. International calls still are.
 
+### Taxes
+- **Billing → Taxes:** sales taxes for every Canadian province and territory and every US state (plus DC).
+  - Canada is pre-filled with GST/HST/PST/QST for telecom services.
+  - US states start at 0%.
+  - Any tax can be renamed, re-rated or switched off, and extra taxes or fees can be added per region.
+- **Tax region:** each customer has one, set on the customer form (Settings → Client defaults can pre-select it). Customers without one aren't taxed.
+- **What gets taxed:**
+  - Plan items and call usage are taxed as they're charged, so prepaid balances always include tax.
+  - Credits get their tax back.
+  - A rate change applies from the next charge.
+- **Invoices:**
+  - each tax is listed with what it was charged on;
+  - your tax registration numbers (Settings → Billing) are printed on every invoice.
+
 ## v0.1.0-beta (2026-11-10)
 
 First public beta. Softswitch is a Class 4 (wholesale) softswitch built on FreeSWITCH, with light PBX features, a web admin UI, a customer portal and a REST API. It installs on one Rocky Linux / RHEL-family server with `install.sh`.

@@ -68,7 +68,18 @@ class InvoiceGenerator
             $payments = $sum('payment');
             $adjustments = $sum('adjustment');
             $chargesLedger = bcmul($sum('charge'), '-1', 6);  // positive charge; credits lower it
-            $closing = bcadd(bcadd(bcadd(bcadd($opening, $payments, 6), $adjustments, 6), $sum('usage'), 6), $sum('charge'), 6);
+            $taxesLedger = bcmul($sum('tax'), '-1', 6);
+            $closing = bcadd(bcadd(bcadd(bcadd(bcadd($opening, $payments, 6), $adjustments, 6), $sum('usage'), 6), $sum('charge'), 6), $sum('tax'), 6);
+
+            // Billing → Taxes, totalled per tax and rate.
+            $taxes = DB::table('tax_postings')->where('account_id', $account->id)
+                ->where('effective_at', '>=', $start)->where('effective_at', '<', $end)->whereNotNull('ledger_entry_id')
+                ->groupBy('name', 'rate')->selectRaw('name, rate, sum(base) AS base, sum(amount) AS amount, min(id) AS first')
+                ->orderBy('first')->get();
+            $taxLines = $taxes->reduce(fn (string $t, $x) => bcadd($t, (string) $x->amount, 6), '0');
+            if (bccomp($taxLines, $taxesLedger, 6) !== 0) {
+                throw new RuntimeException("Taxes on the ledger ({$taxesLedger}) do not match the tax postings ({$taxLines}) for this period; not issuing.");
+            }
 
             // Plan items (Billing profiles), each as posted.
             $charges = DB::table('billing_charges')->where('account_id', $account->id)
@@ -115,6 +126,9 @@ class InvoiceGenerator
                 'payments_total' => $payments,
                 'adjustments_total' => $adjustments,
                 'charges_total' => $chargesLedger,
+                'taxes_total' => $taxesLedger,
+                'tax_region' => $account->tax_region,
+                'tax_numbers' => Billing::taxNumbers(),
                 'included_seconds' => $includedSeconds,
                 'closing_balance' => $closing,
                 // Postpaid customers owe a negative closing balance; prepaid accounts pay in advance.
@@ -145,6 +159,10 @@ class InvoiceGenerator
                     'unit_price' => $c->unit_price,
                     'amount' => $c->amount,
                 ]);
+            }
+
+            foreach ($taxes->values() as $i => $x) {
+                $invoice->taxes()->create(['position' => $i + 1, 'name' => $x->name, 'rate' => $x->rate, 'base' => $x->base, 'amount' => $x->amount]);
             }
 
             // Sent after the transaction commits (setting in Settings → Billing).

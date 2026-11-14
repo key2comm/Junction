@@ -4,7 +4,7 @@ import { Download, Printer } from '@lucide/vue';
 import InvoiceController from '@/actions/App/Http/Controllers/Admin/InvoiceController';
 import InputError from '@/components/InputError.vue';
 import InvoiceDocument from '@/components/invoices/InvoiceDocument.vue';
-import type { InvoiceCharge } from '@/components/invoices/InvoiceDocument.vue';
+import type { InvoiceCharge, InvoiceTax } from '@/components/invoices/InvoiceDocument.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { date } from '@/lib/format';
@@ -30,6 +30,9 @@ type Invoice = {
     adjustments_total: string;
     charges_total: string;
     included_seconds: number;
+    taxes_total: string;
+    tax_region: string | null;
+    tax_numbers: string | null;
     closing_balance: string;
     amount_due: string;
     calls: number;
@@ -46,6 +49,7 @@ const props = defineProps<{
     invoice: Invoice;
     lines: { position: number; prefix: string | null; destination: string | null; calls: number; billsec: number; rate: string | null; amount: string }[];
     charges: InvoiceCharge[];
+    taxes: InvoiceTax[];
     issuer: { name: string; host: string | null };
     mailConfigured: boolean;
 }>();
@@ -75,7 +79,7 @@ const print = () => window.print();
             </div>
         </div>
 
-        <InvoiceDocument :invoice="invoice" :lines="lines" :charges="charges" :issuer="issuer" />
+        <InvoiceDocument :invoice="invoice" :lines="lines" :charges="charges" :taxes="taxes" :issuer="issuer" />
 
         <!-- Email (not printed) -->
         <section class="mx-auto ss-maxw-3xl d-print-none">

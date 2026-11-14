@@ -23,6 +23,7 @@ type Defaults = {
     max_channels: number | null;
     max_cps: string | null;
     billing_profile_id: number | null;
+    tax_region: string | null;
 };
 
 const props = defineProps<{
@@ -33,6 +34,7 @@ const props = defineProps<{
         rateDecks: { id: number; name: string; currency: string }[];
         routingPlans: { id: number; name: string }[];
         billingProfiles: { id: number; name: string }[];
+        taxRegions: { country: string; regions: { code: string; name: string }[] }[];
         timezones: string[];
         currencies: { code: string; name: string; top: boolean }[];
     };
@@ -134,6 +136,7 @@ const tariffCurrency = computed(() => props.options.rateDecks.find((d) => d.id =
             <input type="hidden" name="credit_limit" :value="defaults.credit_limit" />
             <input type="hidden" name="low_balance_threshold" :value="defaults.low_balance_threshold ?? ''" />
             <input type="hidden" name="billing_profile_id" :value="defaults.billing_profile_id ?? ''" />
+            <input type="hidden" name="tax_region" :value="defaults.tax_region ?? ''" />
         </template>
         <section v-else class="ss-grid gap-4 ss-cols-sm-2">
             <h2 class="fw-semibold ss-span-sm-2 mb-0">Billing</h2>
@@ -166,6 +169,18 @@ const tariffCurrency = computed(() => props.options.rateDecks.find((d) => d.id =
                 </select>
                 <p class="small text-secondary mb-0">Its items go on a new customer's bill from the day they're created (prorated).</p>
                 <InputError :message="errors.billing_profile_id" />
+            </div>
+
+            <div v-if="true" class="ss-grid gap-2">
+                <Label for="tax_region">Tax region</Label>
+                <select id="tax_region" name="tax_region" :class="select">
+                    <option value="">— None (no tax) —</option>
+                    <optgroup v-for="g in options.taxRegions" :key="g.country" :label="g.country">
+                        <option v-for="r in g.regions" :key="r.code" :value="r.code" :selected="r.code === defaults.tax_region">{{ r.name }}</option>
+                    </optgroup>
+                </select>
+                <p class="small text-secondary mb-0">Most of your customers' province or state; change it per customer.</p>
+                <InputError :message="errors.tax_region" />
             </div>
         </section>
 

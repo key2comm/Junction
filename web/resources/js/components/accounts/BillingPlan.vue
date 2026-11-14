@@ -31,6 +31,7 @@ export type Plan = {
     profiles: { id: number; name: string }[];
     items: { id: number; name: string; unit: string; price: string; frequency: 'monthly' | 'once' }[];
     recent: { id: number; kind: string; description: string; amount: string; effective_at: string }[];
+    tax: { region: string; summary: string } | null;
 };
 
 const props = defineProps<{ accountId: number; currency: string; timezone: string; plan: Plan }>();
@@ -85,6 +86,11 @@ const chosen = computed(() => props.plan.items.find((i) => i.id === newItem.valu
             </Badge>
             <span class="small text-secondary">International calls pay the tariff rate.</span>
         </div>
+        <p class="small mb-0">
+            <span class="text-secondary">Taxes:</span>
+            <template v-if="plan.tax">{{ plan.tax.region }} — {{ plan.tax.summary }}</template>
+            <template v-else>none (no tax region; set one with Edit)</template>
+        </p>
         <div v-if="bundle">
             <div class="d-flex justify-content-between small mb-1">
                 <span>Included minutes this month</span>

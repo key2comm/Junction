@@ -16,6 +16,9 @@ Here is your {{ $kind }} for **{{ $month }}** (account {{ $invoice->account_code
 @if ((float) $invoice->charges_total != 0)
 | Plan charges | −{{ $fmt($invoice->charges_total) }} |
 @endif
+@foreach ($invoice->taxes as $t)
+| {{ $t->name }} {{ rtrim(rtrim((string) $t->rate, '0'), '.') }}% | −{{ $fmt($t->amount) }} |
+@endforeach
 | Usage ({{ number_format($invoice->calls) }} calls, {{ number_format($invoice->billsec / 60, 1) }} min) | −{{ $fmt($invoice->usage_total) }} |
 | **Closing balance** | **{{ $fmt($invoice->closing_balance) }}** |
 @if ($invoice->billing_type === 'postpaid')

@@ -19,6 +19,9 @@ export type InvoiceDoc = {
     payments_total: string;
     adjustments_total: string;
     charges_total: string;
+    taxes_total: string;
+    tax_region: string | null;
+    tax_numbers: string | null;
     included_seconds: number;
     closing_balance: string;
     amount_due: string;
@@ -30,6 +33,8 @@ export type InvoiceDoc = {
     voided_at: string | null;
 };
 
+export type InvoiceTax = { position: number; name: string; rate: string; base: string; amount: string };
+
 export type InvoiceCharge = { position: number; description: string; quantity: string; unit_price: string; amount: string };
 
 const props = defineProps<{
@@ -37,7 +42,9 @@ const props = defineProps<{
     lines: { position: number; prefix: string | null; destination: string | null; calls: number; billsec: number; rate: string | null; amount: string }[];
     issuer: { name: string; host: string | null };
     charges?: InvoiceCharge[];
+    taxes?: InvoiceTax[];
 }>();
+const pct = (r: string) => `${Number(r)}%`;
 
 const m = (v: string) => money(v, props.invoice.currency);
 const minutes = (s: number) => (s / 60).toLocaleString(undefined, { maximumFractionDigits: 2 });
@@ -51,6 +58,7 @@ const lastDay = new Date(new Date(props.invoice.period_end).getTime() - 1000).to
         <div>
             <p class="fs-3 fw-semibold">{{ issuer.name }}</p>
             <p v-if="issuer.host" class="text-secondary">{{ issuer.host }}</p>
+            <p v-if="invoice.tax_numbers" class="small text-secondary ss-pre-line mt-1 mb-0">{{ invoice.tax_numbers }}</p>
         </div>
         <div class="text-end">
             <p class="fs-1 fw-semibold">{{ invoice.billing_type === 'postpaid' ? 'Invoice' : 'Statement' }}</p>
@@ -171,6 +179,10 @@ const lastDay = new Date(new Date(props.invoice.period_end).getTime() - 1000).to
             </template>
             <dt class="text-secondary">Usage charges</dt>
             <dd class="text-end tabular-nums">−{{ m(invoice.usage_total) }}</dd>
+            <template v-for="t in taxes ?? []" :key="t.position">
+                <dt class="text-secondary">{{ t.name }} {{ pct(t.rate) }} <span class="small">on {{ m(t.base) }}</span></dt>
+                <dd class="text-end tabular-nums">−{{ m(t.amount) }}</dd>
+            </template>
             <dt class="border-top pt-1 fw-medium">Closing balance</dt>
             <dd class="border-top pt-1 text-end fw-medium tabular-nums" :class="{ 'text-danger': Number(invoice.closing_balance) < 0 }">{{ m(invoice.closing_balance) }}</dd>
             <template v-if="invoice.billing_type === 'postpaid'">

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
 import { Download, Printer } from '@lucide/vue';
-import type { InvoiceCharge, InvoiceDoc } from '@/components/invoices/InvoiceDocument.vue';
+import type { InvoiceCharge, InvoiceDoc, InvoiceTax } from '@/components/invoices/InvoiceDocument.vue';
 import InvoiceDocument from '@/components/invoices/InvoiceDocument.vue';
 import { Button } from '@/components/ui/button';
 import { download as invoiceCsv, index as invoices, show as showInvoice } from '@/routes/portal/invoices';
@@ -10,6 +10,7 @@ const props = defineProps<{
     invoice: InvoiceDoc & { id: number };
     lines: { position: number; prefix: string | null; destination: string | null; calls: number; billsec: number; rate: string | null; amount: string }[];
     charges: InvoiceCharge[];
+    taxes: InvoiceTax[];
     issuer: { name: string; host: string | null };
 }>();
 
@@ -37,6 +38,6 @@ const csvUrl = invoiceCsv.url(props.invoice.id);
                 <Button variant="outline" as-child><a :href="csvUrl"><Download class="icon" /> CSV</a></Button>
             </div>
         </div>
-        <InvoiceDocument :invoice="invoice" :lines="lines" :charges="charges" :issuer="issuer" />
+        <InvoiceDocument :invoice="invoice" :lines="lines" :charges="charges" :taxes="taxes" :issuer="issuer" />
     </div>
 </template>

@@ -103,3 +103,13 @@ _Last updated: 2026-11-07. All 8 phases of `docs/PLAN.md` are done._
     - Billing menu: Billing items and Billing profiles (pages `billing/*`).
     - Customer page: Billing plan section (`components/accounts/BillingPlan.vue`).
     - The New customer form and Client defaults each have a profile field.
+- **Taxes (2026-11-14, migration 000031, `Taxes` service, `TaxRegions`):**
+  - **Data:**
+    - `taxes` holds the rates per region code ("CA-ON", "US-NY"); a region can have several rows. Canada is seeded from `TaxRegions::CANADA_TAXES`; all 51 US regions are seeded as "Sales tax" at 0%.
+    - `accounts.tax_region`; none means no tax.
+  - **Posting:**
+    - `Taxes::post(account, base, source, what, at)` posts a ledger entry of type `tax` per active non-zero tax, plus a `tax_postings` row.
+    - `PostUsage` calls it after each usage batch, and `BillingCharges::post` after each charge or credit (a credit has a negative base).
+    - Nothing is posted while billing is off or for customers with no region.
+  - **Invoices:** grouped per tax and rate into `invoice_taxes`, plus `taxes_total`. The customer's `tax_region` and `Billing::taxNumbers()` (Settings → Billing, one per line) are snapshotted on the invoice, and the generator checks the tax postings against the ledger.
+  - **Not covered:** routing funds checks don't add tax on usage that hasn't been posted yet.

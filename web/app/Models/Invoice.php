@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable([
     'number', 'account_id', 'status', 'period_start', 'period_end', 'timezone', 'currency', 'account_name', 'account_code',
     'billing_email', 'billing_type', 'opening_balance', 'usage_total', 'payments_total', 'adjustments_total',
-    'closing_balance', 'amount_due', 'charges_total', 'included_seconds', 'calls', 'billsec', 'issued_at', 'due_at', 'void_reason', 'voided_at', 'emailed_at', 'emailed_to',
+    'closing_balance', 'amount_due', 'charges_total', 'included_seconds', 'taxes_total', 'tax_region', 'tax_numbers', 'calls', 'billsec', 'issued_at', 'due_at', 'void_reason', 'voided_at', 'emailed_at', 'emailed_to',
 ])]
 class Invoice extends Model
 {
@@ -46,6 +46,12 @@ class Invoice extends Model
     public function lines(): HasMany
     {
         return $this->hasMany(InvoiceLine::class)->orderBy('position');
+    }
+
+    /** Billing → Taxes totals on this invoice. */
+    public function taxes(): HasMany
+    {
+        return $this->hasMany(InvoiceTax::class)->orderBy('position');
     }
 
     /** Plan items (Billing profiles) on this invoice. */

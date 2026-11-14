@@ -29,7 +29,7 @@ use Illuminate\Support\Facades\DB;
  */
 class BillingCharges
 {
-    public function __construct(private Ledger $ledger) {}
+    public function __construct(private Ledger $ledger, private Taxes $taxes) {}
 
     /** Give the customer a profile (or none): its items replace the old profile's. */
     public function assignProfile(Account $account, ?BillingProfile $profile, ?User $user = null): void
@@ -161,6 +161,8 @@ class BillingCharges
         $account = $line->relationLoaded('account') ? $line->account : Account::findOrFail($line->account_id);
         $entry = $this->ledger->post($account, LedgerEntryType::Charge, bcmul($amount, '-1', 6), $description, $charge, $user, $at);
         $charge->update(['ledger_entry_id' => $entry->id]);
+        // Billing → Taxes: tax on the charge (or its credit), dated with it.
+        $this->taxes->post($account, $amount, 'charge', $line->item->name, $at);
     }
 
     /** "Unlimited hosting × 12 per ext — December 2026" */

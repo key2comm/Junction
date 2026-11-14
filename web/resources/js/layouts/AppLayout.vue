@@ -23,6 +23,7 @@ import {
     LogOut,
     Mail,
     Package,
+    Percent,
     Palette,
     Menu,
     Moon,
@@ -67,6 +68,7 @@ import { index as firewall } from '@/routes/firewall';
 import { index as invoices } from '@/routes/invoices';
 import { index as billingItems } from '@/routes/billing-items';
 import { index as billingProfiles } from '@/routes/billing-profiles';
+import { index as taxes } from '@/routes/taxes';
 import { index as live } from '@/routes/live';
 import { index as pbx } from '@/routes/pbx';
 import { home as portalHome, phone as portalPhone } from '@/routes/portal';
@@ -115,6 +117,7 @@ const adminNav = computed((): NavEntry[] => [
                   { title: 'Invoices', href: invoices(), icon: FileText },
                   { title: 'Billing items', href: billingItems(), icon: ListChecks },
                   { title: 'Billing profiles', href: billingProfiles(), icon: Package },
+                  { title: 'Taxes', href: taxes(), icon: Percent },
               ],
           }
         : { title: 'Accounts', href: accounts(), icon: Building2 },

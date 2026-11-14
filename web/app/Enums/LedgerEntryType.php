@@ -9,6 +9,8 @@ enum LedgerEntryType: string
     case Adjustment = 'adjustment';
     /** Billing profile items (monthly, prorated, one-time; credits are positive). */
     case Charge = 'charge';
+    /** Billing → Taxes, posted with each charge and usage batch. */
+    case Tax = 'tax';
 
     /** @return list<string> */
     public static function values(): array

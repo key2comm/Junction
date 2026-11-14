@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Enums\LedgerEntryType;
 use App\Models\Account;
 use App\Services\Ledger;
+use App\Services\Taxes;
 use App\Services\VendorLedger;
 use App\Support\Decimal;
 use Carbon\CarbonImmutable;
@@ -111,14 +112,17 @@ class PostUsage extends Command
 
                 if (bccomp($total, '0', 6) > 0) {
                     $start = CarbonImmutable::parse($bucket);
+                    $at = CarbonImmutable::parse($batch->max('started_at'));
                     $ledger->post(
                         $account,
                         LedgerEntryType::Usage,
                         Decimal::round(bcmul($total, '-1', 6)),
                         sprintf('Usage %s %s–%s UTC: %d call(s)', $start->format('Y-m-d'), $start->format('H:i'),
                             $start->addMinutes(15)->format('H:i'), $batch->count()),
-                        effectiveAt: CarbonImmutable::parse($batch->max('started_at')),
+                        effectiveAt: $at,
                     );
+                    // Billing → Taxes: tax on the usage, dated with it.
+                    app(Taxes::class)->post($account, Decimal::round($total), 'usage', sprintf('usage %s %s UTC', $start->format('Y-m-d'), $start->format('H:i')), $at);
                     $posted++;
                 }
             }

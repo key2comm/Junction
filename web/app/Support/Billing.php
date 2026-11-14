@@ -19,6 +19,8 @@ final class Billing
 
     public const DUE_DAYS = 'billing.invoice_due_days';
 
+    public const TAX_NUMBERS = 'billing.tax_numbers';
+
     public static function enabled(): bool
     {
         return (bool) Settings::get(self::ENABLED, true);
@@ -27,6 +29,14 @@ final class Billing
     public static function autoEmailInvoices(): bool
     {
         return (bool) Settings::get(self::AUTO_EMAIL, false);
+    }
+
+    /** Your tax registration numbers ("GST/HST 123456789 RT0001"), one per line, printed on invoices. */
+    public static function taxNumbers(): ?string
+    {
+        $v = trim((string) Settings::get(self::TAX_NUMBERS, ''));
+
+        return $v === '' ? null : $v;
     }
 
     /** Days a postpaid customer has to pay an invoice. */

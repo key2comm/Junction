@@ -31,6 +31,7 @@ final class ClientDefaults
         'max_channels' => null,
         'max_cps' => null,
         'billing_profile_id' => null,
+        'tax_region' => null,
     ];
 
     /** @return array<string, mixed> the saved defaults; a deleted tariff or LCR group is dropped */
@@ -67,6 +68,7 @@ final class ClientDefaults
             'max_channels' => ['nullable', 'integer', 'min:1', 'max:100000'],
             'max_cps' => ['nullable', 'numeric', 'min:0.1', 'max:10000'],
             'billing_profile_id' => ['nullable', 'integer', 'exists:billing_profiles,id'],
+            'tax_region' => ['nullable', Rule::in(array_keys(TaxRegions::all()))],
         ];
     }
 

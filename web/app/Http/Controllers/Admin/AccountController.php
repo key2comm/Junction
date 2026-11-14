@@ -20,10 +20,12 @@ use App\Models\User;
 use App\Services\BillingCharges;
 use App\Services\IncludedMinutes;
 use App\Services\Router;
+use App\Services\Taxes;
 use App\Support\Billing;
 use App\Support\ClientDefaults;
 use App\Support\Currencies;
 use App\Support\DialCountries;
+use App\Support\TaxRegions;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -202,7 +204,7 @@ class AccountController extends Controller
             ...$this->formOptions(),
             'account' => [
                 ...$account->only(['id', 'name', 'code', 'is_customer', 'is_vendor', 'currency', 'credit_limit', 'low_balance_threshold',
-                    'timezone', 'billing_email', 'noc_email', 'sell_rate_deck_id', 'routing_plan_id',
+                    'timezone', 'billing_email', 'noc_email', 'sell_rate_deck_id', 'routing_plan_id', 'tax_region',
                     'max_channels', 'max_cps', 'notes', 'dialing_scope', 'dialing_countries']),
                 'status' => $account->status->value,
                 'billing_type' => $account->billing_type->value,
@@ -323,6 +325,7 @@ class AccountController extends Controller
                 ->reduce(fn (string $t, $c) => bcadd($t, $c->total(), 6), '0'),
             'profiles' => BillingProfile::query()->orderBy('name')->get(['id', 'name']),
             'items' => BillingItem::query()->where('active', true)->orderBy('name')->get(['id', 'name', 'unit', 'price', 'frequency']),
+            'tax' => $account->tax_region ? ['region' => TaxRegions::name($account->tax_region), 'summary' => Taxes::summary($account->tax_region)] : null,
             'recent' => BillingCharge::query()->where('account_id', $account->id)->latest('id')->limit(10)
                 ->get(['id', 'kind', 'description', 'amount', 'effective_at']),
         ];
@@ -342,6 +345,7 @@ class AccountController extends Controller
                 'codecs' => Endpoint::CODECS,
                 'countries' => DialCountries::selectable(),
                 'billingProfiles' => BillingProfile::query()->orderBy('name')->get(['id', 'name']),
+                'taxRegions' => TaxRegions::options(),
             ],
         ];
     }

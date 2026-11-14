@@ -7,6 +7,7 @@ use App\Enums\BillingType;
 use App\Models\Account;
 use App\Support\Currencies;
 use App\Support\DialCountries;
+use App\Support\TaxRegions;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Validator as ValidatorFactory;
 use Illuminate\Validation\Rule;
@@ -79,6 +80,8 @@ class AccountRequest extends FormRequest
             'notes' => ['nullable', 'string', 'max:5000'],
             // Billing → Billing profiles (customers): the plan whose items go on their bill.
             'billing_profile_id' => ['sometimes', 'nullable', 'integer', 'exists:billing_profiles,id'],
+            // Billing → Taxes: the province or state the customer is taxed in (none: no tax).
+            'tax_region' => ['sometimes', 'nullable', Rule::in(array_keys(TaxRegions::all()))],
             // Dialing rules (customers): Canada/USA only, anywhere, or Canada/USA plus chosen countries.
             'dialing_scope' => ['sometimes', 'required', Rule::in(['nanp', 'international', 'countries'])],
             'dialing_countries' => ['sometimes', 'array', 'max:300'],
