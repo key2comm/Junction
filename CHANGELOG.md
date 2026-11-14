@@ -1,6 +1,13 @@
 # Changelog
 
-## Unreleased
+## v0.1.1-beta (2026-11-14)
+
+### Junction
+- The project is now called **Junction** (github.com/key2comm/Junction). The admin UI, SIP User-Agent and API title say Junction. Paths, services and the database keep their `softswitch` names, so upgrading changes nothing on disk.
+
+### Dashboard
+- The Server card shows the hostname, IP address, OS and app version.
+- **App version** compares this server with the latest release on GitHub ("Up to date" or "Update available"). It checks every 6 hours, or on **Check now**.
 
 ### Billing items and billing profiles
 - **Billing → Billing items:** a shared catalog of things to put on any customer's bill.
