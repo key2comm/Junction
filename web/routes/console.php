@@ -91,3 +91,6 @@ Schedule::call(fn () => app(\App\Services\SystemStats::class)->sample())->name('
 
 // Billing profiles: monthly plan items are charged in advance as each customer's month starts.
 Schedule::call(fn () => app(\App\Services\BillingCharges::class)->runMonthly())->name('softswitch:billing-charges')->hourly()->withoutOverlapping();
+
+// Dashboard → App version: look for a newer release on GitHub (php-fpm can't reach out).
+Schedule::call(fn () => app(\App\Services\UpdateCheck::class)->check())->name('softswitch:update-check')->everySixHours()->withoutOverlapping();

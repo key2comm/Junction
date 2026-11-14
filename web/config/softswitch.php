@@ -4,6 +4,13 @@ return [
     // Release (web/VERSION; see CHANGELOG.md at the repository root).
     'version' => trim((string) @file_get_contents(base_path('VERSION'))) ?: 'dev',
 
+    // Dashboard → App version: where to look for newer releases. A private
+    // repository needs a GitHub token with read access.
+    'updates' => [
+        'repo' => env('SOFTSWITCH_UPDATE_REPO', 'key2comm/Junction'),
+        'token' => env('SOFTSWITCH_UPDATE_TOKEN'),
+    ],
+
     // Public IPv4 of this switch (set by the installer). Used to sanity-check
     // DNS before requesting a Let's Encrypt certificate.
     'public_ip' => env('SOFTSWITCH_PUBLIC_IP'),

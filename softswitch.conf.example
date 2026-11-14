@@ -37,6 +37,10 @@ SS_SPANDSP_REF=v3.1.1
 # Web admin UI (Laravel). nginx serves $SS_WEB_ROOT/public.
 SS_WEB_ROOT=/var/www/html
 SS_ADMIN_EMAIL=""        # first admin login (default: admin@<hostname>)
+
+# Dashboard → App version compares this server with the latest GitHub release.
+SS_UPDATE_REPO=""        # owner/name (default: key2comm/Junction)
+SS_UPDATE_TOKEN=""       # only for a private repository: a GitHub token with read access
 SS_APP_USER=softswitch  # system user that owns the app and runs PHP-FPM / queue workers
 
 # PostgreSQL (local). The password is generated into /etc/softswitch/secrets.

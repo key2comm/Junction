@@ -8,8 +8,9 @@ import Heading from '@/components/Heading.vue';
 import { Badge } from '@/components/ui/badge';
 import { useBilling } from '@/composables/useBilling';
 import { dayBars, hourBars } from '@/lib/callBars';
-import { date, money } from '@/lib/format';
+import { date, dateTime, money } from '@/lib/format';
 import { dashboard } from '@/routes';
+import { checkUpdates } from '@/routes/dashboard';
 import { show as showAccount } from '@/routes/accounts';
 import { index as alertsIndex } from '@/routes/alerts';
 import { index as cdrIndex } from '@/routes/cdrs';
@@ -37,6 +38,7 @@ const props = defineProps<{
     hours: { hour: string; calls: number; answered: number }[];
     system: System | null;
     host: { hostname: string; ip: string | null; os: string | null; version: string };
+    update: { status: 'ok' | 'error'; latest: string | null; newer: boolean; url: string | null; checked_at: string; error: string | null } | null;
     last24h: { calls: number; answered: number; rejected: number; asr: number | null; acd: number | null; minutes: number; sell: string; buy: string; margin: string };
     activeCalls: number;
     lowBalance: { id: number; code: string; name: string; currency: string; low_balance_threshold: string; low_balance_alerted_at: string; available: string }[];
@@ -56,7 +58,9 @@ const n = (v: number) => v.toLocaleString();
 const pct = (part: number, whole: number) => (whole > 0 ? Math.round((part / whole) * 100) : 0);
 
 // Live figures refresh on their own; system stats are sampled once a minute.
-usePoll(30000, { only: ['activeCalls', 'today', 'month', 'week', 'hours', 'last24h', 'system'] });
+usePoll(30000, { only: ['activeCalls', 'today', 'month', 'week', 'hours', 'last24h', 'system', 'update'] });
+// "0.1.0-beta" → "v0.1.0 beta"
+const release = (v: string) => `v${v.replace(/-(\w+)$/, ' $1')}`;
 
 // --- Charts: days and hours in the viewer's own time zone (the server buckets them). ---
 const weekTotal = computed(() => props.week.reduce((t, d) => t + d.calls, 0));
@@ -212,7 +216,22 @@ const stale = computed(() => (props.system ? Date.now() - new Date(props.system.
                         <dt class="text-secondary fw-normal">OS</dt>
                         <dd class="mb-0">{{ host.os ?? '—' }}</dd>
                         <dt class="text-secondary fw-normal">App version</dt>
-                        <dd class="mb-0">Junction v{{ host.version.replace(/-(\w+)$/, ' $1') }}</dd>
+                        <dd class="mb-0">
+                            <div>This server: Junction {{ release(host.version) }}</div>
+                            <div class="d-flex flex-wrap align-items-center gap-1">
+                                <template v-if="update?.status === 'ok' && update.latest">
+                                    <span>GitHub: {{ release(update.latest) }}</span>
+                                    <a v-if="update.newer && update.url" :href="update.url" target="_blank" rel="noopener" class="badge bg-warning-lt text-decoration-none">Update available</a>
+                                    <Badge v-else-if="!update.newer" variant="outline" class="text-success">Up to date</Badge>
+                                </template>
+                                <span v-else-if="update?.status === 'ok'" class="text-secondary">GitHub: no releases yet</span>
+                                <span v-else-if="update" class="text-secondary" :title="update.error ?? ''">GitHub: couldn't check</span>
+                                <span v-else class="text-secondary">GitHub: not checked yet</span>
+                                <Link :href="checkUpdates()" method="post" as="button" class="btn btn-link btn-sm p-0 ms-1" preserve-scroll>Check now</Link>
+                            </div>
+                            <div v-if="update?.status === 'error'" class="text-secondary" style="font-size: 0.75rem">{{ update.error }}</div>
+                            <div v-else-if="update" class="text-secondary" style="font-size: 0.75rem">Checked {{ dateTime(update.checked_at) }}</div>
+                        </dd>
                     </dl>
                     <hr class="my-0" />
                     <p v-if="!system" class="text-secondary mb-0">The scheduler reads the server's stats once a minute; they'll appear shortly.</p>

@@ -13,6 +13,7 @@ Route::get('/', fn () => to_route(auth()->check() ? 'dashboard' : 'login'))->nam
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', DashboardController::class)->middleware('admin')->name('dashboard');
+    Route::post('dashboard/check-for-updates', [DashboardController::class, 'checkForUpdates'])->middleware(['admin', 'throttle:6,1'])->name('dashboard.check-updates');
 });
 
 require __DIR__.'/settings.php';

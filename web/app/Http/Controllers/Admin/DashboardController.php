@@ -3,16 +3,19 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\CheckForUpdates;
 use App\Models\Account;
 use App\Models\Alert;
 use App\Models\Invoice;
 use App\Models\VendorInvoice;
 use App\Services\MailSettings;
 use App\Services\SystemStats;
+use App\Services\UpdateCheck;
 use App\Support\Billing;
 use App\Support\CallStats;
 use App\Support\CdrFilters;
 use Carbon\CarbonImmutable;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -38,6 +41,7 @@ class DashboardController extends Controller
             ...(new CallStats($request->user()->timezone ?: 'UTC'))->all(),
             'system' => SystemStats::current(),
             'host' => app(SystemStats::class)->host(),
+            'update' => UpdateCheck::last(),
             'lowBalance' => $low,
             'unpaid' => ! $billing ? [] : Invoice::query()->where('status', 'issued')->where('amount_due', '>', 0)->orderBy('due_at')->limit(10)
                 ->get(['id', 'number', 'account_code', 'account_name', 'currency', 'amount_due', 'due_at']),
@@ -49,5 +53,14 @@ class DashboardController extends Controller
             'mailConfigured' => MailSettings::configured(),
             'currency' => Account::query()->groupBy('currency')->orderByRaw('count(*) desc')->value('currency') ?? 'USD',
         ]);
+    }
+
+    /** Dashboard → App version → Check now (runs on the queue; the dashboard refreshes itself). */
+    public function checkForUpdates(): RedirectResponse
+    {
+        CheckForUpdates::dispatch();
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Checking GitHub for a newer version…']);
+
+        return back();
     }
 }
