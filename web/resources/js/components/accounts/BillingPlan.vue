@@ -86,11 +86,13 @@ const chosen = computed(() => props.plan.items.find((i) => i.id === newItem.valu
             </Badge>
             <span class="small text-secondary">International calls pay the tariff rate.</span>
         </div>
-        <p class="small mb-0">
-            <span class="text-secondary">Taxes:</span>
-            <template v-if="plan.tax">{{ plan.tax.region }} — {{ plan.tax.summary }}</template>
-            <template v-else>none (no tax region; set one with Edit)</template>
-        </p>
+        <div>
+            <h3 class="mb-0">Taxes</h3>
+            <p class="text-secondary mb-0" style="font-size: 0.75rem">
+                <template v-if="plan.tax">{{ plan.tax.region }} — {{ plan.tax.summary }}</template>
+                <template v-else>None (no tax region; set one with Edit)</template>
+            </p>
+        </div>
         <div v-if="bundle">
             <div class="d-flex justify-content-between small mb-1">
                 <span>Included minutes this month</span>
