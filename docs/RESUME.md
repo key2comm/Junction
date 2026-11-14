@@ -83,3 +83,23 @@ _Last updated: 2026-11-07. All 8 phases of `docs/PLAN.md` are done._
 - **Per-call PCAPs (2026-11-10, migration 000027):** `softswitch-capture.service` (tcpdump, SELinux `netutils_t`, writes only `netutils_tmp_t`, so `/var/lib/softswitch/capture` carries that label via semanage) records SIP on the PBX and carrier ports in 5-minute UTC files. The legs the switch places get `sip_invite_call_id=<call uuid>-<n><hex>` (util.lua `leg_call_id`; this FreeSWITCH has no `sip_outgoing_call_id`). The CDR stores the caller leg's `sip_call_id`; `ExtractCallPcap` runs 60 s after the CDR and `PcapExtractor` (plain PHP pcap reader, keeps IPv4 fragments) writes `pcaps/<Ymd>/<uuid>.pcap`. Settings → Call captures: on/off, retention (default 90 days); raw files are deleted after 24 h. Call records: PCAP link per row; the Sell/Margin columns and totals were removed (the user's choice).
 - **Times in the user's time zone (2026-11-10, migration 000028):** `users.timezone` (default UTC), chosen on My account → Profile. `lib/format.ts` keeps it in a reactive `timeZone` (set by AppLayout from `auth.user`); `dateTime()`/`date()` and the call record From/To filters (`toZonedInput` / `fromZonedInput`) use it. CSV exports and rate "Effective from" stay UTC; invoices and scheduled reports keep their own zones.
 - **Dialing rules (2026-11-10, migration 000029):** customers have `dialing_scope` = `nanp` (Canada/USA only, the default for new customers), `international` (anywhere; what existing accounts were given) or `countries` (Canada/USA plus `dialing_countries`, ISO codes). Countries and their prefixes live in `App\Support\DialCountries` (synced to `dial_countries` / `dial_country_prefixes`); `softswitch_dial_country()` takes the longest prefix, so Caribbean +1 area codes (e.g. 1876 Jamaica) are their own countries, while US territories count as Canada/USA. `softswitch_route()` checks it right after blocked prefixes: reason `destination_not_allowed`, SIP 403. Edited on the customer form (search, add a whole region, chips); shown on the account page as "May call"; in the REST API too. Self-test covers the refusal.
+- **Billing items and profiles (2026-11-14, migration 000030, `BillingCharges`, `IncludedMinutes`):**
+  - **Data:**
+    - `billing_items` is the catalog: price, `unit` ("per ext"), `frequency` monthly|once. Prices have no currency; they're charged in the customer's currency.
+    - `billing_profiles` holds `nanp_plan` = metered|unlimited|bundle and `nanp_minutes`, plus `billing_profile_items`.
+    - `accounts.billing_profile_id`.
+    - `account_charges` are the lines on a customer's bill. Lines copied from their profile have `from_profile`; a `price` of null follows the catalog.
+    - `billing_charges` records every posting: kind monthly|prorated|once|change. A partial unique index allows one monthly or prorated charge per line per `period`.
+  - **Charging:**
+    - Postings go to the ledger as the new type `charge`.
+    - The scheduler runs `runMonthly` hourly. It charges each month in advance, dated the last second of the month before, so it lands on the invoice issued then. If that invoice is already out, it's dated now.
+    - `InvoiceGenerator::generate` calls `runMonthly` first. It adds `invoice_charges`, `charges_total` and `included_seconds`, and checks the charge lines against the ledger.
+    - Mid-month add, change or remove is prorated by days (today included); amounts are rounded to cents.
+    - Assigning a profile replaces only the `from_profile` lines.
+  - **Rating and routing:**
+    - `CdrIngestor` → `IncludedMinutes::rate` handles Canada/USA calls (`softswitch_dial_country` = NANP). Unlimited calls cost 0. Bundle calls take from `account_bundle_usage` (per account per local month, row-locked), and the rest of the call pays. A re-sent CDR gives its minutes back.
+    - `softswitch_route` is patched in 000030 (it reads 029's function text and applies 4 patches). A covered call (unlimited, or bundle with minutes left) skips the funds check and reserves 0.
+  - **UI:**
+    - Billing menu: Billing items and Billing profiles (pages `billing/*`).
+    - Customer page: Billing plan section (`components/accounts/BillingPlan.vue`).
+    - The New customer form and Client defaults each have a profile field.
