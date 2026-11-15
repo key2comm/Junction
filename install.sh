@@ -59,7 +59,10 @@ log "Done."
 admin_pw="$(sed -n 's/^ADMIN_INITIAL_PASSWORD=//p' /etc/softswitch/secrets 2>/dev/null | awk 'NR==1')"
 if [ -n "${SS_UPDATED_FROM:-}" ]; then
 	# From update.sh: the server is already set up, so no login details.
-	printf '\n\033[1;32m%s\033[0m\n' "Junction is updated to $(cat "$SS_ROOT/web/VERSION" 2>/dev/null) (was $SS_UPDATED_FROM)."
+	now="$(cat "$SS_ROOT/web/VERSION" 2>/dev/null)"
+	if [ "$now" = "$SS_UPDATED_FROM" ]; then msg="Junction $now is updated to the latest code."
+	else msg="Junction is updated to $now (was $SS_UPDATED_FROM)."; fi
+	printf '\n\033[1;32m%s\033[0m\n' "$msg"
 	info "Admin UI:  https://$SS_HOSTNAME"
 	printf '\n'
 elif [ -n "$admin_pw" ]; then
