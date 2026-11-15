@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Support\AdminAreas;
+use App\Support\AdminRole;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -23,11 +25,12 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property string|null $two_factor_secret
  * @property string|null $two_factor_recovery_codes
  * @property Carbon|null $two_factor_confirmed_at
+ * @property AdminRole|null $role
  * @property string|null $remember_token
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'email', 'password', 'account_id', 'timezone'])]
+#[Fillable(['name', 'email', 'password', 'account_id', 'role', 'timezone'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements PasskeyUser
 {
@@ -48,6 +51,7 @@ class User extends Authenticatable implements PasskeyUser
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
+            'role' => AdminRole::class,
         ];
     }
 
@@ -60,5 +64,21 @@ class User extends Authenticatable implements PasskeyUser
     public function isAdmin(): bool
     {
         return $this->account_id === null;
+    }
+
+    /** The admin's access level (Settings → Admin users); an admin without one only gets to look. */
+    public function adminRole(): AdminRole
+    {
+        return $this->role ?? AdminRole::ReadOnly;
+    }
+
+    /** "write", "read" or null for one area of the admin UI (AdminAreas); portal users get nothing. */
+    public function adminAccess(string $area): ?string
+    {
+        if (! $this->isAdmin()) {
+            return null;
+        }
+
+        return $area === AdminAreas::ANY ? AdminRole::WRITE : $this->adminRole()->access($area);
     }
 }

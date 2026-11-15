@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\User;
+use App\Support\AdminRole;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
@@ -50,6 +51,10 @@ class CreateAdmin extends Command
         $user->name = (string) ($this->option('name') ?: ($user->name ?: Str::before($email, '@')));
         $user->password = Hash::make($password);
         $user->email_verified_at ??= now();
+        // Made on the server, so it's an owner: it can invite everyone else (Settings → Admin users).
+        if ($user->account_id === null && $user->role === null) {
+            $user->role = AdminRole::Owner;
+        }
         $user->save();
 
         $this->info(($created ? 'Created' : 'Updated').' admin '.$email);

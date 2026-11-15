@@ -11,6 +11,7 @@ use App\Models\VendorInvoice;
 use App\Services\MailSettings;
 use App\Services\SystemStats;
 use App\Services\UpdateCheck;
+use App\Support\AdminAreas;
 use App\Support\Billing;
 use App\Support\CallStats;
 use App\Support\CdrFilters;
@@ -27,7 +28,8 @@ class DashboardController extends Controller
         $now = CarbonImmutable::now('UTC');
         $last24h = CdrController::summary(new CdrFilters($now->subDay(), $now, []));
 
-        $billing = Billing::enabled(); // the billing lists are hidden while it's off
+        // The billing lists are hidden while billing is off, and from admins whose level excludes billing.
+        $billing = Billing::enabled() && $request->user()->adminAccess(AdminAreas::BILLING) !== null;
         $low = ! $billing ? [] : Account::query()->customers()->where('status', 'active')->whereNotNull('low_balance_alerted_at')
             ->orderBy('low_balance_alerted_at')->limit(20)->get()
             ->map(fn (Account $a) => [

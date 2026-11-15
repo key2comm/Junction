@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Settings\AdminUserController;
 use App\Http\Controllers\Settings\ApiTokenController;
 use App\Http\Controllers\Settings\BillingController;
 use App\Http\Controllers\Settings\BrandingController;
@@ -86,6 +87,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('settings/firewall/refresh', [FirewallController::class, 'refresh'])->middleware('throttle:12,1')->name('firewall.refresh');
         Route::post('settings/firewall/unban', [FirewallController::class, 'unban'])->middleware(RequirePassword::class)->name('firewall.unban');
         Route::post('settings/firewall/bans/blacklist', [FirewallController::class, 'blacklistBan'])->middleware(RequirePassword::class)->name('firewall.bans.blacklist');
+    });
+
+    // Admin users and invitations (owners only, see AdminAreas). Changes need a recent password confirmation.
+    Route::middleware('admin')->group(function () {
+        Route::get('settings/admin-users', [AdminUserController::class, 'index'])->name('admin-users.index');
+        Route::post('settings/admin-users/invite', [AdminUserController::class, 'invite'])->middleware([RequirePassword::class, 'throttle:20,1'])->name('admin-invitations.store');
+        Route::post('settings/admin-invitations/{invitation}/resend', [AdminUserController::class, 'resend'])->middleware([RequirePassword::class, 'throttle:20,1'])->name('admin-invitations.resend');
+        Route::delete('settings/admin-invitations/{invitation}', [AdminUserController::class, 'revoke'])->name('admin-invitations.destroy');
+        Route::patch('settings/admin-users/{user}', [AdminUserController::class, 'update'])->middleware(RequirePassword::class)->name('admin-users.update');
+        Route::delete('settings/admin-users/{user}', [AdminUserController::class, 'destroy'])->middleware(RequirePassword::class)->name('admin-users.destroy');
     });
 
     // What new customer accounts start with.

@@ -1,10 +1,13 @@
 <script setup lang="ts">
 /** Server settings (admin only): the pages under the top menu's Settings item, as tabs of one card. */
 import { Link } from '@inertiajs/vue3';
-import { BrickWall, CalendarClock, FileAudio, KeyRound, Mail, Palette, Receipt, ShieldCheck, UserCog } from '@lucide/vue';
+import { BrickWall, CalendarClock, FileAudio, KeyRound, Mail, Palette, Receipt, ShieldCheck, UserCog, Users } from '@lucide/vue';
 import { computed } from 'vue';
+import { useAccess } from '@/composables/useAccess';
+import type { AdminArea } from '@/composables/useAccess';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
 import { toUrl } from '@/lib/utils';
+import { index as adminUsers } from '@/routes/admin-users';
 import { index as apiTokens } from '@/routes/api-tokens';
 import { edit as editBilling } from '@/routes/billing';
 import { edit as editBranding } from '@/routes/branding';
@@ -15,21 +18,25 @@ import { edit as editEmail } from '@/routes/email';
 import { index as firewall } from '@/routes/firewall';
 import { index as reports } from '@/routes/reports';
 
-const tabs = [
+const allTabs: { title: string; href: ReturnType<typeof firewall>; icon: typeof Mail; area: AdminArea }[] = [
     // Same order as the top menu's Settings dropdown.
-    { title: 'SSL certificate', href: editCertificate(), icon: ShieldCheck },
-    { title: 'Firewall', href: firewall(), icon: BrickWall },
-    { title: 'Billing', href: editBilling(), icon: Receipt },
-    { title: 'Branding', href: editBranding(), icon: Palette },
-    { title: 'Call captures', href: editCaptures(), icon: FileAudio },
-    { title: 'Client defaults', href: editClientDefaults(), icon: UserCog },
-    { title: 'Email (SMTP)', href: editEmail(), icon: Mail },
-    { title: 'Scheduled reports', href: reports(), icon: CalendarClock },
-    { title: 'API tokens', href: apiTokens(), icon: KeyRound },
+    { title: 'SSL certificate', href: editCertificate(), icon: ShieldCheck, area: 'settings' },
+    { title: 'Firewall', href: firewall(), icon: BrickWall, area: 'settings' },
+    { title: 'Billing', href: editBilling(), icon: Receipt, area: 'billing' },
+    { title: 'Branding', href: editBranding(), icon: Palette, area: 'settings' },
+    { title: 'Call captures', href: editCaptures(), icon: FileAudio, area: 'settings' },
+    { title: 'Client defaults', href: editClientDefaults(), icon: UserCog, area: 'settings' },
+    { title: 'Email (SMTP)', href: editEmail(), icon: Mail, area: 'settings' },
+    { title: 'Scheduled reports', href: reports(), icon: CalendarClock, area: 'settings' },
+    { title: 'API tokens', href: apiTokens(), icon: KeyRound, area: 'settings' },
+    { title: 'Admin users', href: adminUsers(), icon: Users, area: 'users' },
 ];
+// Only the tabs this admin's access level can open.
+const { can } = useAccess();
+const tabs = computed(() => allTabs.filter((t) => can(t.area)));
 const { isCurrentOrParentUrl } = useCurrentUrl();
 // The firewall and reports pages have wide tables; the others are single forms.
-const wide = computed(() => isCurrentOrParentUrl(firewall()) || isCurrentOrParentUrl(reports()));
+const wide = computed(() => [firewall(), reports(), adminUsers()].some((h) => isCurrentOrParentUrl(h)));
 </script>
 
 <template>

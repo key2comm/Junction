@@ -17,6 +17,7 @@ Junction is an open Class 4 (wholesale carrier) switch. It routes VoIP traffic b
 - **Monitoring**: live calls, call records with a SIP PCAP for every call, carrier quality stats (ASR, ACD, PDD) and email alerts.
 - **Customer portal**: customers see their balance, calls, invoices, rates and API tokens. They never see your carriers or costs.
 - **REST API**: bearer tokens, customer-scoped tokens, and an OpenAPI 3.1 spec.
+- **Admin users**: invite people by email with an access level: Owner, Admin, Operations (NOC), Billing or Read-only.
 - **Security**: Let's Encrypt SSL, a firewall manager with automatic rollback, fail2ban, and SELinux left in enforcing mode.
 
 ## Requirements

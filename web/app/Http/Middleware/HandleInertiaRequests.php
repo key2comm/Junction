@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\Alert;
+use App\Support\AdminAreas;
 use App\Support\Billing;
 use App\Support\Branding;
 use Illuminate\Http\Request;
@@ -46,6 +47,14 @@ class HandleInertiaRequests extends Middleware
                 // Portal users: the customer account they belong to.
                 'account' => $request->user()?->account?->only(['id', 'code', 'name']),
             ],
+            // Admins: their access level and what it allows per area ("write", "read" or null),
+            // plus this page's area, so the menu hides what they can't open and marks view-only pages.
+            'access' => fn () => $request->user()?->isAdmin() ? [
+                'role' => $request->user()->adminRole()->value,
+                'label' => $request->user()->adminRole()->label(),
+                'areas' => $request->user()->adminRole()->accessMap(),
+                'page' => $request->user()->adminAccess(AdminAreas::forRoute($request->route()?->getName())),
+            ] : null,
             // Admins: open alerts, for the sidebar badge.
             'openAlerts' => fn () => $request->user()?->isAdmin() ? Alert::query()->where('status', 'open')->count() : null,
             // Settings → Billing: hides billing pages and figures when off.

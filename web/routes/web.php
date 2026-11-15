@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Auth\InvitationController;
 use App\Http\Controllers\Settings\BrandingController;
 use Illuminate\Support\Facades\Route;
 
@@ -8,6 +9,10 @@ use Illuminate\Support\Facades\Route;
 // customer portal ("dashboard" itself redirects portal users to /portal).
 // Settings → Branding images: public, the sign-in page shows them too.
 Route::get('branding/{kind}', [BrandingController::class, 'show'])->whereIn('kind', ['logo', 'icon'])->name('branding.show');
+
+// The link in an admin invitation (Settings → Admin users): choose a name and password.
+Route::get('invite/{token}', [InvitationController::class, 'show'])->name('invitation.show');
+Route::post('invite/{token}', [InvitationController::class, 'accept'])->middleware('throttle:10,1')->name('invitation.accept');
 
 Route::get('/', fn () => to_route(auth()->check() ? 'dashboard' : 'login'))->name('home');
 

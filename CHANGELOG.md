@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+### Admin users and access levels
+- **Settings → Admin users** (Owners only): invite people to manage the server, change their access level, or remove them. It also shows each person's 2FA status and when they were last active.
+- **Five access levels:**
+  - **Owner**: everything, including managing admins.
+  - **Admin**: everything except managing admins.
+  - **Operations (NOC)**: customers, carriers, rates, LCR groups, PBX, DIDs, live calls, call records and alerts. No billing or server settings.
+  - **Billing**: customers, invoices, payments, billing items and profiles, taxes and billing settings. Can see routing and calls but not change them.
+  - **Read-only**: can see everything except server settings, and change nothing.
+- **Invitations:** the person gets an email with a link to choose their name and password. The link works once and expires after 7 days. If email isn't set up, you get the link to send yourself. Invitations can be resent or cancelled.
+- The menu only shows what each person can open. Pages they can see but not change are marked "View only".
+- Admins that already exist become Owners when you update, and so does the first admin the installer creates.
+
 ### Updating
 - **`sudo ./update.sh`** downloads the latest version from GitHub and applies it, keeping your settings and data. `sudo ./update.sh <release>` switches to a specific release.
 - When an update is available, the dashboard shows the command to run.

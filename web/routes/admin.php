@@ -29,7 +29,8 @@ use Illuminate\Support\Facades\Route;
 
 /*
  * Softswitch administration: admin users only (the "admin" middleware sends
- * customer portal users to /portal). Every admin can manage everything.
+ * customer portal users to /portal). What each admin may see or change depends
+ * on their access level: see App\Support\AdminAreas when adding a route.
  */
 Route::middleware(['auth', 'admin'])->group(function () {
     // Routing → Carriers: the carrier accounts (Billing → Accounts lists everyone and creates customers).
@@ -118,7 +119,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('carrier-rates', [RateDeckController::class, 'index'])->defaults('kind', 'carrier')->name('carrier-rates.index');
     // Old /rate-decks links show carrier rates. GET only: Route::redirect() would match every
     // method and swallow the create form's POST /rate-decks once routes are cached.
-    Route::get('rate-decks', [RateDeckController::class, 'index'])->defaults('kind', 'carrier');
+    Route::get('rate-decks', [RateDeckController::class, 'index'])->defaults('kind', 'carrier')->name('rate-decks.old');
     Route::resource('rate-decks', RateDeckController::class)->except(['index', 'destroy']);
     Route::post('rate-decks/{rate_deck}/imports', [RateImportController::class, 'store'])
         ->middleware('throttle:10,1')

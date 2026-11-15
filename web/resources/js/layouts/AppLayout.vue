@@ -37,6 +37,7 @@ import {
     Sun,
     Tags,
     UserCog,
+    Users,
     UserRound,
 } from '@lucide/vue';
 import { onClickOutside } from '@vueuse/core';
@@ -44,6 +45,8 @@ import { computed, ref, useTemplateRef, watchEffect } from 'vue';
 import AppFooter from '@/components/AppFooter.vue';
 import AppLogo from '@/components/AppLogo.vue';
 import { Toaster } from '@/components/ui/sonner';
+import { useAccess } from '@/composables/useAccess';
+import type { AdminArea } from '@/composables/useAccess';
 import { useAppearance } from '@/composables/useAppearance';
 import { useBilling } from '@/composables/useBilling';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
@@ -51,6 +54,7 @@ import { setTimeZone } from '@/lib/format';
 import { dashboard, logout } from '@/routes';
 import { index as accounts } from '@/routes/accounts';
 import { index as alerts } from '@/routes/alerts';
+import { index as adminUsers } from '@/routes/admin-users';
 import { index as apiTokens } from '@/routes/api-tokens';
 import { edit as billingSettings } from '@/routes/billing';
 import { edit as brandingSettings } from '@/routes/branding';
@@ -94,36 +98,41 @@ const openAlerts = computed(() => (page.props as { openAlerts?: number | null })
 
 type NavGroup = { title: string; icon: NavItem['icon']; items: NavItem[] };
 type NavEntry = NavItem | NavGroup;
+// Each menu item is shown only to admins whose access level can open its area.
+type Gated<T> = T & { area?: AdminArea };
+const { access, can } = useAccess();
 
 // With billing off (Settings → Billing) there are no invoices, so Accounts stands on its own.
-const adminNav = computed((): NavEntry[] => [
+const allAdminNav = computed((): Gated<NavItem | (NavGroup & { items: Gated<NavItem>[] })>[] => [
     { title: 'Dashboard', href: dashboard(), icon: LayoutGrid },
-    { title: 'Alerts', href: alerts(), icon: BellRing },
+    { title: 'Alerts', href: alerts(), icon: BellRing, area: 'monitoring' },
     {
         title: 'Calls',
         icon: PhoneCall,
+        area: 'monitoring',
         items: [
             { title: 'Live calls', href: live(), icon: AudioLines },
             { title: 'Call records', href: cdrs(), icon: PhoneCall },
             { title: 'Carrier quality', href: quality(), icon: Activity },
         ],
     },
-    billing.value
+    billing.value && can('billing')
         ? {
               title: 'Billing',
               icon: FileText,
               items: [
-                  { title: 'Accounts', href: accounts(), icon: Building2 },
+                  { title: 'Accounts', href: accounts(), icon: Building2, area: 'accounts' },
                   { title: 'Invoices', href: invoices(), icon: FileText },
                   { title: 'Billing items', href: billingItems(), icon: ListChecks },
                   { title: 'Billing profiles', href: billingProfiles(), icon: Package },
                   { title: 'Taxes', href: taxes(), icon: Percent },
               ],
           }
-        : { title: 'Accounts', href: accounts(), icon: Building2 },
+        : { title: 'Accounts', href: accounts(), icon: Building2, area: 'accounts' },
     {
         title: 'Routing',
         icon: Route,
+        area: 'routing',
         items: [
             { title: 'Carriers', href: carriers(), icon: Building2 },
             { title: 'Tariffs', href: tariffs(), icon: Tags },
@@ -133,23 +142,33 @@ const adminNav = computed((): NavEntry[] => [
             { title: 'LCR groups', href: routingPlans(), icon: Route },
         ],
     },
-    { title: 'PBX', href: pbx(), icon: Phone },
+    { title: 'PBX', href: pbx(), icon: Phone, area: 'routing' },
     {
         title: 'Settings',
         icon: Settings,
         items: [
-            { title: 'SSL certificate', href: certificate(), icon: ShieldCheck },
-            { title: 'Firewall', href: firewall(), icon: BrickWall },
-            { title: 'Billing', href: billingSettings(), icon: Receipt },
-            { title: 'Branding', href: brandingSettings(), icon: Palette },
-            { title: 'Call captures', href: capturesSettings(), icon: FileAudio },
-            { title: 'Client defaults', href: clientDefaults(), icon: UserCog },
-            { title: 'Email (SMTP)', href: email(), icon: Mail },
-            { title: 'Scheduled reports', href: reports(), icon: CalendarClock },
-            { title: 'API tokens', href: apiTokens(), icon: KeyRound },
+            { title: 'SSL certificate', href: certificate(), icon: ShieldCheck, area: 'settings' },
+            { title: 'Firewall', href: firewall(), icon: BrickWall, area: 'settings' },
+            { title: 'Billing', href: billingSettings(), icon: Receipt, area: 'billing' },
+            { title: 'Branding', href: brandingSettings(), icon: Palette, area: 'settings' },
+            { title: 'Call captures', href: capturesSettings(), icon: FileAudio, area: 'settings' },
+            { title: 'Client defaults', href: clientDefaults(), icon: UserCog, area: 'settings' },
+            { title: 'Email (SMTP)', href: email(), icon: Mail, area: 'settings' },
+            { title: 'Scheduled reports', href: reports(), icon: CalendarClock, area: 'settings' },
+            { title: 'API tokens', href: apiTokens(), icon: KeyRound, area: 'settings' },
+            { title: 'Admin users', href: adminUsers(), icon: Users, area: 'users' },
         ],
     },
 ]);
+// Without access to an area its items go; a menu group with nothing left goes too.
+const adminNav = computed((): NavEntry[] =>
+    allAdminNav.value.flatMap((e): NavEntry[] => {
+        if (e.area && !can(e.area)) return [];
+        if (!('items' in e)) return [e];
+        const items = (e.items as Gated<NavItem>[]).filter((i) => !i.area || can(i.area));
+        return items.length ? [{ ...e, items }] : [];
+    }),
+);
 const portalNav = computed((): NavEntry[] => [
     { title: 'Overview', href: portalHome(), icon: LayoutGrid },
     { title: 'Calls', href: portalCalls(), icon: PhoneCall },
@@ -276,6 +295,9 @@ const initials = computed(() =>
             </div>
             <div class="page-body">
                 <div class="container-xl">
+                    <div v-if="!isPortal && access?.page === 'read'" class="alert alert-info py-2 mb-3" role="status">
+                        View only: your access level ({{ access.label }}) can see this page but not change it.
+                    </div>
                     <slot />
                 </div>
             </div>
