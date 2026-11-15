@@ -4,7 +4,7 @@
 
 Junction is an open Class 4 (wholesale carrier) switch. It routes VoIP traffic between your customers and your carriers using least-cost routing, bills it, and adds a few light PBX features. Everything is managed from a web admin UI, with a customer portal and a REST API.
 
-> **Status: v0.1.1 beta.** Test it on your own traffic before relying on it, and expect changes before 1.0. See [CHANGELOG.md](CHANGELOG.md) for what's included.
+> **Status: v0.1.2 beta.** Test it on your own traffic before relying on it, and expect changes before 1.0. See [CHANGELOG.md](CHANGELOG.md) for what's included.
 
 ![Admin dashboard](docs/screenshots/01-dashboard.png)
 

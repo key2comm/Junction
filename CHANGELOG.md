@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v0.1.2-beta (2026-11-15)
 
 ### Admin users and access levels
 - **Settings → Admin users** (Owners only): invite people to manage the server, change their access level, or remove them. It also shows each person's 2FA status and when they were last active.
