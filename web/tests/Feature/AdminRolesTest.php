@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Support\AdminAreas;
 use App\Support\AdminRole;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -80,8 +81,12 @@ class AdminRolesTest extends TestCase
     {
         $this->actingAs($this->admin(AdminRole::Admin))->get(route('certificate.edit'))->assertOk();
         $this->actingAs($this->admin(AdminRole::Admin))->get(route('admin-users.index'))->assertRedirect(route('dashboard'));
-        $this->actingAs($this->admin(AdminRole::Owner))->get(route('admin-users.index'))->assertOk()
-            ->assertInertia(fn (Assert $p) => $p->component('settings/AdminUsers')->has('roles', 5));
+        $owner = $this->admin(AdminRole::Owner);
+        // Someone signed in somewhere: their last activity is shown.
+        DB::table('sessions')->insert(['id' => 'abc', 'user_id' => $owner->id, 'payload' => '', 'last_activity' => now()->getTimestamp()]);
+        $this->actingAs($owner)->get(route('admin-users.index'))->assertOk()
+            ->assertInertia(fn (Assert $p) => $p->component('settings/AdminUsers')->has('roles', 5)
+                ->where('users', fn ($users) => collect($users)->firstWhere('me', true)['last_seen'] !== null));
     }
 
     public function test_an_invitation_is_emailed_and_creates_the_admin_when_accepted(): void

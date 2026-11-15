@@ -26,7 +26,7 @@ class AdminUserController extends Controller
     public function index(Request $request): Response
     {
         $lastSeen = DB::table('sessions')->whereNotNull('user_id')->groupBy('user_id')
-            ->pluck(DB::raw('max(last_activity)'), 'user_id');
+            ->selectRaw('user_id, max(last_activity) as last_activity')->pluck('last_activity', 'user_id');
 
         return Inertia::render('settings/AdminUsers', [
             'users' => User::query()->whereNull('account_id')->orderBy('name')->get()
