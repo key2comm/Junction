@@ -229,6 +229,9 @@ const stale = computed(() => (props.system ? Date.now() - new Date(props.system.
                                 <span v-else class="text-secondary">GitHub: not checked yet</span>
                                 <Link :href="checkUpdates()" method="post" as="button" class="btn btn-link btn-sm p-0 ms-1" preserve-scroll>Check now</Link>
                             </div>
+                            <div v-if="update?.status === 'ok' && update.newer" class="text-secondary" style="font-size: 0.75rem">
+                                To update, run <code>sudo ./update.sh</code> in the Junction folder on this server.
+                            </div>
                             <div v-if="update?.status === 'error'" class="text-secondary" style="font-size: 0.75rem">{{ update.error }}</div>
                             <div v-else-if="update" class="text-secondary" style="font-size: 0.75rem">Checked {{ dateTime(update.checked_at) }}</div>
                         </dd>

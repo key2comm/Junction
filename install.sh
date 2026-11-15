@@ -57,7 +57,12 @@ log "Done."
 # The admin login, on screen at the very end so it isn't lost in the scrollback.
 # It's the initial password: once it's been changed in the UI, this one no longer works.
 admin_pw="$(sed -n 's/^ADMIN_INITIAL_PASSWORD=//p' /etc/softswitch/secrets 2>/dev/null | awk 'NR==1')"
-if [ -n "$admin_pw" ]; then
+if [ -n "${SS_UPDATED_FROM:-}" ]; then
+	# From update.sh: the server is already set up, so no login details.
+	printf '\n\033[1;32m%s\033[0m\n' "Junction is updated to $(cat "$SS_ROOT/web/VERSION" 2>/dev/null) (was $SS_UPDATED_FROM)."
+	info "Admin UI:  https://$SS_HOSTNAME"
+	printf '\n'
+elif [ -n "$admin_pw" ]; then
 	printf '\n\033[1;32m%s\033[0m\n' "Junction $(cat "$SS_ROOT/web/VERSION" 2>/dev/null) is installed."
 	info "Admin UI:  https://$SS_HOSTNAME"
 	info "Login:     ${SS_ADMIN_EMAIL:-admin@$SS_HOSTNAME}"

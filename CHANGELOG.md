@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Updating
+- **`sudo ./update.sh`** downloads the latest version from GitHub and applies it, keeping your settings and data. `sudo ./update.sh <release>` switches to a specific release.
+- When an update is available, the dashboard shows the command to run.
+
 ## v0.1.1-beta (2026-11-14)
 
 ### Junction

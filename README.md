@@ -33,7 +33,7 @@ cd Junction
 sudo ./install.sh
 ```
 
-When the install finishes, open the admin UI at `https://<your-server>/<admin-path>` and sign in with an admin account.
+When the install finishes, it shows the admin UI address, login and initial password. Open the admin UI at `https://<your-server>/<admin-path>` and sign in with an admin account.
 
 ### After installing
 
@@ -43,6 +43,19 @@ When the install finishes, open the admin UI at `https://<your-server>/<admin-pa
 4. **Routing → Carrier rates** and **Tariffs**: import what carriers charge you and build what you charge customers.
 5. **Routing → LCR groups**: group your carriers and choose the routing mode.
 6. **Billing → Accounts**: add customers and give each one an LCR group and a tariff.
+
+## Update
+
+The dashboard shows **Update available** when there's a newer release on GitHub. To update, run this in the Junction folder on your server:
+
+```sh
+cd Junction
+sudo ./update.sh
+```
+
+It downloads the latest version and applies it. Your settings, database and call records are kept. To switch to a specific release instead, name it: `sudo ./update.sh v0.1.1-beta`.
+
+Installed v0.1.1 beta or earlier? Those don't have `update.sh` yet, so run `git pull` once first.
 
 ## Tour
 
