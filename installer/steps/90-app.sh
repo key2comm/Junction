@@ -82,7 +82,11 @@ grep -qE '^APP_KEY=.+' "$env_file" || artisan key:generate --force --no-interact
 
 # Stale route/config caches from the previous deploy would hide new routes
 # from Wayfinder (which generates the frontend route helpers during the build).
-artisan optimize:clear --no-interaction >/dev/null
+# Only the cached files: optimize:clear would also empty the database cache,
+# whose table doesn't exist yet on a new server (migrate runs further down).
+for what in config route view event; do
+	artisan "$what:clear" --no-interaction >/dev/null
+done
 
 info "Building frontend assets (slow on small servers)"
 as_app npm ci --no-audit --no-fund --loglevel=error

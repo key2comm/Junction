@@ -3,6 +3,8 @@
 ## Unreleased
 
 ### Installer
+- **Fixed: on a new server, the install stopped silently in step 90**, right after installing PHP packages. It tried to empty the app's cache before the cache's database table existed. As a result, the admin login was never shown.
+- If any step fails, the installer now names the command that failed, with its file and line, and tells you to re-run it. A step can no longer stop without saying why.
 - On a new server, FreeSWITCH's first start can be slow, and the installer sometimes gave up at step 60 before it was ready. It now waits up to 3 minutes. If FreeSWITCH or a SIP profile still doesn't start, the installer shows FreeSWITCH's own error lines instead of just pointing at the log.
 - Step 80 no longer prints php-fpm's help text. It checked the PHP config with an option that php-fpm doesn't support.
 - Re-running the installer no longer prints SELinux's "already defined, modifying instead" notices.

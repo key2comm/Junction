@@ -49,7 +49,18 @@ for step in "$SS_ROOT"/installer/steps/[0-9][0-9]-*.sh; do
 		continue
 	fi
 	log "Step $(basename "$step" .sh)"
-	( . "$step" )
+	# Run the step in a subshell that stops at the first failing command and names
+	# it, so a step never stops without saying why. (Not "( … ) || die": that
+	# would switch off set -e inside the step.)
+	set +e
+	(
+		set -e
+		trap 'rc=$?; printf "\033[1;31mERROR:\033[0m %s failed (exit %s) at %s line %s\n" "$BASH_COMMAND" "$rc" "${BASH_SOURCE[0]#"$SS_ROOT"/}" "$LINENO" >&2; trap - ERR' ERR
+		. "$step"
+	)
+	rc=$?
+	set -e
+	[ "$rc" -eq 0 ] || die "Step $(basename "$step" .sh) did not finish. Fix the error above, then run: sudo $0"
 done
 
 log "Done."
