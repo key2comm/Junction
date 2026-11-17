@@ -1,9 +1,13 @@
 # Changelog
 
-## Unreleased
+## v1.0.1 (not released yet)
+
+A minor fix to the updater.
 
 ### Updating
-- **Fixed: `update.sh` said "Already up to date" after a `git pull`** and didn't install the new code. This could happen after following the README's "run `git pull` once first" step. The installer now records which code it installed, and `update.sh` installs whenever the code in the folder is different from that.
+- **Fixed: the web UI kept showing "Update available" after an update.** After a `git pull`, which the README says to run once on older versions, `update.sh` said "Already up to date" and didn't install the new code. The server kept running the old version, so the dashboard was right to say an update was available.
+  - The installer now records which code it installed.
+  - `update.sh` installs whenever the code in the Junction folder differs from that record, however it got there.
 
 ## v1.0.0 (2026-11-17)
 
