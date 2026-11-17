@@ -17,6 +17,7 @@ Junction is an open Class 4 (wholesale carrier) switch. It routes VoIP traffic b
 - **Monitoring**: live calls, call records with a SIP PCAP for every call, carrier quality stats (ASR, ACD, PDD) and email alerts.
 - **Customer portal**: customers see their balance, calls, invoices, rates and API tokens. They never see your carriers or costs.
 - **REST API**: bearer tokens, customer-scoped tokens, and an OpenAPI 3.1 spec.
+- **High availability**: a live backup server kept in sync with the main one, made the main server with one click.
 - **Admin users**: invite people by email with an access level: Owner, Admin, Operations (NOC), Billing or Read-only.
 - **Security**: Let's Encrypt SSL, a firewall manager with automatic rollback, fail2ban, and SELinux left in enforcing mode.
 
@@ -57,6 +58,43 @@ sudo ./update.sh
 It downloads the latest version and applies it. Your settings, database and call records are kept. To switch to a specific release instead, name it: `sudo ./update.sh v0.1.1-beta`.
 
 Installed v0.1.1 beta or earlier? Those don't have `update.sh` yet, so run `git pull` once first.
+
+## High availability
+
+You can run a second Junction server as a live backup of the main one. The backup keeps a copy of everything, updated continuously:
+- the database: customers, carriers, rates, settings, call records and billing;
+- files: secrets, certificates, IVR greetings, branding and uploads.
+
+It doesn't take calls itself. If the main server fails, you make the backup the main server with one click, then point your DNS name at it.
+
+### Set it up
+
+Use two servers with the same OS. If they're on the same private network, use their private IPs below.
+
+1. **On the main server**, add these to `/etc/softswitch/softswitch.conf`, then run `sudo ./install.sh`:
+   ```sh
+   SS_HA_ROLE="primary"
+   SS_HA_PEER="<the backup's IP>"
+   ```
+   The install ends by printing the settings for the backup, including its `SS_HA_PASSWORD`.
+2. **On the backup**, add the printed settings to `/etc/softswitch/softswitch.conf`, then run `sudo ./install.sh`:
+   ```sh
+   SS_HA_ROLE="standby"
+   SS_HA_PEER="<the main server's IP>"
+   SS_HA_PASSWORD="<printed by the main server>"
+   SS_HOSTNAME="<the same hostname as the main server>"
+   ```
+   This replaces the backup's own database with a copy of the main server's.
+
+The main server's dashboard shows whether the backup is in sync. If the backup disconnects or falls more than 5 minutes behind, you get an alert. If the backup loses contact with the main server, it emails you.
+
+### If the main server fails
+
+1. Open the backup's admin UI at `https://<backup's IP>` and sign in with your usual login. Click **Make this the main server**, or run `sudo softswitch-ha promote` on the backup.
+2. Point your DNS name at the backup's IP. Carriers that whitelist by IP need the backup's IP too, so ask them to add it when you set up HA.
+3. When the old main server is back, **don't** start it as the main server again. On it, run `sudo softswitch-ha clone` to make it the new backup.
+
+Calls in progress on the failed server are lost; new calls work once the DNS change takes effect. Run `sudo softswitch-ha status` on either server to see where it stands.
 
 ## Tour
 
@@ -131,7 +169,7 @@ curl -H "Authorization: Bearer $TOKEN" https://switch.example.com/api/v1/cdrs/su
 
 ## Known limitations
 
-- Single server only. There is no clustering or high availability yet.
+- High availability is one main server plus one backup, with manual failover. Calls in progress are lost on a failover, and moving traffic needs a DNS change.
 - Call captures cover SIP on ports 5060 and 5080 only. TLS (5061) and WebRTC (WSS) signalling is encrypted, so it can't be captured.
 - The web phone needs UDP ports 16384–32768 open to the browser.
 

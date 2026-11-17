@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+### High availability
+- **A backup server kept in sync with the main one.**
+  - The database is copied continuously over an encrypted connection (PostgreSQL streaming replication), usually within seconds.
+  - Files are copied every minute: secrets, the app key, certificates, IVR greetings, branding and uploads.
+  - Only the other server may connect, through both the firewall and the database's access rules.
+- **Set up with three settings** in `/etc/softswitch/softswitch.conf`: `SS_HA_ROLE`, `SS_HA_PEER` and, on the backup, `SS_HA_PASSWORD`. Then run `sudo ./install.sh` on each server. The main server's install prints what to put on the backup.
+- **The backup stays idle:** FreeSWITCH and the background jobs are stopped, and the admin UI shows only the sync status.
+- **One-click failover:** an Owner or Admin clicks **Make this the main server** on the backup, or runs `sudo softswitch-ha promote` there. The backup starts taking calls; then you point your DNS name at it. `sudo softswitch-ha clone` turns the old main server into the new backup.
+- **Monitoring:**
+  - The main server's dashboard shows whether the backup is in sync.
+  - A new alert, "Backup server not in sync", fires if the backup disconnects or falls more than 5 minutes behind.
+  - The backup emails you if it loses contact with the main server, and again when it's back in sync.
+- `sudo softswitch-ha status` shows where either server stands.
+
 ### Installer
 - **Fixed: on a new server, the install stopped silently in step 90**, right after installing PHP packages. It tried to empty the app's cache before the cache's database table existed. As a result, the admin login was never shown.
 - If any step fails, the installer now names the command that failed, with its file and line, and tells you to re-run it. A step can no longer stop without saying why.

@@ -4,6 +4,8 @@
 # (The main server's side is set up in step 70.)
 
 render "$SS_ROOT/deploy/sbin/softswitch-ha" /usr/local/sbin/softswitch-ha 0755
+# So "sudo softswitch-ha …" works: sudo's PATH on EL doesn't include /usr/local/sbin.
+ln -sfn /usr/local/sbin/softswitch-ha /usr/sbin/softswitch-ha
 
 ha_standby || return 0
 
