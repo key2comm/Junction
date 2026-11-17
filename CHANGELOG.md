@@ -1,6 +1,6 @@
 # Changelog
 
-## v1.0.1 (not released yet)
+## v1.0.1 (2026-11-17)
 
 A minor fix to the updater.
 
