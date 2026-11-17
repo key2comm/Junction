@@ -51,8 +51,7 @@ When the install finishes, it shows the admin UI address, login and initial pass
 The dashboard shows **Update available** when there's a newer release on GitHub. To update, run this in the Junction folder on your server:
 
 ```sh
-cd Junction
-sudo ./update.sh
+cd ~/Junction && git pull && sudo ./update.sh
 ```
 
 It downloads the latest version and applies it. Your settings, database and call records are kept. To switch to a specific release instead, name it: `sudo ./update.sh v1.0.1`.
