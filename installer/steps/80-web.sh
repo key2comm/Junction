@@ -63,13 +63,14 @@ systemctl restart nginx
 if selinuxenabled 2>/dev/null; then
 	setsebool -P httpd_can_network_connect_db 1   # PHP -> PostgreSQL
 	# nginx -> FreeSWITCH WebSocket (wss://<host>/ws): reverse-proxy to an http port.
-	semanage port -a -t http_port_t -p tcp "$SS_PBX_WSS_PORT" 2>/dev/null \
-		|| semanage port -m -t http_port_t -p tcp "$SS_PBX_WSS_PORT"
+	# (On a re-run these already exist; semanage then says "already defined, modifying instead".)
+	semanage port -a -t http_port_t -p tcp "$SS_PBX_WSS_PORT" >/dev/null 2>&1 \
+		|| semanage port -m -t http_port_t -p tcp "$SS_PBX_WSS_PORT" >/dev/null
 	setsebool -P httpd_can_network_relay 1
-	semanage fcontext -a -t httpd_sys_rw_content_t "$SS_WEB_ROOT/storage(/.*)?" 2>/dev/null \
-		|| semanage fcontext -m -t httpd_sys_rw_content_t "$SS_WEB_ROOT/storage(/.*)?"
-	semanage fcontext -a -t httpd_sys_rw_content_t "$SS_WEB_ROOT/bootstrap/cache(/.*)?" 2>/dev/null \
-		|| semanage fcontext -m -t httpd_sys_rw_content_t "$SS_WEB_ROOT/bootstrap/cache(/.*)?"
+	semanage fcontext -a -t httpd_sys_rw_content_t "$SS_WEB_ROOT/storage(/.*)?" >/dev/null 2>&1 \
+		|| semanage fcontext -m -t httpd_sys_rw_content_t "$SS_WEB_ROOT/storage(/.*)?" >/dev/null
+	semanage fcontext -a -t httpd_sys_rw_content_t "$SS_WEB_ROOT/bootstrap/cache(/.*)?" >/dev/null 2>&1 \
+		|| semanage fcontext -m -t httpd_sys_rw_content_t "$SS_WEB_ROOT/bootstrap/cache(/.*)?" >/dev/null
 	restorecon -R "$SS_WEB_ROOT" /var/www/acme
 fi
 
