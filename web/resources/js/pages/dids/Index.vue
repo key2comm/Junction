@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
-import { Plus, Trash2, Upload } from '@lucide/vue';
-import { reactive } from 'vue';
+import { Download, Plus, Trash2, Upload } from '@lucide/vue';
+import { computed, reactive } from 'vue';
 import DidController from '@/actions/App/Http/Controllers/Admin/DidController';
 import Heading from '@/components/Heading.vue';
 import Pagination from '@/components/Pagination.vue';
@@ -19,12 +19,12 @@ type Did = {
     id: number;
     number: string;
     language: string;
-    status: 'active' | 'deactivated' | 'banned';
+    status: 'active' | 'unassigned' | 'deactivated' | 'banned';
     status_reason: string | null;
     description: string | null;
-    account: Account;
+    account: Account | null; // null: not assigned
     provider: Account | null;
-    destination: string;
+    destination: string | null;
 };
 
 const props = defineProps<{
@@ -52,7 +52,15 @@ function remove(d: Did) {
         router.delete(DidController.destroy.url(d.id), { preserveScroll: true });
     }
 }
-const badge = (s: string) => (s === 'banned' ? 'destructive' : s === 'active' ? 'default' : 'secondary');
+const badge = (s: string) => (s === 'banned' ? 'destructive' : s === 'active' ? 'default' : s === 'unassigned' ? 'outline' : 'secondary');
+// Export: every DID matching the current filters (a plain download, not an Inertia visit).
+const exportUrl = computed(() => {
+    const q = new URLSearchParams();
+    for (const [k, v] of Object.entries({ q: props.filters.q, account: props.filters.account, provider: props.filters.provider, status: props.filters.status, endpoint: props.filters.endpoint?.id })) {
+        if (v) q.set(k, String(v));
+    }
+    return `/dids/export${q.size ? `?${q}` : ''}`;
+});
 </script>
 
 <template>
@@ -63,6 +71,7 @@ const badge = (s: string) => (s === 'banned' ? 'destructive' : s === 'active' ? 
             <Heading title="DIDs" description="Numbers providers deliver to this switch, and where each one goes. Inbound calls to DIDs are free for the customer." />
             <div class="d-flex gap-2">
                 <Button variant="outline" as-child><Link :href="showImport()"><Upload class="icon" /> Import</Link></Button>
+                <Button variant="outline" as-child><a :href="exportUrl" download><Download class="icon" /> Export</a></Button>
                 <Button as-child><Link :href="create({ query: { account: f.account || undefined } })"><Plus class="icon" /> Add DID</Link></Button>
             </div>
         </div>
@@ -104,8 +113,11 @@ const badge = (s: string) => (s === 'banned' ? 'destructive' : s === 'active' ? 
                 <tbody>
                     <tr v-for="d in dids.data" :key="d.id">
                         <td class="font-monospace fw-medium"><Link :href="edit(d.id)">{{ d.number }}</Link></td>
-                        <td><Link :href="showAccount(d.account.id)">{{ d.account.name }}</Link></td>
-                        <td>{{ d.destination }}</td>
+                        <td>
+                            <Link v-if="d.account" :href="showAccount(d.account.id)">{{ d.account.name }}</Link>
+                            <span v-else class="text-secondary">Not assigned</span>
+                        </td>
+                        <td>{{ d.destination ?? '—' }}</td>
                         <td>{{ d.provider?.name ?? '—' }}</td>
                         <td class="text-uppercase">{{ d.language }}</td>
                         <td>

@@ -146,6 +146,8 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::post('dids/import/upload', [DidImportController::class, 'upload'])->name('did-import.upload');
     Route::post('dids/import', [DidImportController::class, 'store'])->name('did-import.store');
     Route::post('dids/import/cancel', [DidImportController::class, 'cancel'])->name('did-import.cancel');
+    // Every DID (matching the list's filters) as CSV, in the import's columns.
+    Route::get('dids/export', [DidController::class, 'export'])->middleware('throttle:10,1')->name('dids.export');
     Route::resource('dids', DidController::class)->except(['show']);
     // A carrier's SIP trunks (gateways), on the carrier page.
     Route::post('accounts/{account}/sip-trunks', [GatewayController::class, 'store'])->name('accounts.sip-trunks.store');

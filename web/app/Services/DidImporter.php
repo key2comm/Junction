@@ -34,7 +34,7 @@ class DidImporter
         'device_id' => 'PBX/Device ID',
         'extension' => 'Extension / IVR number',
         'language' => 'Language (en, fr...)',
-        'status' => 'Status (active, deactivated, banned)',
+        'status' => 'Status (active, not assigned, deactivated, banned)',
         'status_reason' => 'Status reason',
         'comment' => 'Comment',
     ];
@@ -55,7 +55,8 @@ class DidImporter
     public const SAMPLE = "number,customer,provider,device_id,extension,language,status,status_reason,comment\n"
         ."14165550100,ACME01,CARRIER1,12,,en,active,,Main line\n"
         ."14165550101,ACME01,CARRIER1,,1001,fr,active,,Reception (extension 1001)\n"
-        ."4165550102,ACME01,CARRIER1,12,,en,banned,Unpaid invoice,10 digits: 1 is added\n";
+        ."4165550102,ACME01,CARRIER1,12,,en,banned,Unpaid invoice,10 digits: 1 is added\n"
+        ."14165550103,,CARRIER1,,,en,not assigned,,In stock: no customer yet\n";
 
     public function __construct(private Pbx $pbx) {}
 
@@ -147,10 +148,32 @@ class DidImporter
                 continue;
             }
 
+            // The status first: a DID that's not assigned needs no customer or destination.
+            $status = PbxDid::statusFrom($get('status') ?: (string) ($defaults['status'] ?? 'active'));
+            if ($status === null) {
+                $fail('unknown status '.$get('status').' (active, not assigned, deactivated or banned).');
+
+                continue;
+            }
+            $reason = $get('status_reason');
+            if ($status === 'banned' && $reason === '') {
+                $fail('a banned DID needs a status reason.');
+
+                continue;
+            }
+
             $code = $get('customer');
-            $account = $code !== '' ? ($byCode[strtolower($code)] ?? null) : $customers->firstWhere('id', (int) ($defaults['account_id'] ?? 0));
-            if (! $account) {
-                $fail($code !== '' ? "no customer with account code {$code}." : 'no customer (add a Customer column or choose one for all rows).');
+            if ($status === 'unassigned' && $code === '') {
+                $account = null;
+            } elseif ($status === 'unassigned') {
+                $fail("a DID that's not assigned can't have a customer ({$code}); leave the Customer empty or change the status.");
+
+                continue;
+            } else {
+                $account = $code !== '' ? ($byCode[strtolower($code)] ?? null) : $customers->firstWhere('id', (int) ($defaults['account_id'] ?? 0));
+            }
+            if (! $account && $status !== 'unassigned') {
+                $fail($code !== '' ? "no customer with account code {$code}." : 'no customer (add a Customer column, choose one for all rows, or set the status to not assigned).');
 
                 continue;
             }
@@ -172,7 +195,9 @@ class DidImporter
                 continue;
             }
             try {
-                if ($device !== '') {
+                if ($account === null) {
+                    $destination = null; // not assigned: goes nowhere
+                } elseif ($device !== '') {
                     $destination = $this->pbx->destination($account, ['type' => 'endpoint', 'target' => $device], 'destination');
                 } elseif ($extension !== '') {
                     $destination = $this->pbx->destination($account, ['type' => 'number', 'target' => $extension], 'destination');
@@ -196,22 +221,9 @@ class DidImporter
 
                 continue;
             }
-            $status = strtolower($get('status') ?: (string) ($defaults['status'] ?? 'active'));
-            if (! isset(PbxDid::STATUSES[$status])) {
-                $fail("unknown status {$status} (active, deactivated or banned).");
-
-                continue;
-            }
-            $reason = $get('status_reason');
-            if ($status === 'banned' && $reason === '') {
-                $fail('a banned DID needs a status reason.');
-
-                continue;
-            }
-
             $plan[] = ['skip' => false, 'id' => $current?->id, 'data' => [
-                'number' => $number, 'account_id' => $account->id, 'provider_account_id' => $provider->id, 'destination' => $destination,
-                'language' => $language, 'status' => $status, 'status_reason' => $status === 'active' ? null : (mb_substr($reason, 0, 255) ?: null),
+                'number' => $number, 'account_id' => $account?->id, 'provider_account_id' => $provider->id, 'destination' => $destination,
+                'language' => $language, 'status' => $status, 'status_reason' => in_array($status, ['active', 'unassigned'], true) ? null : (mb_substr($reason, 0, 255) ?: null),
                 'description' => mb_substr($get('comment'), 0, 255) ?: null,
             ]];
         }

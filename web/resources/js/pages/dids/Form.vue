@@ -16,12 +16,12 @@ import { index } from '@/routes/dids';
 type Account = { id: number; name: string; code: string };
 type Did = {
     id: number;
-    account_id: number;
+    account_id: number | null;
     provider_account_id: number | null;
     number: string;
-    destination: Destination;
+    destination: Destination | null;
     language: string;
-    status: 'active' | 'deactivated' | 'banned';
+    status: 'active' | 'unassigned' | 'deactivated' | 'banned';
     status_reason: string | null;
     description: string | null;
 };
@@ -51,7 +51,7 @@ const target = computed(() => props.targets[String(account.value)] ?? { endpoint
 const hasTargets = computed(() => target.value.endpoints.length > 0 || target.value.numbers.length > 0);
 // New DIDs go to a PBX/Device when the customer has one.
 const initial = computed<Destination>(() =>
-    props.did && props.did.account_id === account.value ? props.did.destination : target.value.endpoints.length ? { type: 'endpoint' } : { type: 'number' },
+    props.did?.destination && props.did.account_id === account.value ? props.did.destination : target.value.endpoints.length ? { type: 'endpoint' } : { type: 'number' },
 );
 const topLanguages = props.languages.filter((l) => l.top);
 const otherLanguages = props.languages.filter((l) => !l.top);
@@ -65,6 +65,33 @@ const action = props.did ? DidController.update.form(props.did.id) : DidControll
         <Heading :title="did ? `DID ${did.number}` : 'New DID'" description="A number a provider delivers to this switch, and where its calls go." />
 
         <Form v-bind="action" class="ss-stack-4" v-slot="{ errors, processing }">
+            <section class="ss-stack-2">
+                <fieldset class="ss-grid gap-1">
+                    <legend class="fw-medium fs-5 mb-1">Status</legend>
+                    <label class="d-flex align-items-start gap-2">
+                        <input v-model="status" type="radio" name="status" value="active" class="form-check-input m-0 mt-1" />
+                        <span>Active <span class="d-block small text-secondary">Calls are delivered.</span></span>
+                    </label>
+                    <label class="d-flex align-items-start gap-2">
+                        <input v-model="status" type="radio" name="status" value="unassigned" class="form-check-input m-0 mt-1" />
+                        <span>Not assigned <span class="d-block small text-secondary">In stock: no customer yet. Calls are refused as "not found" (404).</span></span>
+                    </label>
+                    <label class="d-flex align-items-start gap-2">
+                        <input v-model="status" type="radio" name="status" value="deactivated" class="form-check-input m-0 mt-1" />
+                        <span>Deactivated <span class="d-block small text-secondary">Calls are refused as "not found" (404).</span></span>
+                    </label>
+                    <label class="d-flex align-items-start gap-2">
+                        <input v-model="status" type="radio" name="status" value="banned" class="form-check-input m-0 mt-1" />
+                        <span>Banned <span class="d-block small text-secondary">Calls are refused (403), e.g. while the customer hasn't paid.</span></span>
+                    </label>
+                </fieldset>
+                <div v-if="status !== 'active' && status !== 'unassigned'" class="ss-grid gap-1">
+                    <Label for="status_reason">Reason <span v-if="status !== 'banned'" class="small text-secondary">(optional)</span></Label>
+                    <Input id="status_reason" name="status_reason" :default-value="did?.status_reason ?? ''" :required="status === 'banned'" placeholder="Unpaid invoice #1042" />
+                    <InputError :message="errors.status_reason" />
+                </div>
+            </section>
+
             <section class="ss-grid gap-3 ss-cols-sm-2">
                 <div class="ss-grid gap-1">
                     <Label for="number">DID</Label>
@@ -80,7 +107,7 @@ const action = props.did ? DidController.update.form(props.did.id) : DidControll
                     </select>
                     <InputError :message="errors.provider_account_id" />
                 </div>
-                <div class="ss-grid gap-1">
+                <div v-if="status !== 'unassigned'" class="ss-grid gap-1">
                     <Label for="account_id">Customer</Label>
                     <select id="account_id" v-model="account" name="account_id" :class="selectClass" required>
                         <option value="" disabled>Choose…</option>
@@ -101,7 +128,7 @@ const action = props.did ? DidController.update.form(props.did.id) : DidControll
                 </div>
             </section>
 
-            <section class="ss-grid gap-1">
+            <section v-if="status !== 'unassigned'" class="ss-grid gap-1">
                 <Label for="destination">Send calls to</Label>
                 <template v-if="account === ''">
                     <p class="text-secondary mb-0">Choose the customer first.</p>
@@ -117,29 +144,6 @@ const action = props.did ? DidController.update.form(props.did.id) : DidControll
                     <Link :href="createEndpoint({ query: { account: account } })" class="fw-medium">Add a PBX/Device</Link> first.
                 </p>
                 <InputError :message="errors['destination.type']" />
-            </section>
-
-            <section class="ss-stack-2">
-                <fieldset class="ss-grid gap-1">
-                    <legend class="fw-medium fs-5 mb-1">Status</legend>
-                    <label class="d-flex align-items-start gap-2">
-                        <input v-model="status" type="radio" name="status" value="active" class="form-check-input m-0 mt-1" />
-                        <span>Active <span class="d-block small text-secondary">Calls are delivered.</span></span>
-                    </label>
-                    <label class="d-flex align-items-start gap-2">
-                        <input v-model="status" type="radio" name="status" value="deactivated" class="form-check-input m-0 mt-1" />
-                        <span>Deactivated <span class="d-block small text-secondary">Calls are refused as "not found" (404).</span></span>
-                    </label>
-                    <label class="d-flex align-items-start gap-2">
-                        <input v-model="status" type="radio" name="status" value="banned" class="form-check-input m-0 mt-1" />
-                        <span>Banned <span class="d-block small text-secondary">Calls are refused (403), e.g. while the customer hasn't paid.</span></span>
-                    </label>
-                </fieldset>
-                <div v-if="status !== 'active'" class="ss-grid gap-1">
-                    <Label for="status_reason">Reason <span v-if="status !== 'banned'" class="small text-secondary">(optional)</span></Label>
-                    <Input id="status_reason" name="status_reason" :default-value="did?.status_reason ?? ''" :required="status === 'banned'" placeholder="Unpaid invoice #1042" />
-                    <InputError :message="errors.status_reason" />
-                </div>
             </section>
 
             <div class="ss-grid gap-1">
