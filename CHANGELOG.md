@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Updating
+- **Fixed: `update.sh` said "Already up to date" after a `git pull`** and didn't install the new code. This could happen after following the README's "run `git pull` once first" step. The installer now records which code it installed, and `update.sh` installs whenever the code in the folder is different from that.
+
 ## v1.0.0 (2026-11-17)
 
 ### High availability

@@ -41,9 +41,12 @@ main() {
 	[ -z "$(g status --porcelain --untracked-files=no)" ] \
 		|| die "files in $SS_ROOT were changed by hand (see: git -C $SS_ROOT status). Undo or commit them, then run update.sh again."
 
-	local before before_commit
-	before="$(cat "$SS_ROOT/web/VERSION" 2>/dev/null || echo unknown)"
-	before_commit="$(g rev-parse HEAD)"
+	# What's installed and running (not just what's in this folder: a "git pull"
+	# downloads code without installing it).
+	local web before installed
+	web="$( (set +u; . /etc/softswitch/softswitch.conf 2>/dev/null; printf '%s' "${SS_WEB_ROOT:-/var/www/html}") )"
+	before="$(cat "$web/VERSION" 2>/dev/null || echo unknown)"
+	installed="$(cat /etc/softswitch/installed-commit 2>/dev/null || true)"
 
 	log "Checking GitHub for updates"
 	g fetch --quiet --tags --force origin
@@ -61,9 +64,12 @@ main() {
 			|| die "can't update $branch: it has local commits that aren't on GitHub"
 	fi
 
-	local after
+	local after current
 	after="$(cat "$SS_ROOT/web/VERSION" 2>/dev/null || echo unknown)"
-	if [ "$(g rev-parse HEAD)" = "$before_commit" ]; then
+	current="$(g rev-parse HEAD)"
+	# Up to date only if this exact code was installed (installs before 1.0.1 didn't
+	# record it: then the installed version must match).
+	if { [ -n "$installed" ] && [ "$installed" = "$current" ]; } || { [ -z "$installed" ] && [ "$before" = "$after" ] && [ "$after" != unknown ]; }; then
 		log "Already up to date (Junction $after). Nothing to do."
 		info "To reinstall anyway: sudo $SS_ROOT/install.sh"
 		exit 0

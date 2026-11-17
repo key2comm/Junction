@@ -65,6 +65,13 @@ done
 
 log "Done."
 
+# Which code is installed, so update.sh knows whether a downloaded update was
+# applied (only after a full run of a git checkout).
+if [ -z "$SS_ONLY_STEPS" ] && [ -d "$SS_ROOT/.git" ]; then
+	git -c safe.directory="$SS_ROOT" -C "$SS_ROOT" rev-parse HEAD > /etc/softswitch/installed-commit 2>/dev/null \
+		|| rm -f /etc/softswitch/installed-commit
+fi
+
 # The admin login, on screen at the very end so it isn't lost in the scrollback.
 # It's the initial password: once it's been changed in the UI, this one no longer works.
 admin_pw="$(sed -n 's/^ADMIN_INITIAL_PASSWORD=//p' /etc/softswitch/secrets 2>/dev/null | awk 'NR==1')"
