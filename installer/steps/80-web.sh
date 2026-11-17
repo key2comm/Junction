@@ -49,7 +49,7 @@ systemctl enable -q --now certbot-renew.timer 2>/dev/null || warn "certbot-renew
 # --- PHP-FPM: dedicated pool; disable the stock pool (runs as 'apache').
 render "$SS_ROOT/deploy/php-fpm/softswitch.conf" /etc/php-fpm.d/softswitch.conf
 [ -f /etc/php-fpm.d/www.conf ] && mv /etc/php-fpm.d/www.conf /etc/php-fpm.d/www.conf.disabled
-php-fpm -t -q 2>/dev/null || php-fpm -t || die "php-fpm config test failed"
+php-fpm -t >/dev/null 2>&1 || { php-fpm -t; die "php-fpm config test failed (see above)"; }
 systemctl enable -q php-fpm
 systemctl restart php-fpm
 

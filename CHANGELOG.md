@@ -4,6 +4,7 @@
 
 ### Installer
 - On a new server, FreeSWITCH's first start can be slow, and the installer sometimes gave up at step 60 before it was ready. It now waits up to 3 minutes. If FreeSWITCH or a SIP profile still doesn't start, the installer shows FreeSWITCH's own error lines instead of just pointing at the log.
+- Step 80 no longer prints php-fpm's help text. It checked the PHP config with an option that php-fpm doesn't support.
 
 ## v0.1.2-beta (2026-11-15)
 
