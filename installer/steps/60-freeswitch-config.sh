@@ -91,22 +91,36 @@ else
 	info "FreeSWITCH configuration unchanged"
 fi
 
-for _ in $(seq 1 30); do
+# On failure, show FreeSWITCH's own complaints, not just "check the log".
+fs_failed() {
+	warn "$1"
+	if [ -f "$SS_FS_LOG/freeswitch.log" ]; then
+		info "Last errors in $SS_FS_LOG/freeswitch.log:"
+		grep -E '\[(ERR|CRIT|ALERT)\]' "$SS_FS_LOG/freeswitch.log" | tail -15 | sed 's/^/    /' >&2 || true
+	fi
+	journalctl -u freeswitch -n 10 --no-pager 2>/dev/null | sed 's/^/    /' >&2 || true
+	die "$1. Fix the cause above, then run: sudo ./install.sh"
+}
+
+# The first start on a new server is slow (FreeSWITCH creates its DTLS certificate
+# and internal databases), so wait up to 3 minutes before giving up.
+info "Waiting for FreeSWITCH to start"
+for _ in $(seq 1 90); do
 	"$fs_cli" -x status >/dev/null 2>&1 && break
 	sleep 2
 done
-"$fs_cli" -x status >/dev/null 2>&1 || die "FreeSWITCH did not start; check journalctl -u freeswitch and $SS_FS_LOG/freeswitch.log"
+"$fs_cli" -x status >/dev/null 2>&1 || fs_failed "FreeSWITCH did not start"
 
 # Profiles start a moment after the core answers; give them time.
 for profile in carrier internal selftest; do
 	running=0
-	for _ in $(seq 1 20); do
+	for _ in $(seq 1 60); do
 		if "$fs_cli" -x "sofia status" | awk -v p="$profile" '$1 == p && $2 == "profile" && /RUNNING/ { f = 1 } END { exit !f }'; then
 			running=1; break
 		fi
 		sleep 1
 	done
-	[ "$running" = 1 ] || die "SIP profile '$profile' is not running; check $SS_FS_LOG/freeswitch.log"
+	[ "$running" = 1 ] || fs_failed "SIP profile '$profile' is not running (it may not be able to use $SS_PUBLIC_IP)"
 done
 info "FreeSWITCH running: $("$fs_cli" -x version | awk 'NR==1')"
 info "SIP profiles: carrier on $SS_PUBLIC_IP:$SS_CARRIER_PORT, internal on $SS_PUBLIC_IP:$SS_PBX_PORT"
