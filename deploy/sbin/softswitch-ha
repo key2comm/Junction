@@ -208,10 +208,26 @@ clone() {
 		-d "host=$peer user=$REPL_USER password=$pw sslmode=require channel_binding=require application_name=$REPL_APP" \
 		|| { rm -rf -- "$PGDATA"; [ -d "$PGDATA.before-clone" ] && mv "$PGDATA.before-clone" "$PGDATA"; systemctl start postgresql || true; die "copying the database failed; this server's database was put back"; }
 	command -v restorecon >/dev/null && restorecon -R "$PGDATA"
+	# The copied access rules name the other server's peer (this server); allow the
+	# server we copy from instead, for when it later becomes the backup.
+	sed -i -E "/# BEGIN softswitch/,/# END softswitch/ s#(softswitch_repl +)[0-9.]+/32#\1$peer/32#" "$PGDATA/pg_hba.conf"
 	systemctl start postgresql
 	set_conf SS_HA_ROLE standby
 	rm -rf -- "$APPLIED"
 	pull
+
+	# The app as a backup: sessions and cache in files (read-only database), no
+	# background jobs, and the "Make this the main server" button armed.
+	if [ -f "$WEB/.env" ]; then
+		set_env SOFTSWITCH_HA_ROLE standby
+		set_env SOFTSWITCH_HA_PEER "$peer"
+		set_env SESSION_DRIVER file
+		set_env CACHE_STORE file
+		set_env QUEUE_CONNECTION sync
+		artisan optimize --no-interaction >/dev/null
+		systemctl enable -q --now softswitch-ha.timer softswitch-ha-promote.path 2>/dev/null || true
+		systemctl restart php-fpm
+	fi
 	log "This server is now a backup of $peer."
 }
 
