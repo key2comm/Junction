@@ -450,6 +450,11 @@ class SelfTest extends Command
         if ($login) {
             $vars .= "sip_invite_req_uri=sip:{$number}@{$this->wsHost()},sip_invite_to_uri=<sip:{$number}@{$this->wsHost()}>,";
         }
+        // ...and routed to our IP (sip_route_uri) whatever the hostname resolves to, so the test checks
+        // this server even when DNS points elsewhere (e.g. a backup just promoted, before DNS moves).
+        if ($login) {
+            $vars .= "sip_route_uri=sip:{$ip}:{$port},";
+        }
         $reply = trim($esl->api(
             "originate {{$vars}originate_timeout=20,ignore_early_media=true,absolute_codec_string=PCMU}"
             ."sofia/selftest/{$number}@{$ip}:{$port} &park",

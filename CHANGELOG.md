@@ -15,6 +15,7 @@
   - A new alert, "Backup server not in sync", fires if the backup disconnects or falls more than 5 minutes behind.
   - The backup emails you if it loses contact with the main server, and again when it's back in sync.
 - `sudo softswitch-ha status` shows where either server stands.
+- The call self-test now sends its PBX and device test calls straight to the server it runs on, instead of to wherever the hostname points in DNS. So it also checks a backup that was just promoted, before DNS has moved.
 
 ### Installer
 - **Fixed: on a new server, the install stopped silently in step 90**, right after installing PHP packages. It tried to empty the app's cache before the cache's database table existed. As a result, the admin login was never shown.
