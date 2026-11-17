@@ -71,6 +71,8 @@ It doesn't take calls itself. If the main server fails, you make the backup the 
 
 Use two servers with the same OS. If they're on the same private network, use their private IPs below.
 
+If your provider has its own firewall in front of the servers (DigitalOcean Cloud Firewalls, AWS security groups and so on), allow TCP port 5432 between the two servers there too, in both directions. Junction's own firewall already allows it, but only for the other server.
+
 1. **On the main server**, add these to `/etc/softswitch/softswitch.conf`, then run `sudo ./install.sh`:
    ```sh
    SS_HA_ROLE="primary"
