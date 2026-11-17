@@ -52,10 +52,15 @@ set_env DB_PORT 5432
 set_env DB_DATABASE "$SS_DB_NAME"
 set_env DB_USERNAME "$SS_DB_USER"
 set_env DB_PASSWORD "$(secret DB_PASSWORD)"
-set_env SESSION_DRIVER database
+# A backup's database is read-only: sessions and the cache live in files there,
+# and queued jobs run straight away (softswitch-ha promote switches these back).
+if ha_standby; then app_store=file; app_queue=sync; else app_store=database; app_queue=database; fi
+set_env SESSION_DRIVER "$app_store"
 set_env SESSION_SECURE_COOKIE true
-set_env QUEUE_CONNECTION database
-set_env CACHE_STORE database
+set_env QUEUE_CONNECTION "$app_queue"
+set_env CACHE_STORE "$app_store"
+set_env SOFTSWITCH_HA_ROLE "$SS_HA_ROLE"
+set_env SOFTSWITCH_HA_PEER "$SS_HA_PEER"
 set_env SOFTSWITCH_PUBLIC_IP "$SS_PUBLIC_IP"
 set_env SOFTSWITCH_ESL_PASSWORD "$(secret ESL_PASSWORD)"
 set_env SOFTSWITCH_INTERNAL_USER "$SS_INTERNAL_USER"
@@ -78,7 +83,14 @@ chown "$SS_APP_USER:$SS_APP_USER" "$env_file"; chmod 0600 "$env_file"
 # --- Dependencies + assets.
 info "Installing PHP dependencies"
 as_app composer install --no-dev --optimize-autoloader --no-interaction --no-progress
-grep -qE '^APP_KEY=.+' "$env_file" || artisan key:generate --force --no-interaction
+if ha_standby; then
+	# The main server's key (it decrypts settings such as the SMTP password).
+	key="$(runuser -u postgres -- psql -qAtX -d "$SS_DB_NAME" -c "SELECT convert_from(content, 'UTF8') FROM softswitch_ha.files WHERE name = 'app_key'" | sed -n 's/^APP_KEY=//p')"
+	[ -n "$key" ] || die "the main server's app key hasn't arrived yet; check that softswitch-ha runs on the main server, then re-run"
+	set_env APP_KEY "$key"
+else
+	grep -qE '^APP_KEY=.+' "$env_file" || artisan key:generate --force --no-interaction
+fi
 
 # Stale route/config caches from the previous deploy would hide new routes
 # from Wayfinder (which generates the frontend route helpers during the build).
@@ -94,6 +106,25 @@ as_app npm run build --silent >/dev/null
 rm -rf "$app/node_modules"
 
 # --- Database + caches.
+if ha_standby; then
+	# Everything below changes the database; a backup gets it all from the main server.
+	artisan optimize --no-interaction >/dev/null
+	install -d -o "$SS_APP_USER" -g "$SS_APP_USER" -m 0750 "$app/storage/app/ha"
+	for unit in softswitch-scheduler.service softswitch-queue.service softswitch-capture.service 		softswitch-ha.service softswitch-ha.timer softswitch-ha-promote.service softswitch-ha-promote.path; do
+		render "$SS_ROOT/deploy/systemd/$unit" "/etc/systemd/system/$unit"
+	done
+	systemctl daemon-reload
+	systemctl disable -q --now softswitch-queue softswitch-scheduler 2>/dev/null || true
+	systemctl enable -q --now softswitch-ha.timer softswitch-ha-promote.path
+	systemctl restart php-fpm
+	/usr/local/sbin/softswitch-ha tick || warn "the first sync check failed; it runs again every minute"
+	code="$(curl -sk -o /dev/null -w '%{http_code}' --resolve "$SS_HOSTNAME:443:127.0.0.1" "https://$SS_HOSTNAME/login")"
+	[ "$code" = 200 ] || die "admin UI did not respond (HTTP $code); see $app/storage/logs and /var/log/php-fpm/softswitch-error.log"
+	info "Backup server ready: in sync with the main server at $SS_HA_PEER"
+	info "Its admin UI shows the sync status and the button to make it the main server."
+	return 0
+fi
+
 artisan migrate --force --no-interaction
 
 # FreeSWITCH's database role may only execute the routing functions.
@@ -126,12 +157,20 @@ if command -v semanage >/dev/null 2>&1; then
 	restorecon -R /var/lib/softswitch/capture
 fi
 
-for unit in softswitch-queue.service softswitch-scheduler.service softswitch-capture.service; do
+for unit in softswitch-queue.service softswitch-scheduler.service softswitch-capture.service 	softswitch-ha.service softswitch-ha.timer softswitch-ha-promote.service softswitch-ha-promote.path; do
 	render "$SS_ROOT/deploy/systemd/$unit" "/etc/systemd/system/$unit"
 done
 systemctl daemon-reload
 systemctl enable -q softswitch-queue softswitch-scheduler softswitch-capture
 systemctl restart softswitch-queue softswitch-scheduler php-fpm softswitch-capture
+# High availability: the main server packs files for the backup every minute.
+if [ -n "$SS_HA_ROLE" ]; then
+	systemctl enable -q --now softswitch-ha.timer
+	/usr/local/sbin/softswitch-ha tick || warn "packing files for the backup failed; it runs again every minute"
+else
+	systemctl disable -q --now softswitch-ha.timer 2>/dev/null || true
+fi
+systemctl disable -q --now softswitch-ha-promote.path 2>/dev/null || true
 
 # Push gateways and the carrier allowlist from the database to the switch.
 artisan softswitch:sync --no-interaction || warn "switch sync failed; it will be retried by the scheduler"

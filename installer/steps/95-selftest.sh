@@ -3,6 +3,11 @@
 # rejections, the funds cut-off and billing, then removes its test data.
 # Takes about 40 seconds. Skip with: sudo ./install.sh --steps 10,20,...,90
 
+if ha_standby; then
+	info "Backup server: no self-test (it doesn't take calls until it's made the main server)"
+	return 0
+fi
+
 info "Running the call self-test (about 40 seconds)"
 if (cd "$SS_WEB_ROOT" && runuser -u "$SS_APP_USER" -- php artisan softswitch:selftest --no-ansi); then
 	info "Self-test passed: the switch routes, fails over and bills calls correctly"

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureNotStandby;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\InternalAuth;
@@ -33,7 +34,10 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleAppearance::class,
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
+            EnsureNotStandby::class,
         ]);
+        // High availability: the backup's API is closed (read-only database).
+        $middleware->api(append: [EnsureNotStandby::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

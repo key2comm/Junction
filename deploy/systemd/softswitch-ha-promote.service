@@ -1,0 +1,8 @@
+# Rendered by install.sh to /etc/systemd/system/softswitch-ha-promote.service
+[Unit]
+Description=Junction: promote this backup to the main server
+After=postgresql.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/softswitch-ha promote

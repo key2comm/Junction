@@ -76,11 +76,27 @@ if [ -n "${SS_UPDATED_FROM:-}" ]; then
 	printf '\n\033[1;32m%s\033[0m\n' "$msg"
 	info "Admin UI:  https://$SS_HOSTNAME"
 	printf '\n'
+elif [ "$SS_HA_ROLE" = standby ]; then
+	printf '\n\033[1;32m%s\033[0m\n' "Junction $(cat "$SS_ROOT/web/VERSION" 2>/dev/null) is installed as the backup of $SS_HA_PEER."
+	info "Admin UI:  https://$SS_PUBLIC_IP (sign in with your main server's admin login)"
+	info "Status:    sudo softswitch-ha status"
+	printf '\n'
 elif [ -n "$admin_pw" ]; then
 	printf '\n\033[1;32m%s\033[0m\n' "Junction $(cat "$SS_ROOT/web/VERSION" 2>/dev/null) is installed."
 	info "Admin UI:  https://$SS_HOSTNAME"
 	info "Login:     ${SS_ADMIN_EMAIL:-admin@$SS_HOSTNAME}"
 	info "Password:  $admin_pw"
 	info "(The initial password. Change it after you sign in: My account → Security.)"
+	printf '\n'
+fi
+
+# High availability: what the backup server needs.
+if [ "$SS_HA_ROLE" = primary ]; then
+	info "High availability: this is the main server. To set up the backup ($SS_HA_PEER),"
+	info "install Junction there with these in /etc/softswitch/softswitch.conf:"
+	info "    SS_HA_ROLE=\"standby\""
+	info "    SS_HA_PEER=\"<this server's IP, as the backup reaches it>\""
+	info "    SS_HA_PASSWORD=\"$(sed -n 's/^REPL_PASSWORD=//p' /etc/softswitch/secrets | awk 'NR==1')\""
+	info "    SS_HOSTNAME=\"$SS_HOSTNAME\""
 	printf '\n'
 fi

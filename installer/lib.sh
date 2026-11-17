@@ -49,6 +49,17 @@ resolve_defaults() {
 	SS_FS_LOG="$SS_FS_PREFIX/var/log/freeswitch"
 	SS_FS_RUN="$SS_FS_PREFIX/var/run/freeswitch"
 	SS_FS_GREETINGS="$SS_FS_PREFIX/var/lib/freeswitch/greetings" # PBX IVR greetings (PbxSync)
+	# High availability (softswitch-ha): main server ("primary") and backup ("standby").
+	: "${SS_HA_ROLE:=}" "${SS_HA_PEER:=}" "${SS_HA_PASSWORD:=}"
+	case "$SS_HA_ROLE" in
+		"") SS_HA_FW_RULE="# (no backup server)" ;;
+		primary|standby)
+			[[ "$SS_HA_PEER" =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]] || die "SS_HA_PEER must be the other server's IPv4 address (got '$SS_HA_PEER')"
+			# The other server's database replication (and nothing else from it).
+			SS_HA_FW_RULE="ip saddr $SS_HA_PEER tcp dport 5432 accept" ;;
+		*) die "SS_HA_ROLE must be empty, primary or standby (got '$SS_HA_ROLE')" ;;
+	esac
+	ha_standby() { [ "$SS_HA_ROLE" = standby ]; }
 	for v in $(compgen -v SS_); do export "${v?}"; done
 }
 
@@ -60,6 +71,10 @@ show_settings() {
 	info "SIP ports:   PBX $SS_PBX_PORT/$SS_PBX_TLS_PORT, carriers $SS_CARRIER_PORT"
 	info "RTP range:   $SS_RTP_START-$SS_RTP_END"
 	info "Carrier IPs: ${SS_CARRIER_IPS:-(none yet)}"
+	case "$SS_HA_ROLE" in
+		primary) info "HA:          main server; backup at $SS_HA_PEER" ;;
+		standby) info "HA:          backup of the main server at $SS_HA_PEER" ;;
+	esac
 }
 
 # render SRC DST [MODE] - copy a template, replacing @SS_VAR@ with its value.

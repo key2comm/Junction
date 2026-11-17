@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\HighAvailabilityController;
+use Illuminate\Auth\Middleware\RequirePassword;
 use App\Http\Controllers\Auth\InvitationController;
 use App\Http\Controllers\Settings\BrandingController;
 use Illuminate\Support\Facades\Route;
@@ -15,6 +17,12 @@ Route::get('invite/{token}', [InvitationController::class, 'show'])->name('invit
 Route::post('invite/{token}', [InvitationController::class, 'accept'])->middleware('throttle:10,1')->name('invitation.accept');
 
 Route::get('/', fn () => to_route(auth()->check() ? 'dashboard' : 'login'))->name('home');
+
+// High availability: the backup server's page, and "Make this the main server"
+// (Owners and Admins, with a recent password confirmation).
+Route::get('backup-server', [HighAvailabilityController::class, 'standby'])->middleware('auth')->name('ha.standby');
+Route::post('backup-server/promote', [HighAvailabilityController::class, 'promote'])
+    ->middleware(['auth', 'admin', RequirePassword::class, 'throttle:3,1'])->name('ha.promote');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', DashboardController::class)->middleware('admin')->name('dashboard');

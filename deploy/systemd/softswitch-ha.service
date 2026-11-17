@@ -1,0 +1,11 @@
+# Rendered by install.sh to /etc/systemd/system/softswitch-ha.service
+# High availability, every minute: the main server packs changed files into
+# the database; the backup unpacks them and checks it's still in sync.
+[Unit]
+Description=Junction high availability sync
+After=postgresql.service
+Requires=postgresql.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/softswitch-ha tick

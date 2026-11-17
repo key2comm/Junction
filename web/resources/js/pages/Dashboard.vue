@@ -39,6 +39,8 @@ const props = defineProps<{
     system: System | null;
     host: { hostname: string; ip: string | null; os: string | null; version: string };
     update: { status: 'ok' | 'error'; latest: string | null; newer: boolean; url: string | null; checked_at: string; error: string | null } | null;
+    /** High availability (a main server with a backup); null otherwise. */
+    ha: { peer: string | null; connected: boolean; state: string | null; lag: number | null; files: { at: string } | null } | null;
     last24h: { calls: number; answered: number; rejected: number; asr: number | null; acd: number | null; minutes: number; sell: string; buy: string; margin: string };
     activeCalls: number;
     lowBalance: { id: number; code: string; name: string; currency: string; low_balance_threshold: string; low_balance_alerted_at: string; available: string }[];
@@ -58,7 +60,7 @@ const n = (v: number) => v.toLocaleString();
 const pct = (part: number, whole: number) => (whole > 0 ? Math.round((part / whole) * 100) : 0);
 
 // Live figures refresh on their own; system stats are sampled once a minute.
-usePoll(30000, { only: ['activeCalls', 'today', 'month', 'week', 'hours', 'last24h', 'system', 'update'] });
+usePoll(30000, { only: ['activeCalls', 'today', 'month', 'week', 'hours', 'last24h', 'system', 'update', 'ha'] });
 // "0.1.0-beta" → "v0.1.0 beta"
 const release = (v: string) => `v${v.replace(/-(\w+)$/, ' $1')}`;
 
@@ -235,6 +237,21 @@ const stale = computed(() => (props.system ? Date.now() - new Date(props.system.
                             <div v-if="update?.status === 'error'" class="text-secondary" style="font-size: 0.75rem">{{ update.error }}</div>
                             <div v-else-if="update" class="text-secondary" style="font-size: 0.75rem">Checked {{ dateTime(update.checked_at) }}</div>
                         </dd>
+                        <template v-if="ha">
+                            <dt class="text-secondary fw-normal">Backup server</dt>
+                            <dd class="mb-0">
+                                <div class="d-flex flex-wrap align-items-center gap-1">
+                                    <span class="font-monospace">{{ ha.peer }}</span>
+                                    <Badge v-if="ha.connected && (ha.lag ?? 0) <= 300" variant="outline" class="text-success">In sync</Badge>
+                                    <Badge v-else-if="ha.connected" variant="outline" class="text-warning">{{ Math.round((ha.lag ?? 0) / 60) }} min behind</Badge>
+                                    <Badge v-else variant="destructive">Not connected</Badge>
+                                </div>
+                                <div class="text-secondary" style="font-size: 0.75rem">
+                                    {{ ha.connected ? `Database replicating${ha.lag ? `, ${ha.lag} s behind` : ''}` : "The backup isn't replicating from this server" }}
+                                    <template v-if="ha.files"> · files checked {{ dateTime(ha.files.at) }}</template>
+                                </div>
+                            </dd>
+                        </template>
                     </dl>
                     <hr class="my-0" />
                     <p v-if="!system" class="text-secondary mb-0">The scheduler reads the server's stats once a minute; they'll appear shortly.</p>

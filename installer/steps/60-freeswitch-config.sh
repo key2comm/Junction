@@ -84,6 +84,16 @@ install -m 0600 /dev/null /etc/fs_cli.conf
 printf '[default]\nhost => 127.0.0.1\nport => 8021\npassword => %s\n' "$SS_ESL_PASSWORD" > /etc/fs_cli.conf
 
 after="$(checksum)"
+
+# A backup server doesn't take calls (its database is read-only); FreeSWITCH
+# is started when it's made the main server (softswitch-ha promote).
+if ha_standby; then
+	systemctl disable -q --now freeswitch 2>/dev/null || true
+	info "Backup server: FreeSWITCH is configured but stays stopped until this server is made the main one"
+	. "$SS_ROOT/installer/steps/30-fail2ban.sh"
+	return 0
+fi
+
 if [ "$before" != "$after" ] || ! systemctl is-active -q freeswitch; then
 	info "FreeSWITCH configuration changed; restarting"
 	systemctl restart freeswitch

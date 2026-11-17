@@ -83,6 +83,9 @@ table inet softswitch {
 		# RTP
 		udp dport @SS_RTP_START@-@SS_RTP_END@ accept
 
+		# High availability: the other server's database replication
+		@SS_HA_FW_RULE@
+
 		counter drop
 	}
 

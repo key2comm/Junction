@@ -37,6 +37,8 @@ class AlertEngine
             'help' => "A trunk's average post-dial delay over the last hour is above {pdd_ms} ms (with at least {min_attempts} measured attempts)."],
         'gateway_failing' => ['label' => 'Gateway failing', 'kind' => 'operational', 'severity' => 'critical',
             'help' => "A gateway's last {attempts} attempts (within the last hour) all failed."],
+        'ha_backup' => ['label' => 'Backup server not in sync', 'kind' => 'operational', 'severity' => 'critical',
+            'help' => 'High availability: the backup server is disconnected, or more than {max_lag_minutes} minutes behind. (Only on a main server with a backup set up.)'],
     ];
 
     /** @return array{opened: int, updated: int, resolved: int} */
@@ -255,5 +257,27 @@ class AlertEngine
         return array_map(fn ($r) => ['key' => "gateway_failing:{$r->gateway_id}", 'account_id' => $r->account_id, 'trunk_id' => $r->trunk_id,
             'gateway_id' => $r->gateway_id, 'title' => "Gateway {$r->name}: last {$r->n} attempts all failed",
             'details' => ['attempts' => (int) $r->n]], $rows);
+    }
+
+    // --- high availability ---
+
+    private function checkHaBackup(array $p): array
+    {
+        if (HighAvailability::role() !== 'primary') {
+            return [];
+        }
+        $backup = HighAvailability::backup();
+        $peer = config('softswitch.ha.peer');
+        $maxLag = (int) ($p['max_lag_minutes'] ?? 5) * 60;
+        if (! $backup['connected']) {
+            return [['key' => 'ha_backup', 'title' => "The backup server ({$peer}) is not connected",
+                'details' => ['backup' => $peer, 'state' => $backup['state'] ?? 'disconnected']]];
+        }
+        if ($backup['lag'] > $maxLag) {
+            return [['key' => 'ha_backup', 'title' => 'The backup server is '.intdiv($backup['lag'], 60).' minutes behind',
+                'details' => ['backup' => $peer, 'lag_seconds' => $backup['lag']]]];
+        }
+
+        return [];
     }
 }

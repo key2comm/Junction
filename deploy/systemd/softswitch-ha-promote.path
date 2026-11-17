@@ -1,0 +1,11 @@
+# Rendered by install.sh to /etc/systemd/system/softswitch-ha-promote.path
+# The backup's admin page ("Make this the main server") drops a request file;
+# this starts the promotion as root. The web app itself never runs as root.
+[Unit]
+Description=Junction: watch for a request to promote this backup
+
+[Path]
+PathExists=@SS_WEB_ROOT@/storage/app/ha/promote-request
+
+[Install]
+WantedBy=multi-user.target

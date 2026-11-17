@@ -8,6 +8,7 @@ use App\Models\Account;
 use App\Models\Alert;
 use App\Models\Invoice;
 use App\Models\VendorInvoice;
+use App\Services\HighAvailability;
 use App\Services\MailSettings;
 use App\Services\SystemStats;
 use App\Services\UpdateCheck;
@@ -44,6 +45,8 @@ class DashboardController extends Controller
             'system' => SystemStats::current(),
             'host' => app(SystemStats::class)->host(),
             'update' => UpdateCheck::last(),
+            // High availability (main server with a backup): is the backup in sync?
+            'ha' => HighAvailability::dashboard(),
             'lowBalance' => $low,
             'unpaid' => ! $billing ? [] : Invoice::query()->where('status', 'issued')->where('amount_due', '>', 0)->orderBy('due_at')->limit(10)
                 ->get(['id', 'number', 'account_code', 'account_name', 'currency', 'amount_due', 'due_at']),

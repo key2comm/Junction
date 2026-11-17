@@ -11,6 +11,15 @@ return [
         'token' => env('SOFTSWITCH_UPDATE_TOKEN'),
     ],
 
+    // High availability (set by the installer): "primary" (the main server),
+    // "standby" (the backup) or null (a single server); peer = the other server.
+    'ha' => [
+        'role' => env('SOFTSWITCH_HA_ROLE') ?: null,
+        'peer' => env('SOFTSWITCH_HA_PEER') ?: null,
+        // How far behind the backup may fall before it alerts (seconds).
+        'max_lag' => (int) env('SOFTSWITCH_HA_MAX_LAG', 300),
+    ],
+
     // Public IPv4 of this switch (set by the installer). Used to sanity-check
     // DNS before requesting a Let's Encrypt certificate.
     'public_ip' => env('SOFTSWITCH_PUBLIC_IP'),

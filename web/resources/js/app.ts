@@ -12,7 +12,8 @@ void createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
     layout: (name) => {
         switch (true) {
-            case name.startsWith('auth/'):
+            // The backup server's page (high availability) stands alone too: nothing else works there.
+            case name.startsWith('auth/') || name.startsWith('ha/'):
                 return AuthLayout;
             // The signed-in user's own account (user menu → My account) vs server
             // settings (top menu → Settings: every other settings page).

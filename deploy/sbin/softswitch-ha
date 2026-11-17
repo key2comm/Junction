@@ -1,0 +1,244 @@
+#!/usr/bin/env bash
+# Rendered by install.sh to /usr/local/sbin/softswitch-ha
+#
+# High availability: a backup server kept in sync with the main one.
+# The database replicates with PostgreSQL streaming replication. Files the
+# database doesn't hold (secrets, app key, certificates, IVR greetings,
+# branding and uploads) are packed into the softswitch_ha.files table on the
+# main server, which replicates with everything else, and unpacked on the backup.
+#
+#   softswitch-ha status     where this server stands
+#   softswitch-ha tick       every minute (softswitch-ha.timer): main packs, backup unpacks
+#   softswitch-ha promote    make this backup the main server (then point DNS at it)
+#   softswitch-ha clone      make this server a backup of SS_HA_PEER: REPLACES its database
+#
+# Settings are in /etc/softswitch/softswitch.conf (SS_HA_ROLE, SS_HA_PEER, SS_HA_PASSWORD).
+set -Eeuo pipefail
+umask 077
+
+CONF=/etc/softswitch/softswitch.conf
+SECRETS=/etc/softswitch/secrets
+WEB=@SS_WEB_ROOT@
+APP_USER=@SS_APP_USER@
+DB=@SS_DB_NAME@
+GREETINGS=@SS_FS_GREETINGS@
+PGDATA=/var/lib/pgsql/data
+STATE="$WEB/storage/app/ha"       # status files the admin UI reads
+APPLIED=/var/lib/softswitch/ha    # fingerprints of what the backup has unpacked
+REPL_USER=softswitch_repl
+REPL_APP=junction_backup          # how the backup shows up on the main server
+
+log() { printf '%s\n' "$*"; }
+die() { printf 'softswitch-ha: %s\n' "$*" >&2; exit 1; }
+setting() { (set +u; . "$CONF"; eval "printf '%s' \"\${$1:-}\""); }
+secret() { sed -n "s/^$1=//p" "$SECRETS" 2>/dev/null | awk 'NR==1'; }
+psql_su() { runuser -u postgres -- psql -v ON_ERROR_STOP=1 -qAtX -d "$DB" "$@"; }
+artisan() { (cd "$WEB" && runuser -u "$APP_USER" -- php artisan "$@"); }
+in_recovery() { [ "$(psql_su -c 'SELECT pg_is_in_recovery()' 2>/dev/null)" = t ]; }
+now() { date -u +%Y-%m-%dT%H:%M:%SZ; }
+
+set_conf() { # set_conf KEY VALUE in softswitch.conf
+	if grep -qE "^$1=" "$CONF"; then sed -i -E "s|^$1=.*|$1=\"$2\"|" "$CONF"; else printf '%s="%s"\n' "$1" "$2" >> "$CONF"; fi
+}
+set_env() { # set_env KEY VALUE in the app's .env
+	local f="$WEB/.env"
+	if grep -qE "^#? *$1=" "$f"; then sed -i -E "s|^#? *$1=.*|$1=$2|" "$f"; else printf '%s=%s\n' "$1" "$2" >> "$f"; fi
+}
+write_state() { # write_state NAME JSON, readable by the app
+	id "$APP_USER" >/dev/null 2>&1 || return 0 # (a new backup: the app isn't installed yet)
+	install -d -o "$APP_USER" -g "$APP_USER" -m 0750 "$STATE"
+	printf '%s\n' "$2" > "$STATE/$1.json"
+	chown "$APP_USER:$APP_USER" "$STATE/$1.json"; chmod 0640 "$STATE/$1.json"
+}
+
+# What travels from the main server to the backup: name|kind|path
+items() {
+	printf '%s\n' \
+		"secrets|file|$SECRETS" \
+		"app_key|env|$WEB/.env" \
+		"storage|dir|$WEB/storage/app" \
+		"greetings|dir|$GREETINGS" \
+		"tls|dir|/etc/softswitch/tls" \
+		"letsencrypt|dir|/etc/letsencrypt"
+}
+
+# Cheap fingerprint: content hash for files, names/sizes/times/links for directories.
+fingerprint() { # fingerprint KIND PATH
+	case "$1" in
+		file) sha256sum < "$2" | cut -d' ' -f1 ;;
+		env) grep -E '^APP_KEY=' "$2" | sha256sum | cut -d' ' -f1 ;;
+		dir) (cd "$2" && find . -path ./ha -prune -o \( -type f -o -type l \) -printf '%P %s %T@ %m %u %l\n' | sort | sha256sum | cut -d' ' -f1) ;;
+	esac
+}
+payload() { # payload KIND PATH: base64 on stdout
+	case "$1" in
+		file) base64 -w0 < "$2" ;;
+		env) grep -E '^APP_KEY=' "$2" | head -1 | base64 -w0 ;;
+		dir) tar -C "$2" --exclude=./ha -czf - . | base64 -w0 ;;
+	esac
+}
+
+# --- main server: pack changed files into softswitch_ha.files ---
+push() {
+	in_recovery && die "this server is a backup (read-only database); nothing to push"
+	local name kind path fp old changed=0
+	while IFS='|' read -r name kind path; do
+		if [ ! -e "$path" ]; then
+			psql_su -c "DELETE FROM softswitch_ha.files WHERE name = '$name'"
+			continue
+		fi
+		fp="$(fingerprint "$kind" "$path")"
+		old="$(psql_su -c "SELECT sha256 FROM softswitch_ha.files WHERE name = '$name'")"
+		[ "$fp" = "$old" ] && continue
+		{
+			printf "INSERT INTO softswitch_ha.files (name, kind, sha256, content, updated_at) VALUES ('%s', '%s', '%s', decode('" "$name" "$kind" "$fp"
+			payload "$kind" "$path"
+			printf "', 'base64'), now()) ON CONFLICT (name) DO UPDATE SET kind = EXCLUDED.kind, sha256 = EXCLUDED.sha256, content = EXCLUDED.content, updated_at = now();\n"
+		} | psql_su
+		changed=$((changed + 1))
+	done < <(items)
+	write_state push "{\"at\":\"$(now)\",\"changed\":$changed}"
+}
+
+# --- backup: unpack what changed ---
+pull() {
+	install -d -m 0700 "$APPLIED"
+	local name kind sha path tmp dir reoptimize=0 reload_nginx=0 changed=0
+	while IFS='|' read -r name kind sha; do
+		[ -n "$name" ] || continue
+		[ "$(cat "$APPLIED/$name" 2>/dev/null)" = "$sha" ] && continue
+		path="$(items | awk -F'|' -v n="$name" '$1 == n { print $3 }')"
+		[ -n "$path" ] || continue
+		tmp="$(mktemp)"
+		psql_su -c "SELECT encode(content, 'base64') FROM softswitch_ha.files WHERE name = '$name'" | base64 -d > "$tmp"
+		case "$kind" in
+			file)
+				install -m 0600 "$tmp" "$path" ;;
+			env)
+				# No .env yet on a new backup: step 90 reads the key from the database itself.
+				if [ ! -f "$WEB/.env" ]; then rm -f -- "$tmp"; continue; fi
+				set_env APP_KEY "$(sed -n 's/^APP_KEY=//p' "$tmp")"; reoptimize=1 ;;
+			dir)
+				dir="$(mktemp -d)"
+				tar -C "$dir" -xzpf "$tmp" --same-owner
+				install -d "$path"
+				rsync -a --delete --exclude=/ha "$dir/" "$path/"
+				rm -rf -- "$dir"
+				# Owners by name (the users may not have existed when the tar was unpacked).
+				case "$name" in
+					storage) id "$APP_USER" >/dev/null 2>&1 && chown -R "$APP_USER:$APP_USER" "$path" ;;
+					greetings) id freeswitch >/dev/null 2>&1 && chown -R freeswitch:freeswitch "$path" ;;
+				esac
+				command -v restorecon >/dev/null && restorecon -R "$path"
+				case "$name" in tls|letsencrypt) reload_nginx=1 ;; esac ;;
+		esac
+		rm -f -- "$tmp"
+		printf '%s' "$sha" > "$APPLIED/$name"
+		changed=$((changed + 1))
+	done < <(psql_su -c "SELECT name || '|' || kind || '|' || sha256 FROM softswitch_ha.files ORDER BY name" -F'|')
+	if [ "$reoptimize" = 1 ] && [ -f "$WEB/artisan" ]; then artisan optimize --no-interaction >/dev/null; fi
+	if [ "$reload_nginx" = 1 ] && systemctl is-active -q nginx; then nginx -t -q 2>/dev/null && systemctl reload nginx || true; fi
+	write_state pull "{\"at\":\"$(now)\",\"changed\":$changed}"
+}
+
+tick() {
+	case "$(setting SS_HA_ROLE)" in
+		primary) push ;;
+		standby)
+			in_recovery || exit 0 # promoted, but the settings aren't updated yet
+			pull
+			artisan softswitch:ha-watch --no-interaction || true ;;
+	esac
+}
+
+# --- make this backup the main server ---
+promote() {
+	[ "$(setting SS_HA_ROLE)" = standby ] || die "this server isn't a backup (SS_HA_ROLE=$(setting SS_HA_ROLE))"
+	rm -f -- "$STATE/promote-request"
+	write_state promotion "{\"status\":\"running\",\"at\":\"$(now)\"}"
+	log "Promoting this backup to the main server"
+	if in_recovery; then
+		[ "$(psql_su -c 'SELECT pg_promote(true, 60)')" = t ] || die "PostgreSQL did not finish promoting within 60 seconds"
+	fi
+	pull || true # the latest files from the old main server, if any arrived
+	set_conf SS_HA_ROLE primary
+	set_env SOFTSWITCH_HA_ROLE primary
+	set_env SESSION_DRIVER database
+	set_env CACHE_STORE database
+	set_env QUEUE_CONNECTION database
+	artisan optimize --no-interaction >/dev/null
+	systemctl enable -q --now freeswitch
+	systemctl enable -q --now softswitch-queue softswitch-scheduler
+	systemctl restart php-fpm
+	# Gateways, PBX users, carrier allowlist and firewall policy from the database.
+	artisan softswitch:sync --no-interaction || log "warning: switch sync failed; the scheduler retries it"
+	write_state promotion "{\"status\":\"done\",\"at\":\"$(now)\"}"
+	log "Done. This server is now the main server."
+	log "Next: point your DNS name at this server's IP. The old main server must NOT come back as main:"
+	log "      on it, run  sudo softswitch-ha clone  to make it the new backup."
+}
+
+# --- make this server a backup of SS_HA_PEER ---
+clone() {
+	local yes=0 peer pw stamp
+	[ "${1:-}" = --yes ] && yes=1
+	peer="$(setting SS_HA_PEER)"
+	pw="$(setting SS_HA_PASSWORD)"; [ -n "$pw" ] || pw="$(secret REPL_PASSWORD)"
+	[ -n "$peer" ] || die "set SS_HA_PEER (the main server's IP) in $CONF"
+	[ -n "$pw" ] || die "set SS_HA_PASSWORD in $CONF (the main server prints it when its install finishes)"
+
+	PGPASSWORD="$pw" runuser -u postgres -- psql "host=$peer user=$REPL_USER dbname=$DB replication=database sslmode=require channel_binding=require connect_timeout=10" \
+		-qAtX -c 'IDENTIFY_SYSTEM' >/dev/null 2>&1 \
+		|| die "can't reach the main server's database at $peer:5432 as $REPL_USER. Check that its install has SS_HA_ROLE=primary and SS_HA_PEER set to this server, and that SS_HA_PASSWORD is right"
+
+	if [ "$yes" != 1 ] && systemctl is-active -q postgresql && ! in_recovery; then
+		log "This REPLACES this server's database with a copy of $peer's. Everything on this server is lost"
+		log "(the old database is kept in $PGDATA.before-clone until the next clone)."
+		read -r -p "Type 'yes' to continue: " answer
+		[ "$answer" = yes ] || die "cancelled"
+	fi
+
+	log "Copying the database from $peer (this can take a while)"
+	systemctl disable -q --now freeswitch softswitch-queue softswitch-scheduler 2>/dev/null || true
+	systemctl stop postgresql
+	rm -rf -- "$PGDATA.before-clone"
+	[ -d "$PGDATA" ] && mv "$PGDATA" "$PGDATA.before-clone"
+	install -d -o postgres -g postgres -m 0700 "$PGDATA"
+	runuser -u postgres -- pg_basebackup -D "$PGDATA" -X stream -R -c fast \
+		-d "host=$peer user=$REPL_USER password=$pw sslmode=require channel_binding=require application_name=$REPL_APP" \
+		|| { rm -rf -- "$PGDATA"; [ -d "$PGDATA.before-clone" ] && mv "$PGDATA.before-clone" "$PGDATA"; systemctl start postgresql || true; die "copying the database failed; this server's database was put back"; }
+	command -v restorecon >/dev/null && restorecon -R "$PGDATA"
+	systemctl start postgresql
+	set_conf SS_HA_ROLE standby
+	rm -rf -- "$APPLIED"
+	pull
+	log "This server is now a backup of $peer."
+}
+
+status() {
+	local role
+	role="$(setting SS_HA_ROLE)"
+	log "Role:      ${role:-none (single server)}"
+	log "Peer:      $(setting SS_HA_PEER)"
+	if in_recovery; then
+		log "Database:  backup (read-only), replicating"
+		psql_su -c "SELECT 'Receiver:  ' || status || ' from ' || coalesce(sender_host, '?') || ', last message ' || coalesce(to_char(last_msg_receipt_time, 'YYYY-MM-DD HH24:MI:SS TZ'), 'never') FROM pg_stat_wal_receiver"
+		psql_su -c "SELECT 'Main beat: ' || coalesce(round(extract(epoch FROM now() - beat_at))::text || ' seconds ago', 'never') FROM ha_heartbeat" 2>/dev/null || true
+	else
+		log "Database:  main (read-write)"
+		psql_su -c "SELECT 'Backup:    ' || coalesce(client_addr::text, '?') || ' ' || state || ', lag ' || coalesce(extract(epoch FROM replay_lag)::int::text || ' s', '0 s') FROM pg_stat_replication WHERE application_name = '$REPL_APP'"
+	fi
+	for f in push pull promotion; do [ -f "$STATE/$f.json" ] && log "Last $f: $(cat "$STATE/$f.json")"; done
+	return 0
+}
+
+[ "$(id -u)" -eq 0 ] || die "run as root"
+case "${1:-}" in
+	status) status ;;
+	tick) tick ;;
+	push) push ;;
+	pull) pull ;;
+	promote) promote ;;
+	clone) shift; clone "$@" ;;
+	*) sed -n '9,13p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
+esac

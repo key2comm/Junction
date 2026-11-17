@@ -43,6 +43,16 @@ SS_UPDATE_REPO=""        # owner/name (default: key2comm/Junction)
 SS_UPDATE_TOKEN=""       # only for a private repository: a GitHub token with read access
 SS_APP_USER=softswitch  # system user that owns the app and runs PHP-FPM / queue workers
 
+# High availability (optional): a backup server kept in sync with this one.
+# On the main server:  SS_HA_ROLE="primary", SS_HA_PEER="<backup's IP>"
+# On the backup:       SS_HA_ROLE="standby", SS_HA_PEER="<main's IP>",
+#                      SS_HA_PASSWORD="<printed at the end of the main server's install>"
+# Use the servers' private IPs when they share a private network.
+# Give both the same SS_HOSTNAME: after a failover you point that DNS name at the backup.
+SS_HA_ROLE=""            # "" (single server) | primary | standby
+SS_HA_PEER=""            # the other server's IPv4 address
+SS_HA_PASSWORD=""        # backup only
+
 # PostgreSQL (local). The password is generated into /etc/softswitch/secrets.
 SS_DB_NAME=softswitch
 SS_DB_USER=softswitch

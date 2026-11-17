@@ -44,6 +44,7 @@ final class AdminAreas
         self::ACCOUNTS => ['accounts.*'],
         self::SETTINGS => [
             'certificate.*', 'api-tokens.*', 'email.*', 'reports.*', 'captures.*', 'branding.*', 'firewall.*', 'client-defaults.*',
+            'ha.*',
         ],
     ];
 

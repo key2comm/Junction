@@ -4,6 +4,7 @@ use App\Jobs\RefreshFirewallStatus;
 use App\Jobs\SyncSwitchConfig;
 use App\Models\RateImport;
 use App\Support\Captures;
+use App\Services\HighAvailability;
 use App\Services\LiveCalls;
 use App\Services\PcapExtractor;
 use App\Services\TrunkQuality;
@@ -94,3 +95,7 @@ Schedule::call(fn () => app(\App\Services\BillingCharges::class)->runMonthly())-
 
 // Dashboard → App version: look for a newer release on GitHub (php-fpm can't reach out).
 Schedule::call(fn () => app(\App\Services\UpdateCheck::class)->check())->name('softswitch:update-check')->everySixHours()->withoutOverlapping();
+
+// High availability (main server): a heartbeat the backup measures its lag against.
+Schedule::call(fn () => HighAvailability::beat())->name('softswitch:ha-heartbeat')->everyMinute()
+    ->when(fn () => HighAvailability::role() === 'primary');
