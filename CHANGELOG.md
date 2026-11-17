@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v1.0.0 (2026-11-17)
 
 ### High availability
 - **A backup server kept in sync with the main one.**
