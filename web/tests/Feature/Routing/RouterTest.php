@@ -201,6 +201,21 @@ class RouterTest extends TestCase
         $this->assertSame('destination_not_allowed', $reason('441534123456'));
         $this->assertSame('destination_not_allowed', $reason('18095550100')); // Dominican Republic
 
+        // Emergency and non-emergency 3-digit numbers pass every dialing rule (they'd otherwise
+        // read as countries: 911 as India, 988 as Iran, 711 as Russia...). Longer numbers don't.
+        foreach (['nanp', 'countries'] as $scope) {
+            $this->customer->update(['dialing_scope' => $scope, 'dialing_countries' => []]);
+            foreach (['211', '311', '511', '711', '811', '911', '933', '988'] as $code) {
+                $this->assertNotSame('destination_not_allowed', $reason($code), "{$code} ({$scope})");
+            }
+            $this->assertSame('destination_not_allowed', $reason('9111'));
+            $this->assertSame('destination_not_allowed', $reason('919876543210'));
+        }
+        $this->rate($this->sell, '911', '0');
+        $this->vendor('E', '0', prefix: '911');
+        $this->assertSame('ok', $this->route('911')['status']);
+        $this->customer->update(['dialing_scope' => 'nanp']);
+
         $this->assertSame('KZ', DB::scalar("SELECT softswitch_dial_country('77012345678')"));
         $this->assertSame('RU', DB::scalar("SELECT softswitch_dial_country('74951234567')"));
     }

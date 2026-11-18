@@ -64,7 +64,7 @@ const options: { value: DialingScope; label: string; hint: string }[] = [
     <div class="ss-grid gap-3 ss-span-sm-2">
         <div>
             <h3 class="fw-semibold mb-1">Dialing rules</h3>
-            <p class="small text-secondary mb-0">Where this customer's calls may go. Anything else is refused (403).</p>
+            <p class="small text-secondary mb-0">Where this customer's calls may go. Anything else is refused (403). Emergency and non-emergency 3-digit numbers (211, 311, 511, 711, 811, 911, 933, 988) are always allowed.</p>
         </div>
 
         <div class="ss-grid gap-2">

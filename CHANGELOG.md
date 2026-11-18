@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.0.3 (2026-11-18)
+
+### Dialing rules
+- **Emergency and non-emergency 3-digit numbers are always allowed:** 211, 311, 511, 711, 811, 911, 933 and 988, whatever the customer's dialing rules.
+  - Before this, customers on "Canada and USA only" or chosen countries were refused them (403). The numbers were read as country codes, for example 911 as India (+91) and 988 as Iran (+98).
+  - They count as Canada/USA calls, so a billing profile's unlimited or included Canada/USA minutes cover them.
+
 ## v1.0.2 (2026-11-17)
 
 ### DIDs
