@@ -9,6 +9,7 @@ import type { Destination, PbxEndpoint, PbxNumber } from '@/components/pbx/Desti
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { SearchSelect } from '@/components/ui/search-select';
 import { selectClass } from '@/lib/ui';
 import { create as createEndpoint } from '@/routes/endpoints';
 import { index } from '@/routes/dids';
@@ -45,7 +46,7 @@ defineOptions({
     }),
 });
 
-const account = ref<number | ''>(props.did?.account_id ?? props.defaults.account_id ?? '');
+const account = ref<number | '' | null>(props.did?.account_id ?? props.defaults.account_id ?? '');
 const status = ref(props.did?.status ?? 'active');
 const target = computed(() => props.targets[String(account.value)] ?? { endpoints: [], numbers: [] });
 const hasTargets = computed(() => target.value.endpoints.length > 0 || target.value.numbers.length > 0);
@@ -53,6 +54,7 @@ const hasTargets = computed(() => target.value.endpoints.length > 0 || target.va
 const initial = computed<Destination>(() =>
     props.did?.destination && props.did.account_id === account.value ? props.did.destination : target.value.endpoints.length ? { type: 'endpoint' } : { type: 'number' },
 );
+const customerOptions = props.customers.map((c) => ({ value: c.id, label: c.name, hint: c.code }));
 const topLanguages = props.languages.filter((l) => l.top);
 const otherLanguages = props.languages.filter((l) => !l.top);
 const action = props.did ? DidController.update.form(props.did.id) : DidController.store.form();
@@ -109,10 +111,15 @@ const action = props.did ? DidController.update.form(props.did.id) : DidControll
                 </div>
                 <div v-if="status !== 'free'" class="ss-grid gap-1">
                     <Label for="account_id">Customer</Label>
-                    <select id="account_id" v-model="account" name="account_id" :class="selectClass" required>
-                        <option value="" disabled>Choose…</option>
-                        <option v-for="c in customers" :key="c.id" :value="c.id">{{ c.name }} ({{ c.code }})</option>
-                    </select>
+                    <SearchSelect
+                        id="account_id"
+                        v-model="account"
+                        name="account_id"
+                        :options="customerOptions"
+                        placeholder="Choose the customer…"
+                        search-placeholder="Search by name or account code…"
+                        :invalid="!!errors.account_id"
+                    />
                     <InputError :message="errors.account_id" />
                 </div>
                 <div v-if="status !== 'free'" class="ss-grid gap-1">
@@ -130,7 +137,7 @@ const action = props.did ? DidController.update.form(props.did.id) : DidControll
 
             <section v-if="status !== 'free'" class="ss-grid gap-1">
                 <Label for="destination">Send calls to</Label>
-                <template v-if="account === ''">
+                <template v-if="!account">
                     <p class="text-secondary mb-0">Choose the customer first.</p>
                 </template>
                 <template v-else-if="hasTargets">

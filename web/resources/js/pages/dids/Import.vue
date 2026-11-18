@@ -14,6 +14,7 @@ import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { SearchSelect } from '@/components/ui/search-select';
 import { selectClass } from '@/lib/ui';
 import { sample, show } from '@/routes/did-import';
 import { index } from '@/routes/dids';
@@ -156,10 +157,14 @@ function cancel() {
             <div class="ss-grid gap-2 ss-cols-sm-3">
                 <div class="ss-grid gap-1">
                     <Label for="def_customer">Customer</Label>
-                    <select id="def_customer" v-model="form.fallback.account_id" :class="selectClass" :disabled="!noCustomer">
-                        <option :value="null">{{ noCustomer ? '— Choose —' : 'From the file' }}</option>
-                        <option v-for="c in customers" :key="c.id" :value="c.id">{{ c.name }} ({{ c.code }})</option>
-                    </select>
+                    <SearchSelect
+                        id="def_customer"
+                        v-model="form.fallback.account_id"
+                        :options="customers.map((c) => ({ value: c.id, label: c.name, hint: c.code }))"
+                        :disabled="!noCustomer"
+                        :placeholder="noCustomer ? '— Choose —' : 'From the file'"
+                        search-placeholder="Search by name or account code…"
+                    />
                 </div>
                 <div class="ss-grid gap-1">
                     <Label for="def_provider">Provider</Label>

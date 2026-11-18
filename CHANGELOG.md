@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### DIDs
+- **The Customer field is searchable**, on the DID form and in the DID import's "Customer for all rows". Type part of a customer's name or account code to narrow the list. Arrow keys and Enter work too.
+
 ## v1.0.5 (2026-11-18)
 
 ### Emergency and service numbers
