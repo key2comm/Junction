@@ -15,14 +15,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable(['account_id', 'provider_account_id', 'number', 'destination', 'language', 'status', 'status_reason', 'description'])]
 class PbxDid extends Model
 {
-    /** "unassigned": in stock, not given to a customer yet (no customer, no destination; calls are refused). */
-    public const STATUSES = ['active' => 'Active', 'unassigned' => 'Not assigned', 'deactivated' => 'Deactivated', 'banned' => 'Banned'];
+    /** "free": no customer yet, so it can be given to any customer (no destination; calls are refused). */
+    public const STATUSES = ['active' => 'Active', 'free' => 'Free', 'deactivated' => 'Deactivated', 'banned' => 'Banned'];
 
-    /** Status as written in a CSV ("Not assigned", "not_assigned"...) → its key, or null. */
+    /** Status as written in a CSV ("Free", "Not assigned"...) → its key, or null. */
     public static function statusFrom(string $value): ?string
     {
         $v = str_replace([' ', '-', '_'], '', strtolower(trim($value)));
-        $key = ['notassigned' => 'unassigned', 'unassigned' => 'unassigned'][$v] ?? $v;
+        $key = ['notassigned' => 'free', 'unassigned' => 'free'][$v] ?? $v;
 
         return isset(self::STATUSES[$key]) ? $key : null;
     }

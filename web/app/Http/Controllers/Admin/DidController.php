@@ -153,10 +153,10 @@ class DidController extends Controller
         $request->merge(['number' => preg_replace('/\D/', '', (string) $request->input('number')), 'language' => strtolower((string) $request->input('language'))]);
         $data = $request->validate([
             'number' => ['required', 'string', 'regex:/^[0-9]{7,20}$/', Rule::unique('pbx_dids', 'number')->ignore($did)],
-            // A DID that's not assigned has no customer (and no destination).
-            'account_id' => [$request->input('status') === 'unassigned' ? 'nullable' : 'required', 'integer', Rule::exists('accounts', 'id')->where('is_customer', true)],
+            // A Free DID has no customer and no destination; only the provider is needed.
+            'account_id' => [$request->input('status') === 'free' ? 'nullable' : 'required', 'integer', Rule::exists('accounts', 'id')->where('is_customer', true)],
             'provider_account_id' => ['required', 'integer', Rule::exists('accounts', 'id')->where('is_vendor', true)],
-            'language' => ['required', Rule::in(array_keys(Languages::ALL))],
+            'language' => [$request->input('status') === 'free' ? 'nullable' : 'required', Rule::in(array_keys(Languages::ALL))],
             'status' => ['required', Rule::in(array_keys(PbxDid::STATUSES))],
             'status_reason' => [$request->input('status') === 'banned' ? 'required' : 'nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:255'],
@@ -166,10 +166,10 @@ class DidController extends Controller
             'provider_account_id.required' => 'Choose the provider (the carrier the number comes from).',
             'provider_account_id.exists' => 'Choose one of your carriers.',
             'status_reason.required' => 'Say why the DID is banned (e.g. unpaid invoice).',
-            'account_id.required' => 'Choose the customer, or set the status to Not assigned.',
+            'account_id.required' => 'Choose the customer, or set the status to Free.',
         ]);
-        if ($data['status'] === 'unassigned') {
-            return [...$data, 'account_id' => null, 'destination' => null, 'status_reason' => null];
+        if ($data['status'] === 'free') {
+            return [...$data, 'account_id' => null, 'destination' => null, 'status_reason' => null, 'language' => ($data['language'] ?? null) ?: ($did?->language ?? Languages::DEFAULT)];
         }
         $account = Account::findOrFail($data['account_id']);
         $data['destination'] = $this->pbx->destination($account, $request->input('destination'), 'destination.type');

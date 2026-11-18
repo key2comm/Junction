@@ -21,7 +21,7 @@ type Did = {
     number: string;
     destination: Destination | null;
     language: string;
-    status: 'active' | 'unassigned' | 'deactivated' | 'banned';
+    status: 'active' | 'free' | 'deactivated' | 'banned';
     status_reason: string | null;
     description: string | null;
 };
@@ -73,8 +73,8 @@ const action = props.did ? DidController.update.form(props.did.id) : DidControll
                         <span>Active <span class="d-block small text-secondary">Calls are delivered.</span></span>
                     </label>
                     <label class="d-flex align-items-start gap-2">
-                        <input v-model="status" type="radio" name="status" value="unassigned" class="form-check-input m-0 mt-1" />
-                        <span>Not assigned <span class="d-block small text-secondary">In stock: no customer yet. Calls are refused as "not found" (404).</span></span>
+                        <input v-model="status" type="radio" name="status" value="free" class="form-check-input m-0 mt-1" />
+                        <span>Free <span class="d-block small text-secondary">No customer yet: it can be given to any customer. Only the provider is needed. Calls are refused as "not found" (404).</span></span>
                     </label>
                     <label class="d-flex align-items-start gap-2">
                         <input v-model="status" type="radio" name="status" value="deactivated" class="form-check-input m-0 mt-1" />
@@ -85,7 +85,7 @@ const action = props.did ? DidController.update.form(props.did.id) : DidControll
                         <span>Banned <span class="d-block small text-secondary">Calls are refused (403), e.g. while the customer hasn't paid.</span></span>
                     </label>
                 </fieldset>
-                <div v-if="status !== 'active' && status !== 'unassigned'" class="ss-grid gap-1">
+                <div v-if="status !== 'active' && status !== 'free'" class="ss-grid gap-1">
                     <Label for="status_reason">Reason <span v-if="status !== 'banned'" class="small text-secondary">(optional)</span></Label>
                     <Input id="status_reason" name="status_reason" :default-value="did?.status_reason ?? ''" :required="status === 'banned'" placeholder="Unpaid invoice #1042" />
                     <InputError :message="errors.status_reason" />
@@ -107,7 +107,7 @@ const action = props.did ? DidController.update.form(props.did.id) : DidControll
                     </select>
                     <InputError :message="errors.provider_account_id" />
                 </div>
-                <div v-if="status !== 'unassigned'" class="ss-grid gap-1">
+                <div v-if="status !== 'free'" class="ss-grid gap-1">
                     <Label for="account_id">Customer</Label>
                     <select id="account_id" v-model="account" name="account_id" :class="selectClass" required>
                         <option value="" disabled>Choose…</option>
@@ -115,7 +115,7 @@ const action = props.did ? DidController.update.form(props.did.id) : DidControll
                     </select>
                     <InputError :message="errors.account_id" />
                 </div>
-                <div class="ss-grid gap-1">
+                <div v-if="status !== 'free'" class="ss-grid gap-1">
                     <Label for="language">Language</Label>
                     <select id="language" name="language" :class="selectClass">
                         <option v-for="l in topLanguages" :key="l.code" :value="l.code" :selected="l.code === (did?.language ?? defaults.language)">
@@ -128,7 +128,7 @@ const action = props.did ? DidController.update.form(props.did.id) : DidControll
                 </div>
             </section>
 
-            <section v-if="status !== 'unassigned'" class="ss-grid gap-1">
+            <section v-if="status !== 'free'" class="ss-grid gap-1">
                 <Label for="destination">Send calls to</Label>
                 <template v-if="account === ''">
                     <p class="text-secondary mb-0">Choose the customer first.</p>

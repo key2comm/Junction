@@ -6,11 +6,11 @@
 - **Export:** Routing → DIDs has an **Export** button that downloads every DID, with all its fields, as a CSV. The current filters apply.
   - The columns match the import, so an export can be edited and imported back.
   - It also includes the customer and provider names, a readable destination, and when each DID was added and last changed.
-- **New status: Not assigned.** A DID in stock that isn't given to a customer yet.
-  - It needs no customer or destination: choosing it on the DID form hides both. The form now starts with the status.
+- **New status: Free.** A DID with no customer yet, ready to be given to any customer.
+  - Only the number and provider are needed: choosing Free on the DID form hides the customer, destination and language. The form now starts with the status.
   - Calls to it are refused as "not found" (404).
-  - It works in imports too: status "not assigned", with the Customer column left empty.
-  - Setting a DID back to Not assigned clears its customer and destination.
+  - It works in imports too: status "free" (or "not assigned"), with the Customer column left empty.
+  - Setting a DID back to Free clears its customer and destination.
 
 ## v1.0.1 (2026-11-17)
 

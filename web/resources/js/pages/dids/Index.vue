@@ -19,10 +19,10 @@ type Did = {
     id: number;
     number: string;
     language: string;
-    status: 'active' | 'unassigned' | 'deactivated' | 'banned';
+    status: 'active' | 'free' | 'deactivated' | 'banned';
     status_reason: string | null;
     description: string | null;
-    account: Account | null; // null: not assigned
+    account: Account | null; // null: Free (no customer yet)
     provider: Account | null;
     destination: string | null;
 };
@@ -52,7 +52,7 @@ function remove(d: Did) {
         router.delete(DidController.destroy.url(d.id), { preserveScroll: true });
     }
 }
-const badge = (s: string) => (s === 'banned' ? 'destructive' : s === 'active' ? 'default' : s === 'unassigned' ? 'outline' : 'secondary');
+const badge = (s: string) => (s === 'banned' ? 'destructive' : s === 'active' ? 'default' : s === 'free' ? 'outline' : 'secondary');
 // Export: every DID matching the current filters (a plain download, not an Inertia visit).
 const exportUrl = computed(() => {
     const q = new URLSearchParams();
@@ -115,7 +115,7 @@ const exportUrl = computed(() => {
                         <td class="font-monospace fw-medium"><Link :href="edit(d.id)">{{ d.number }}</Link></td>
                         <td>
                             <Link v-if="d.account" :href="showAccount(d.account.id)">{{ d.account.name }}</Link>
-                            <span v-else class="text-secondary">Not assigned</span>
+                            <span v-else class="text-secondary">Free</span>
                         </td>
                         <td>{{ d.destination ?? '—' }}</td>
                         <td>{{ d.provider?.name ?? '—' }}</td>
