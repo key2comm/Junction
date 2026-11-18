@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v1.0.2 (2026-11-17)
 
 ### DIDs
 - **Export:** Routing → DIDs has an **Export** button that downloads every DID, with all its fields, as a CSV. The current filters apply.
