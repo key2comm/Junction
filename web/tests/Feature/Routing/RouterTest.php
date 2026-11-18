@@ -223,6 +223,32 @@ class RouterTest extends TestCase
         $this->assertSame('RU', DB::scalar("SELECT softswitch_dial_country('74951234567')"));
     }
 
+    public function test_service_numbers_only_use_rates_for_the_exact_number(): void
+    {
+        $this->customer->update(['dialing_scope' => 'nanp']);
+        // India (91) is in the tariff and with a cheap carrier; 911 only with the 911 carrier.
+        $this->rate($this->sell, '91', '0.10');
+        $india = $this->vendor('India', '0.001', prefix: '91');
+        $this->assertSame('no_sell_rate', $this->route('911')['reason']); // the tariff has no 911 rate
+
+        $this->rate($this->sell, '911', '0');
+        $this->assertSame('no_route', $this->route('911')['reason']); // no carrier has an exact 911 rate
+
+        $emergency = $this->vendor('Emergency', '0.02', prefix: '911');
+        $routes = app(\App\Services\Router::class)->route($this->customer->fresh(), '911');
+        $this->assertSame([$emergency->id], array_values(array_unique(array_column($routes['attempts'], 'trunk_id'))));
+        $this->assertSame('911', $routes['sell_prefix']);
+
+        // 211 isn't an emergency number: a carrier dearer than the tariff is still refused.
+        $this->rate($this->sell, '211', '0');
+        $this->vendor('Info', '0.02', prefix: '211');
+        $this->assertSame('negative_margin', $this->route('211')['reason']);
+
+        // Other numbers still match the longest prefix as before.
+        $this->customer->update(['dialing_scope' => 'international']);
+        $this->assertSame('91', app(\App\Services\Router::class)->route($this->customer->fresh(), '919876543210')['sell_prefix']);
+    }
+
     public function test_max_duration_comes_from_available_funds_in_whole_increments(): void
     {
         $this->vendor('V', '0.01');

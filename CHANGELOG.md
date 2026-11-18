@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Emergency and service numbers
+- **Fixed: only carriers with the exact number get these calls.** 211, 311, 511, 711, 811, 911, 933 and 988 now only match a rate for that exact number (for example `911`).
+  - Before this, they also matched country rates that begin with the same digits, so any carrier with an India (`91`) rate could get a 911 call. 988 matched Iran (`98`), 933 Afghanistan (`93`), 711 Russia (`7`), and so on.
+  - The customer's tariff needs the exact number too. Without it, the call is refused (no rate) rather than billed at a country's rate.
+- **911, 933 and 988 are never refused for margin.** They go to the carrier even when it costs more than the customer's rate, so a 0 rate in the tariff (free emergency calls) works.
+
 ## v1.0.4 (2026-11-18)
 
 ### Emergency numbers
