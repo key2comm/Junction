@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v1.0.5 (2026-11-18)
 
 ### Emergency and service numbers
 - **Fixed: only carriers with the exact number get these calls.** 211, 311, 511, 711, 811, 911, 933 and 988 now only match a rate for that exact number (for example `911`).
