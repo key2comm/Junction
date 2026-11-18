@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v1.0.4 (2026-11-18)
 
 ### Emergency numbers
 - **911, 933 and 988 skip the funds check.** A prepaid customer with no balance, or a postpaid one over their credit limit, can still make them, and the call isn't cut off when funds run out. They're still rated and billed from the tariff afterwards. 211, 311, 511, 711 and 811 still need funds.
