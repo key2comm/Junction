@@ -22,6 +22,12 @@ class DialCountries
 {
     public const NANP = 'NANP';
 
+    /** Emergency and non-emergency 3-digit numbers: allowed under every dialing rule, as Canada/USA calls (migration 000036). */
+    public const SERVICE_CODES = ['211', '311', '511', '711', '811', '911', '933', '988'];
+
+    /** Emergency numbers: they also skip the funds check (migration 000037). */
+    public const EMERGENCY = ['911', '933', '988'];
+
     /** code => [name, region, prefixes] */
     public const ALL = [
         'NANP' => ['Canada / USA', 'North America', ['1']],

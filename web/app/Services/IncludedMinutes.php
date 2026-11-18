@@ -6,6 +6,7 @@ use App\Models\Account;
 use App\Models\BillingProfile;
 use App\Models\Cdr;
 use App\Models\Rate;
+use App\Support\DialCountries;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
@@ -67,7 +68,13 @@ class IncludedMinutes
 
     public static function isNanp(string $number): bool
     {
-        return DB::selectOne('SELECT softswitch_dial_country(?) AS c', [preg_replace('/\D/', '', $number)])->c === 'NANP';
+        $digits = preg_replace('/\D/', '', $number);
+        // 3-digit service numbers (911, 211...) would otherwise read as countries (India, South Sudan...).
+        if (in_array($digits, DialCountries::SERVICE_CODES, true)) {
+            return true;
+        }
+
+        return DB::selectOne('SELECT softswitch_dial_country(?) AS c', [$digits])->c === 'NANP';
     }
 
     /** Included seconds used this month (for the customer page). */

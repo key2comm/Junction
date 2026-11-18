@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Emergency numbers
+- **911, 933 and 988 skip the funds check.** A prepaid customer with no balance, or a postpaid one over their credit limit, can still make them, and the call isn't cut off when funds run out. They're still rated and billed from the tariff afterwards. 211, 311, 511, 711 and 811 still need funds.
+- **Fixed:** the 3-digit service numbers from 1.0.3 weren't covered by a billing profile's unlimited or included Canada/USA minutes when the call was billed. They were still read as country codes at that step (911 as India), so they paid the tariff rate. They're now covered as 1.0.3 said.
+
 ## v1.0.3 (2026-11-18)
 
 ### Dialing rules

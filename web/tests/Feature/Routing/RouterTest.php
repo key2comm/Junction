@@ -215,6 +215,9 @@ class RouterTest extends TestCase
         $this->vendor('E', '0', prefix: '911');
         $this->assertSame('ok', $this->route('911')['status']);
         $this->customer->update(['dialing_scope' => 'nanp']);
+        // ...and plans' Canada/USA minutes cover them when the call is rated.
+        $this->assertTrue(\App\Services\IncludedMinutes::isNanp('911'));
+        $this->assertFalse(\App\Services\IncludedMinutes::isNanp('919876543210'));
 
         $this->assertSame('KZ', DB::scalar("SELECT softswitch_dial_country('77012345678')"));
         $this->assertSame('RU', DB::scalar("SELECT softswitch_dial_country('74951234567')"));
@@ -233,6 +236,14 @@ class RouterTest extends TestCase
         // $0.04 cannot pay for the first 60s increment.
         DB::table('accounts')->where('id', $this->customer->id)->update(['balance' => '0.04']);
         $this->assertSame('insufficient_funds', $this->route()['reason']);
+
+        // Emergency numbers skip the funds check, with no time limit from the balance; 211 doesn't.
+        $this->rate($this->sell, '911', '0.05');
+        $this->rate($this->sell, '211', '0.05');
+        $this->vendor('E', '0.01', prefix: '911');
+        $this->vendor('F', '0.01', prefix: '211');
+        $this->assertSame(['ok', 14400], [$this->route('911')['status'], $this->route('911')['max_duration']]);
+        $this->assertSame('insufficient_funds', $this->route('211')['reason']);
 
         // Postpaid credit counts as funds.
         $this->customer->update(['credit_limit' => '1']);
