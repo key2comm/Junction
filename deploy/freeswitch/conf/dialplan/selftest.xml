@@ -18,6 +18,11 @@
         <action application="respond" data="503 Service Unavailable"/>
       </condition>
     </extension>
+    <extension name="vendor-forbidden">
+      <condition field="destination_number" expression="^8403\d+$">
+        <action application="respond" data="403 Forbidden"/>
+      </condition>
+    </extension>
     <extension name="vendor-busy">
       <condition field="destination_number" expression="^8486\d+$">
         <action application="respond" data="486 Busy Here"/>

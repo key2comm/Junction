@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Routing
+- **Fixed: a call stopped at the first carrier that refused it.** The switch only tried the next carrier in the LCR group for a few answers (408, 480, 488 and 5xx). Any other refusal, such as 403 Forbidden, went straight back to the caller, even with more carriers left to try.
+  - Now every failed attempt moves on to the next carrier, up to the LCR group's maximum attempts.
+  - Only answers about the called party end the call: 486 or 600 (busy), 487 (the caller hung up), 603 (declined), 604 (the number doesn't exist anywhere), or ringing with no answer.
+  - The call self-test has a new check: a carrier that refuses with 403, then the next carrier completes the call.
+
 ## v1.0.7 (2026-11-19)
 
 ### Carrier SIP trunks

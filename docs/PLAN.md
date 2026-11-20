@@ -67,7 +67,7 @@ flowchart LR
 
 - Longest-prefix match against each vendor's current rate deck, filtered by the customer's routing plan (allowed vendors, route classes such as premium/standard/CLI).
 - Vendors ranked by cost, then priority or weight, and adjusted by quality (ASR/ACD/PDD). Static overrides are available (fixed order, load-balance percentages, blocked vendors per prefix).
-- Failover to the next vendor on configurable SIP codes (503/502/408/480 and others), with a maximum number of attempts and a time budget. 486 (busy) and 404 (not found) are final and don't trigger failover.
+- Failover to the next vendor on any failed attempt (403, 404, 5xx, timeouts...), with a maximum number of attempts and a time budget. Answers about the called party are final and don't trigger failover: 486 and 600 (busy), 487 (caller hung up), 603 (declined), 604 (doesn't exist anywhere), or ringing with no answer.
 - Every attempt is logged so "why did this call go to vendor X" can be answered from the CDR.
 
 ## API

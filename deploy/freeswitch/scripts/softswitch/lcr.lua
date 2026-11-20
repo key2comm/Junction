@@ -18,15 +18,25 @@ local lit = util.lit
 
 local M = {}
 
--- Vendor failures worth trying the next gateway/vendor for. Anything else
--- (busy, not found, no answer, caller hung up...) goes straight back to the caller.
-local FAILOVER_SIP = { [408] = true, [480] = true, [488] = true, [500] = true, [502] = true, [503] = true, [504] = true }
-local FAILOVER_CAUSE = {
-  NORMAL_TEMPORARY_FAILURE = true, RECOVERY_ON_TIMER_EXPIRE = true, DESTINATION_OUT_OF_ORDER = true,
-  NETWORK_OUT_OF_ORDER = true, GATEWAY_DOWN = true, PROGRESS_TIMEOUT = true, SWITCH_CONGESTION = true,
-  NORMAL_CIRCUIT_CONGESTION = true, INCOMPATIBLE_DESTINATION = true, NO_ROUTE_TRANSIT_NET = true,
-  INVALID_GATEWAY = true, NO_USER_RESPONSE = true, SERVICE_UNAVAILABLE = true,
+-- A failed vendor attempt fails over to the next gateway/vendor, unless the
+-- answer is about the called party: those go straight back to the caller.
+-- So a carrier that refuses the call (403, 401, 404, 5xx...) doesn't end it.
+local FINAL_SIP = {
+  [486] = true, -- Busy Here
+  [487] = true, -- Request Terminated (the caller hung up)
+  [600] = true, -- Busy Everywhere
+  [603] = true, -- Decline
+  [604] = true, -- Does Not Exist Anywhere
 }
+-- Without a SIP code (e.g. the call rang out), the hangup cause decides.
+local FINAL_CAUSE = {
+  USER_BUSY = true, ORIGINATOR_CANCEL = true, NO_ANSWER = true, NORMAL_CLEARING = true,
+  CALL_REJECTED_BY_USER = true, LOSE_RACE = true,
+}
+local function failover(code, cause)
+  if code then return not FINAL_SIP[code] end
+  return not FINAL_CAUSE[cause]
+end
 
 -- "2.5" calls per second -> limit app rate syntax ("2/1"; below 1 cps: "1/N").
 local function cps_rate(cps)
@@ -186,8 +196,8 @@ function M.run(session, u, ctx)
         end
         last_cause = cause ~= "" and cause or "NORMAL_TEMPORARY_FAILURE"
         last_code = code
-        if not (FAILOVER_SIP[code] or FAILOVER_CAUSE[last_cause]) then
-          stop = true -- final answer from the vendor (busy, not found, no answer...)
+        if not failover(code, last_cause) then
+          stop = true -- final answer about the called party (busy, declined, caller hung up...)
           break
         end
         u.log("INFO", "attempt " .. n .. " via " .. gw.name .. " failed (" .. last_cause .. (code and (", sip " .. code) or "") .. "), failing over")

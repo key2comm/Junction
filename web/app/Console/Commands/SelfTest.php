@@ -100,6 +100,7 @@ class SelfTest extends Command
             $scenarios = [
                 'Answered call is rated' => fn () => $this->answered($esl, $ip),
                 'Fails over on 503 to the next carrier' => fn () => $this->failover($esl, $ip),
+                'Fails over when a carrier refuses (403)' => fn () => $this->refusedFailover($esl, $ip),
                 'Busy is final (no failover)' => fn () => $this->busy($esl, $ip),
                 'Unknown customer is refused (403)' => fn () => $this->unknownCustomer($esl, $ip),
                 'Blocked destination is refused (403)' => fn () => $this->blocked($esl, $ip),
@@ -186,6 +187,18 @@ class SelfTest extends Command
         $this->check((int) $cdr->trunk_id === $this->f['trunks']['ok']->id, 'not carried by the second carrier');
 
         return 'attempts: 503 → 200';
+    }
+
+    private function refusedFailover(EventSocket $esl, string $ip): string
+    {
+        $this->routes(['403', 'ok']); // the refusing carrier is cheaper, so it is tried first
+        $cdr = $this->placeCall($esl, $ip, self::TECH.self::DEST, hold: 2, expectAnswer: true);
+
+        $codes = $cdr->attemptLog()->orderBy('attempt')->pluck('sip_code')->all();
+        $this->check($codes === [403, 200], 'attempt SIP codes '.json_encode($codes).', expected [403,200]');
+        $this->check((int) $cdr->trunk_id === $this->f['trunks']['ok']->id, 'not carried by the second carrier');
+
+        return 'attempts: 403 → 200';
     }
 
     private function busy(EventSocket $esl, string $ip): string
@@ -576,7 +589,7 @@ class SelfTest extends Command
         ]);
 
         // name => [buy rate, tech prefix that tells the fake carrier what to do]
-        $behaviours = ['503' => ['0.010', '8503'], 'busy' => ['0.015', '8486'], 'ok' => ['0.020', '8200']];
+        $behaviours = ['503' => ['0.010', '8503'], '403' => ['0.012', '8403'], 'busy' => ['0.015', '8486'], 'ok' => ['0.020', '8200']];
         $trunks = $routes = [];
         foreach ($behaviours as $name => [$rate, $prefix]) {
             $trunk = Trunk::create(['account_id' => $vendor->id, 'name' => "selftest {$name}", 'rate_deck_id' => $deck("buy {$name}", $rate)->id,
