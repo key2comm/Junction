@@ -255,6 +255,42 @@ class CallFlowTest extends TestCase
         rmdir($dir);
     }
 
+    public function test_a_trunk_can_send_from_the_pbx_port(): void
+    {
+        $dir = sys_get_temp_dir().'/ss-gw-'.Str::random(6);
+        mkdir("{$dir}/pbx-port", 0777, true);
+        $esl = Mockery::mock(EventSocket::class)->shouldIgnoreMissing();
+        (new GatewaySync($esl, $dir))->sync();
+        $this->assertFileExists("{$dir}/vendor-a.xml");
+
+        // Moved to the PBX port: unloaded from the carrier profile, loaded by the internal one.
+        $this->gateway->update(['source_port' => 'pbx']);
+        $esl = Mockery::mock(EventSocket::class);
+        $esl->shouldReceive('api')->with('sofia profile internal killgw vendor-a')->once();
+        $esl->shouldReceive('api')->with('sofia profile carrier killgw vendor-a')->once();
+        $esl->shouldReceive('api')->with('reloadxml')->once();
+        $esl->shouldReceive('api')->with('sofia profile internal rescan')->once();
+        $esl->shouldReceive('api')->with('sofia profile carrier rescan')->once();
+        $result = (new GatewaySync($esl, $dir))->sync();
+        $this->assertSame([['vendor-a'], ['vendor-a']], [$result['written'], $result['removed']]);
+        $this->assertFileExists("{$dir}/pbx-port/vendor-a.xml");
+        $this->assertFileDoesNotExist("{$dir}/vendor-a.xml");
+
+        array_map('unlink', glob("{$dir}/pbx-port/*"));
+        rmdir("{$dir}/pbx-port");
+        rmdir($dir);
+    }
+
+    public function test_tls_trunks_send_from_the_carrier_port(): void
+    {
+        $admin = \App\Models\User::factory()->create();
+        $vendor = $this->trunk->account;
+        $data = ['label' => 'Main', 'host' => '203.0.113.10', 'port' => 5061, 'transport' => 'tls', 'source_port' => 'pbx', 'priority' => 1, 'weight' => 100];
+        $this->actingAs($admin)->post(route('accounts.sip-trunks.store', $vendor), $data)->assertSessionHasErrors('source_port');
+        $this->actingAs($admin)->post(route('accounts.sip-trunks.store', $vendor), [...$data, 'transport' => 'udp', 'port' => 5060])->assertSessionHasNoErrors();
+        $this->assertSame('pbx', Gateway::query()->where('host', '203.0.113.10')->value('source_port'));
+    }
+
     public function test_firewall_allowlist_covers_customers_and_vendor_hosts(): void
     {
         config(['softswitch.static_carrier_ips' => '192.0.2.50']);

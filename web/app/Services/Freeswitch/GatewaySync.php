@@ -12,7 +12,9 @@ use Throwable;
 
 /**
  * Writes one FreeSWITCH gateway file per enabled vendor gateway into the
- * carrier profile's gateway directory, then makes FreeSWITCH pick up the
+ * gateway directory of the profile it sends from: the carrier profile's
+ * directory, or its pbx-port/ subdirectory for trunks that send from the PBX
+ * port (gateways.source_port = pbx; the internal profile includes those), then makes FreeSWITCH pick up the
  * changes: changed or removed gateways are unloaded (killgw) and the profile
  * is rescanned. Unchanged gateways are left alone, so live calls on them are
  * not disturbed.
@@ -20,6 +22,9 @@ use Throwable;
 class GatewaySync
 {
     public const PROFILE = 'carrier';
+
+    /** gateways.source_port => [FreeSWITCH profile, subdirectory of the gateway directory]. */
+    public const PROFILES = ['carrier' => ['carrier', ''], 'pbx' => ['internal', 'pbx-port']];
 
     public function __construct(private EventSocket $esl, private string $directory) {}
 
@@ -41,46 +46,57 @@ class GatewaySync
             throw new RuntimeException("Gateway directory {$this->directory} is missing or not writable.");
         }
 
-        $wanted = [];
+        $wanted = []; // path => xml
         $gateways = Gateway::query()->where('enabled', true)
             ->whereHas('trunk', fn ($q) => $q->where('enabled', true))
             ->orderBy('name')->get();
         foreach ($gateways as $gateway) {
-            $wanted["{$gateway->name}.xml"] = $this->render($gateway);
+            $wanted["{$this->dir($gateway->source_port ?? 'carrier')}/{$gateway->name}.xml"] = $this->render($gateway);
         }
 
         $written = $removed = [];
+        $touched = []; // profile => gateway names to unload
         $unchanged = 0;
-        foreach ($wanted as $file => $xml) {
-            $path = "{$this->directory}/{$file}";
+        foreach ($wanted as $path => $xml) {
             if (is_file($path) && hash_equals(hash_file('sha256', $path), hash('sha256', $xml))) {
                 $unchanged++;
 
                 continue;
+            }
+            if (! is_dir(dirname($path))) {
+                throw new RuntimeException('Gateway directory '.dirname($path).' is missing (re-run the installer).');
             }
             // Atomic replace so FreeSWITCH never reads a half-written file.
             $tmp = "{$path}.tmp";
             File::put($tmp, $xml);
             chmod($tmp, 0640);
             rename($tmp, $path);
-            $written[] = basename($file, '.xml');
+            $written[] = basename($path, '.xml');
+            $touched[$this->profileOf($path)][] = basename($path, '.xml');
         }
-        foreach (glob("{$this->directory}/*.xml") ?: [] as $path) {
-            if (! isset($wanted[basename($path)])) {
-                unlink($path);
-                $removed[] = basename($path, '.xml');
+        foreach (self::PROFILES as $port => [$profile]) {
+            foreach (glob($this->dir($port).'/*.xml') ?: [] as $path) {
+                if (! isset($wanted[$path])) {
+                    unlink($path);
+                    $removed[] = basename($path, '.xml');
+                    $touched[$profile][] = basename($path, '.xml');
+                }
             }
         }
 
         $reloaded = false;
-        if ($written !== [] || $removed !== []) {
+        if ($touched !== []) {
             try {
-                foreach ([...$written, ...$removed] as $name) {
-                    $this->esl->api('sofia profile '.self::PROFILE." killgw {$name}");
+                foreach ($touched as $profile => $names) {
+                    foreach ($names as $name) {
+                        $this->esl->api("sofia profile {$profile} killgw {$name}");
+                    }
                 }
                 // Includes are only re-read by reloadxml; rescan then loads new gateways.
                 $this->esl->api('reloadxml');
-                $this->esl->api('sofia profile '.self::PROFILE.' rescan');
+                foreach (array_keys($touched) as $profile) {
+                    $this->esl->api("sofia profile {$profile} rescan");
+                }
                 $reloaded = true;
             } catch (Throwable $e) {
                 // Files are in place; FreeSWITCH loads them on its next start.
@@ -89,6 +105,24 @@ class GatewaySync
         }
 
         return compact('written', 'removed', 'unchanged', 'reloaded');
+    }
+
+    private function dir(string $port): string
+    {
+        $sub = self::PROFILES[$port][1] ?? '';
+
+        return $sub === '' ? $this->directory : "{$this->directory}/{$sub}";
+    }
+
+    private function profileOf(string $path): string
+    {
+        foreach (self::PROFILES as $port => [$profile]) {
+            if (dirname($path) === $this->dir($port)) {
+                return $profile;
+            }
+        }
+
+        return self::PROFILE;
     }
 
     public function render(Gateway $gateway): string

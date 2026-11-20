@@ -71,6 +71,7 @@ const props = defineProps<{
         routes_count: number;
         sip_trunks: (SipTrunkValues & { id: number; name: string })[];
         transports: string[];
+        ports: { carrier: number; pbx: number };
     } | null;
     plan: Plan | null;
     ledger: { id: number; type: string; amount: string; balance_after: string; description: string; created_at: string; effective_at: string }[];
@@ -350,7 +351,8 @@ const select = 'form-select w-auto';
                                 <td class="small text-secondary">
                                     {{ [g.send_rpid ? 'RPID' : null, g.send_pai ? 'PAI' : null, g.username ? `auth ${g.username}${g.register ? ' (registers)' : ''}` : 'IP auth',
                                         g.from_user ? `From user ${g.from_user}` : null, g.from_domain ? `From domain ${g.from_domain}` : null,
-                                        g.outbound_proxy ? `proxy ${g.outbound_proxy}` : null].filter(Boolean).join(' · ') }}
+                                        g.outbound_proxy ? `proxy ${g.outbound_proxy}` : null,
+                                        g.source_port === 'pbx' ? `sends from port ${carrier.ports.pbx}` : null].filter(Boolean).join(' · ') }}
                                 </td>
                                 <td class="text-end tabular-nums">{{ g.priority }}<span v-if="g.weight !== 100" class="text-secondary"> / {{ g.weight }}</span></td>
                                 <td class="text-end text-nowrap">
@@ -370,7 +372,7 @@ const select = 'form-select w-auto';
                 <details class="card card-body" :open="carrier.sip_trunks.length === 0">
                     <summary class="fw-medium">Add SIP trunk</summary>
                     <Form v-bind="GatewayController.store.form(account.id)" reset-on-success class="mt-3 ss-stack-3" v-slot="{ errors, processing }">
-                        <SipTrunkFields :transports="carrier.transports" :errors="errors" id-prefix="new" />
+                        <SipTrunkFields :transports="carrier.transports" :ports="carrier.ports" :errors="errors" id-prefix="new" />
                         <div><Button :disabled="processing">Add SIP trunk</Button></div>
                     </Form>
                 </details>

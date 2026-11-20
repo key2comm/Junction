@@ -14,6 +14,7 @@ export type SipTrunkValues = {
     from_user: string | null;
     from_domain: string | null;
     outbound_proxy: string | null;
+    source_port?: 'carrier' | 'pbx';
     send_rpid: boolean;
     send_pai: boolean;
     register: boolean;
@@ -25,6 +26,8 @@ export type SipTrunkValues = {
 const props = defineProps<{
     gateway?: Partial<SipTrunkValues>;
     transports: string[];
+    /** The switch's SIP ports: carrier (5080) and PBX (5060). */
+    ports?: { carrier: number; pbx: number };
     errors: Record<string, string | undefined>;
     /** Prefix for element ids, so two forms can be on one page. */
     idPrefix?: string;
@@ -32,7 +35,7 @@ const props = defineProps<{
 
 const id = (name: string) => `${props.idPrefix ?? 'st'}_${name}`;
 const g = props.gateway ?? {};
-const advancedOpen = !!(g.username || g.has_password || g.from_user || g.from_domain || g.outbound_proxy || g.register || g.send_pai || g.send_rpid === false);
+const advancedOpen = !!(g.username || g.has_password || g.from_user || g.from_domain || g.outbound_proxy || g.register || g.send_pai || g.send_rpid === false || g.source_port === 'pbx');
 </script>
 
 <template>
@@ -100,6 +103,15 @@ const advancedOpen = !!(g.username || g.has_password || g.from_user || g.from_do
                     <Input :id="id('outbound_proxy')" name="outbound_proxy" :default-value="g.outbound_proxy ?? ''" placeholder="None" class="font-monospace" />
                     <p class="small text-secondary">Host or IP, optionally :port. Calls are sent through it.</p>
                     <InputError :message="errors.outbound_proxy" />
+                </div>
+                <div class="ss-grid gap-1">
+                    <Label :for="id('source_port')">Send calls from</Label>
+                    <select :id="id('source_port')" name="source_port" :class="selectClass">
+                        <option value="carrier" :selected="(g.source_port ?? 'carrier') === 'carrier'">Port {{ ports?.carrier ?? 5080 }} (carrier port)</option>
+                        <option value="pbx" :selected="g.source_port === 'pbx'">Port {{ ports?.pbx ?? 5060 }}</option>
+                    </select>
+                    <p class="small text-secondary">The switch's port this carrier gets calls from. Use {{ ports?.pbx ?? 5060 }} if it only accepts calls from {{ ports?.pbx ?? 5060 }}. Not for TLS.</p>
+                    <InputError :message="errors.source_port" />
                 </div>
                 <div class="ss-grid gap-1">
                     <Label :for="id('weight')">Weight</Label>

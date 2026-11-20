@@ -195,11 +195,12 @@ class AccountController extends Controller
             'routes_count' => $trunk ? $trunk->routes()->count() : 0,
             'sip_trunks' => $gateways->map(fn ($g) => [
                 ...$g->only(['id', 'label', 'name', 'host', 'port', 'username', 'from_user', 'from_domain', 'outbound_proxy',
-                    'send_rpid', 'send_pai', 'register', 'enabled', 'priority', 'weight']),
+                    'send_rpid', 'send_pai', 'register', 'enabled', 'priority', 'weight', 'source_port']),
                 'transport' => $g->transport->value,
                 'has_password' => $g->getRawOriginal('password') !== null,
             ])->values(),
             'transports' => Transport::values(),
+            'ports' => self::sipPorts(),
         ];
     }
 
@@ -334,6 +335,12 @@ class AccountController extends Controller
             'recent' => BillingCharge::query()->where('account_id', $account->id)->latest('id')->limit(10)
                 ->get(['id', 'kind', 'description', 'amount', 'effective_at']),
         ];
+    }
+
+    /** The switch's SIP ports a carrier SIP trunk can send calls from (gateways.source_port). */
+    public static function sipPorts(): array
+    {
+        return ['carrier' => (int) config('softswitch.carrier_port'), 'pbx' => (int) config('softswitch.pbx_port')];
     }
 
     private function formOptions(): array

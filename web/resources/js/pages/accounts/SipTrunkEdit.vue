@@ -12,6 +12,7 @@ const props = defineProps<{
     account: { id: number; name: string; code: string };
     gateway: SipTrunkValues & { id: number };
     transports: string[];
+    ports: { carrier: number; pbx: number };
 }>();
 
 defineOptions({
@@ -31,7 +32,7 @@ defineOptions({
     <div class="ss-maxw-3xl ss-stack-4">
         <Heading :title="`Edit SIP trunk ${gateway.label}`" :description="account.name" />
         <Form v-bind="GatewayController.update.form([account.id, gateway.id])" class="ss-stack-4" v-slot="{ errors, processing }">
-            <SipTrunkFields :gateway="gateway" :transports="transports" :errors="errors" />
+            <SipTrunkFields :gateway="gateway" :transports="transports" :ports="ports" :errors="errors" />
             <label v-if="gateway.has_password" class="d-flex align-items-center gap-2">
                 <input type="checkbox" name="clear_password" value="1" class="form-check-input m-0" /> Remove the saved auth password
             </label>

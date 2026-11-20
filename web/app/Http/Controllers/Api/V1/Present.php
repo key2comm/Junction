@@ -112,7 +112,7 @@ final class Present
             'transport' => $g->transport->value, 'username' => $g->username, 'has_password' => $g->getRawOriginal('password') !== null,
             'register' => $g->register, 'enabled' => $g->enabled, 'priority' => $g->priority, 'weight' => $g->weight,
             'from_user' => $g->from_user, 'from_domain' => $g->from_domain, 'outbound_proxy' => $g->outbound_proxy,
-            'send_rpid' => $g->send_rpid, 'send_pai' => $g->send_pai];
+            'send_rpid' => $g->send_rpid, 'send_pai' => $g->send_pai, 'source_port' => $g->source_port];
     }
 
     public static function plan(RoutingPlan $p, bool $withRoutes = false): array

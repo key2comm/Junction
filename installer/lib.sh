@@ -68,7 +68,7 @@ show_settings() {
 	info "Hostname:    $SS_HOSTNAME"
 	info "Public IP:   $SS_PUBLIC_IP"
 	info "SSH port:    $SS_SSH_PORT"
-	info "SIP ports:   PBX $SS_PBX_PORT/$SS_PBX_TLS_PORT, carriers $SS_CARRIER_PORT"
+	info "SIP ports:   PBX $SS_PBX_PORT/$SS_PBX_TLS_PORT, carriers $SS_CARRIER_PORT (or $SS_PBX_PORT)"
 	info "RTP range:   $SS_RTP_START-$SS_RTP_END"
 	info "Carrier IPs: ${SS_CARRIER_IPS:-(none yet)}"
 	case "$SS_HA_ROLE" in

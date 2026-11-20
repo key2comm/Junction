@@ -71,7 +71,7 @@ class RoutingController extends Controller
     {
         $clearPassword = $request->exists('password') && $request->input('password') === null;
         $request->replace([...$gateway->only(['name', 'label', 'host', 'port', 'username', 'from_user', 'from_domain', 'outbound_proxy',
-            'send_rpid', 'send_pai', 'register', 'enabled', 'priority', 'weight']),
+            'send_rpid', 'send_pai', 'register', 'enabled', 'priority', 'weight', 'source_port']),
             'transport' => $gateway->transport->value, ...$request->all()]);
         $data = $admin->validated($request, $trunk, $gateway);
         if (! $request->filled('password')) {

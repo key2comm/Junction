@@ -51,7 +51,7 @@ chown -R root:freeswitch "$conf" "$scripts"
 find "$conf" "$scripts" -type d -exec chmod 0750 {} +
 # Gateway files, PBX users and IVR greetings are written by the app's queue
 # worker (a member of the freeswitch group).
-install -d -o freeswitch -g freeswitch -m 2770 "$conf/sip_profiles/carrier" "$conf/directory/pbx" "$conf/acl" "$SS_FS_GREETINGS"
+install -d -o freeswitch -g freeswitch -m 2770 "$conf/sip_profiles/carrier" "$conf/sip_profiles/carrier/pbx-port" "$conf/directory/pbx" "$conf/acl" "$SS_FS_GREETINGS"
 install -d -o freeswitch -g freeswitch -m 0750 "$SS_FS_LOG/xml_cdr"
 
 # Certificates (tls/ is FreeSWITCH's certs_dir). FreeSWITCH writes its WebRTC
@@ -133,7 +133,7 @@ for profile in carrier internal selftest; do
 	[ "$running" = 1 ] || fs_failed "SIP profile '$profile' is not running (it may not be able to use $SS_PUBLIC_IP)"
 done
 info "FreeSWITCH running: $("$fs_cli" -x version | awk 'NR==1')"
-info "SIP profiles: carrier on $SS_PUBLIC_IP:$SS_CARRIER_PORT, internal on $SS_PUBLIC_IP:$SS_PBX_PORT"
+info "SIP profiles: carrier on $SS_PUBLIC_IP:$SS_CARRIER_PORT, internal (PBX, and carriers too) on $SS_PUBLIC_IP:$SS_PBX_PORT"
 
 # Now that FreeSWITCH logs exist, turn on its fail2ban jail.
 . "$SS_ROOT/installer/steps/30-fail2ban.sh"

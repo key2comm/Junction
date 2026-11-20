@@ -677,6 +677,14 @@
               "tls"
             ]
           },
+          "source_port": {
+            "type": "string",
+            "enum": [
+              "carrier",
+              "pbx"
+            ],
+            "description": "The switch port calls are sent from: carrier (5080 by default) or pbx (5060 by default). TLS trunks use carrier."
+          },
           "username": {
             "type": [
               "string",
@@ -721,6 +729,14 @@
               "tcp",
               "tls"
             ]
+          },
+          "source_port": {
+            "type": "string",
+            "enum": [
+              "carrier",
+              "pbx"
+            ],
+            "description": "The switch port calls are sent from: carrier (5080 by default) or pbx (5060 by default). TLS trunks use carrier."
           },
           "username": {
             "type": [

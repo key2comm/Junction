@@ -66,7 +66,10 @@
       come from 127.0.0.1 (fail2ban ignores it); nginx rate-limits /ws instead.
     -->
     <profile name="internal">
-      <gateways/>
+      <gateways>
+        <!-- Carrier SIP trunks set to send from the PBX port (generated from the database). -->
+        <X-PRE-PROCESS cmd="include" data="../sip_profiles/carrier/pbx-port/*.xml"/>
+      </gateways>
       <domains>
         <domain name="all" alias="false" parse="false"/>
       </domains>

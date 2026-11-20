@@ -40,11 +40,12 @@ class GatewayController extends Controller
             'account' => $account->only(['id', 'name', 'code']),
             'gateway' => [
                 ...$gateway->only(['id', 'label', 'host', 'port', 'username', 'from_user', 'from_domain', 'outbound_proxy',
-                    'send_rpid', 'send_pai', 'register', 'enabled', 'priority', 'weight']),
+                    'send_rpid', 'send_pai', 'register', 'enabled', 'priority', 'weight', 'source_port']),
                 'transport' => $gateway->transport->value,
                 'has_password' => $gateway->getRawOriginal('password') !== null,
             ],
             'transports' => Transport::values(),
+            'ports' => AccountController::sipPorts(),
         ]);
     }
 
@@ -99,6 +100,7 @@ class GatewayController extends Controller
             'from_domain' => trim((string) $request->input('from_domain')) ?: null,
             'outbound_proxy' => trim((string) $request->input('outbound_proxy')) ?: null,
             'register' => $request->boolean('register'),
+            'source_port' => $request->input('source_port') ?: ($gateway?->source_port ?? 'carrier'),
             'enabled' => $request->boolean('enabled'),
             // The admin form sends "checkboxes" (an unticked box is off); the API may leave them out.
             'send_rpid' => $request->has('send_rpid') || $request->boolean('checkboxes') ? $request->boolean('send_rpid') : ($gateway?->send_rpid ?? true),
@@ -121,6 +123,8 @@ class GatewayController extends Controller
             'host' => ['required', 'string', 'max:255', $hostRule],
             'port' => ['required', 'integer', 'between:1,65535'],
             'transport' => ['required', Rule::enum(Transport::class)],
+            // The PBX port has no TLS listener: TLS trunks send from the carrier port.
+            'source_port' => ['required', Rule::in(['carrier', 'pbx']), Rule::when($request->input('transport') === 'tls', [Rule::in(['carrier'])])],
             'password' => ['nullable', 'string', 'max:128', 'not_regex:/\$\{/'],
             'username' => ['nullable', 'string', 'max:128', ...$safe],
             'from_user' => ['nullable', 'string', 'max:128', 'regex:/^[A-Za-z0-9_.+*#-]+$/'],
@@ -137,6 +141,7 @@ class GatewayController extends Controller
             'label.required' => 'Give the SIP trunk a name, e.g. Primary or Failover.',
             'from_user.regex' => 'Letters, digits and + * # . _ - only.',
             'outbound_proxy.regex' => 'Enter a host or IP, optionally with :port.',
+            'source_port.in' => 'TLS trunks send from the carrier port (the PBX port has no TLS).',
         ]);
 
         return $data;

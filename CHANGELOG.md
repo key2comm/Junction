@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Carrier SIP trunks
+- **Send calls from port 5060:** each carrier SIP trunk has a new **Send calls from** option (under Advanced options). Choose port 5060 for carriers that only accept calls from 5060. The default stays 5080 (the carrier port), so existing trunks don't change. TLS trunks always send from the carrier port.
+- Carriers could already send calls to either port: 5060 accepts calls from carrier IPs without a password and routes them like 5080. The installer's summary now says so.
+
 ## v1.0.6 (2026-11-19)
 
 ### Blocked numbers
