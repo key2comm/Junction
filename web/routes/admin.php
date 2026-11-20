@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\AccountController;
 use App\Http\Controllers\Admin\BillingItemController;
 use App\Http\Controllers\Admin\BillingProfileController;
 use App\Http\Controllers\Admin\AccountIpController;
+use App\Http\Controllers\Admin\BlockedNumberController;
 use App\Http\Controllers\Admin\AlertController;
 use App\Http\Controllers\Admin\CdrController;
 use App\Http\Controllers\Admin\DidController;
@@ -42,6 +43,10 @@ Route::middleware(['auth', 'admin'])->group(function () {
         Route::post('accounts/{account}/ips', [AccountIpController::class, 'store'])->name('accounts.ips.store');
         Route::patch('accounts/{account}/ips/{ip}', [AccountIpController::class, 'update'])->name('accounts.ips.update');
         Route::delete('accounts/{account}/ips/{ip}', [AccountIpController::class, 'destroy'])->name('accounts.ips.destroy');
+        // Customers → Blocked numbers: numbers the customer may not call or receive calls from.
+        Route::post('accounts/{account}/blocked-numbers', [BlockedNumberController::class, 'store'])->middleware('throttle:60,1')->name('accounts.blocked-numbers.store');
+        Route::patch('accounts/{account}/blocked-numbers/{blockedNumber}', [BlockedNumberController::class, 'update'])->name('accounts.blocked-numbers.update');
+        Route::delete('accounts/{account}/blocked-numbers/{blockedNumber}', [BlockedNumberController::class, 'destroy'])->name('accounts.blocked-numbers.destroy');
     });
 
     Route::post('accounts/{account}/portal-users', [PortalUserController::class, 'store'])->middleware('throttle:20,1')->name('accounts.portal-users.store');

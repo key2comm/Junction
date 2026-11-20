@@ -50,6 +50,12 @@ if did then
   if did.status == "banned" then return u.reject("did_banned") end
   if did.status ~= "active" then return u.reject("did_deactivated") end
   if did.account_active ~= "t" then return u.reject("account_inactive") end
+  -- The customer's blocked numbers: a caller it doesn't take calls from.
+  local caller = var("caller_id_number") or var("sip_from_user") or ""
+  if caller:match("^[%d%+%-%.%(%) ]+$") and #caller <= 32 then
+    local row = u.row(string.format("SELECT softswitch_number_blocked(%d, %s, 'inbound') AS b", tonumber(did.account_id), lit(caller)))
+    if row and row.b == "t" then return u.reject("blocked_number") end
+  end
   -- The carrier providing the DID: its inbound concurrent call limit.
   if tonumber(did.provider_id) and tonumber(did.provider_max_inbound) then
     local endpoint = require "softswitch.endpoint"

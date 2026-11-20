@@ -249,6 +249,30 @@ class RouterTest extends TestCase
         $this->assertSame('91', app(\App\Services\Router::class)->route($this->customer->fresh(), '919876543210')['sell_prefix']);
     }
 
+    public function test_a_customers_blocked_numbers_are_refused_for_that_customer_only(): void
+    {
+        $this->rate($this->sell, '1', '0.010');
+        $this->vendor('V', '0.005', prefix: '1');
+        $other = Account::factory()->create(['sell_rate_deck_id' => $this->sell->id, 'routing_plan_id' => $this->plan->id]);
+        app(Ledger::class)->payment($other, '100', 'Opening balance');
+
+        \App\Models\BlockedNumber::create(['account_id' => $this->customer->id, 'number' => '14165550100', 'direction' => 'both']);
+        \App\Models\BlockedNumber::create(['account_id' => $this->customer->id, 'number' => '14165550101', 'direction' => 'inbound']);
+
+        $this->assertSame('blocked_number', $this->route('14165550100')['reason']);
+        $this->assertSame('blocked_number', $this->route('4165550100')['reason']); // dialled as 10 digits
+        $this->assertSame('ok', $this->route('14165550199')['status']);            // only that exact number
+        $this->assertSame('ok', $this->route('14165550101')['status']);            // only calls from it are blocked
+        $this->assertSame('ok', app(Router::class)->route($other->fresh(), '14165550100')['status']); // other customers can still call it
+
+        // Calls arriving on the customer's DIDs, by caller number (route.lua).
+        $blocked = fn (string $caller, ?Account $a = null) => DB::scalar('SELECT softswitch_number_blocked(?, ?, ?)', [($a ?? $this->customer)->id, $caller, 'inbound']);
+        $this->assertTrue($blocked('+1 (416) 555-0100'));
+        $this->assertTrue($blocked('4165550101'));
+        $this->assertFalse($blocked('14165550199'));
+        $this->assertFalse($blocked('14165550100', $other));
+    }
+
     public function test_max_duration_comes_from_available_funds_in_whole_increments(): void
     {
         $this->vendor('V', '0.01');

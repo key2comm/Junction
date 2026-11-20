@@ -6,6 +6,8 @@ import InvoiceController from '@/actions/App/Http/Controllers/Admin/InvoiceContr
 import PortalUserController from '@/actions/App/Http/Controllers/Admin/PortalUserController';
 import LedgerEntryController from '@/actions/App/Http/Controllers/Admin/LedgerEntryController';
 import BillingPlan from '@/components/accounts/BillingPlan.vue';
+import BlockedNumbers from '@/components/accounts/BlockedNumbers.vue';
+import type { BlockedNumber } from '@/components/accounts/BlockedNumbers.vue';
 import type { Plan } from '@/components/accounts/BillingPlan.vue';
 import RouteTester from '@/components/accounts/RouteTester.vue';
 import VendorPayables from '@/components/accounts/VendorPayables.vue';
@@ -74,6 +76,8 @@ const props = defineProps<{
     ledger: { id: number; type: string; amount: string; balance_after: string; description: string; created_at: string; effective_at: string }[];
     timezones: string[];
     portalUsers: { id: number; name: string; email: string; created_at: string }[];
+    blockedNumbers: BlockedNumber[];
+    blockedDirections: Record<string, string>;
     vendorLedger: { id: number; type: string; amount: string; balance_after: string; description: string; effective_at: string }[];
     vendorInvoices: { id: number; reference: string; period_start: string; period_end: string; timezone: string; amount: string; our_amount: string; status: string; difference: string }[];
     invoices: { id: number; number: string; status: string; period_start: string; timezone: string; currency: string; usage_total: string; amount_due: string }[];
@@ -174,6 +178,8 @@ const select = 'form-select w-auto';
             </section>
 
             <RouteTester v-if="account.is_customer" :account-id="account.id" :currency="account.currency" />
+
+            <BlockedNumbers v-if="account.is_customer" :account-id="account.id" :numbers="blockedNumbers" :directions="blockedDirections" />
 
             <BillingPlan v-if="plan" :account-id="account.id" :currency="account.currency" :timezone="account.timezone" :plan="plan" />
 

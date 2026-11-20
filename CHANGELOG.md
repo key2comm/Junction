@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Blocked numbers
+- **Customers → a customer → Blocked numbers:** exact numbers this customer can't call, or can't receive calls from, or both. For example, a number the customer doesn't want its users calling, or a retired number that was used for call forwarding.
+  - Only for that customer: other customers on the switch can still call the number.
+  - Outgoing calls are refused (403) from every device, PBX extension and call forward.
+  - Incoming calls to the customer's DIDs are refused (403) when the caller's number is on the list.
+  - Numbers can be typed in any format; a 10-digit Canada/USA number gets its 1. Each one can have a reason, and what it blocks can be changed later.
+
 ### DIDs
 - **The Customer field is searchable**, on the DID form and in the DID import's "Customer for all rows". Type part of a customer's name or account code to narrow the list. Arrow keys and Enter work too.
 

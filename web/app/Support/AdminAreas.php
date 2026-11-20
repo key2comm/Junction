@@ -40,6 +40,7 @@ final class AdminAreas
         self::ROUTING => [
             'carriers.*', 'trunks.*', 'rate-decks.*', 'tariffs.*', 'carrier-rates.*', 'endpoints.*', 'dids.*', 'did-import.*',
             'accounts.sip-trunks.*', 'routing-plans.*', 'pbx.*', 'accounts.pbx.*', 'accounts.route-test', 'accounts.ips.*',
+            'accounts.blocked-numbers.*',
         ],
         self::ACCOUNTS => ['accounts.*'],
         self::SETTINGS => [

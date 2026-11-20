@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\AccountRequest;
 use App\Enums\Transport;
 use App\Models\Account;
+use App\Models\BlockedNumber;
 use App\Models\BillingCharge;
 use App\Models\BillingItem;
 use App\Models\BillingProfile;
@@ -153,6 +154,10 @@ class AccountController extends Controller
             'plan' => $account->is_customer && Billing::enabled() ? $this->planShow($account) : null,
             'ledger' => $account->ledgerEntries()->latest('id')->limit(50)
                 ->get(['id', 'type', 'amount', 'balance_after', 'description', 'created_at', 'effective_at']),
+            'blockedNumbers' => $account->is_customer
+                ? $account->blockedNumbers()->orderBy('number')->get(['id', 'number', 'direction', 'reason', 'created_at'])
+                : [],
+            'blockedDirections' => BlockedNumber::DIRECTIONS,
             'portalUsers' => $account->is_customer
                 ? User::query()->where('account_id', $account->id)->orderBy('name')->get(['id', 'name', 'email', 'created_at'])
                 : [],

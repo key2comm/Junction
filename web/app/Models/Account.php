@@ -54,6 +54,11 @@ class Account extends Model
         ];
     }
 
+    public function blockedNumbers(): HasMany
+    {
+        return $this->hasMany(BlockedNumber::class);
+    }
+
     public function ips(): HasMany
     {
         return $this->hasMany(AccountIp::class);
