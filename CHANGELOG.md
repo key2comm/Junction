@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v1.0.6 (2026-11-19)
 
 ### Blocked numbers
 - **Customers → a customer → Blocked numbers:** exact numbers this customer can't call, or can't receive calls from, or both. For example, a number the customer doesn't want its users calling, or a retired number that was used for call forwarding.
