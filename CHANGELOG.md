@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v1.0.8 (2026-11-20)
 
 ### Routing
 - **Fixed: a call stopped at the first carrier that refused it.** The switch only tried the next carrier in the LCR group for a few answers (408, 480, 488 and 5xx). Any other refusal, such as 403 Forbidden, went straight back to the caller, even with more carriers left to try.
