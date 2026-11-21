@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v1.0.9 (2026-11-20)
 
 ### Search
 - **DIDs:** the search finds a number, a comment or a customer (name or account code). A "Search in" option next to it limits the search to one of them. The customer filter is now a searchable dropdown.
