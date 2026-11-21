@@ -1,16 +1,25 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
+import { computed, ref } from 'vue';
 import Heading from '@/components/Heading.vue';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { show as showPbx } from '@/routes/accounts/pbx';
 import { index } from '@/routes/pbx';
 
-defineProps<{
+const props = defineProps<{
     accounts: { id: number; name: string; code: string; status: string; extensions: number; ivrs: number; dids: number }[];
     connection: { host: string; sip: string; wss: string };
 }>();
 
 defineOptions({ layout: { breadcrumbs: [{ title: 'PBX', href: index() }] } });
+
+// Narrow the list as you type: every word must be in the name or account code.
+const q = ref('');
+const shown = computed(() => {
+    const words = q.value.toLowerCase().split(/\s+/).filter(Boolean);
+    return words.length ? props.accounts.filter((a) => words.every((w) => `${a.name} ${a.code}`.toLowerCase().includes(w))) : props.accounts;
+});
 </script>
 
 <template>
@@ -33,6 +42,8 @@ defineOptions({ layout: { breadcrumbs: [{ title: 'PBX', href: index() }] } });
             </div>
         </div>
 
+        <Input v-model="q" type="search" placeholder="Search customers by name or account code" aria-label="Search customers" class="ss-maxw-sm" />
+
         <div class="card table-responsive">
             <table class="table table-vcenter card-table table-tight">
                 <thead>
@@ -44,7 +55,7 @@ defineOptions({ layout: { breadcrumbs: [{ title: 'PBX', href: index() }] } });
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="a in accounts" :key="a.id">
+                    <tr v-for="a in shown" :key="a.id">
                         <td>
                             <Link :href="showPbx(a.id)" class="fw-medium">{{ a.name }}</Link>
                             <span class="ms-2 font-monospace small text-secondary">{{ a.code }}</span>
@@ -54,8 +65,8 @@ defineOptions({ layout: { breadcrumbs: [{ title: 'PBX', href: index() }] } });
                         <td class="text-end tabular-nums">{{ a.ivrs }}</td>
                         <td class="text-end tabular-nums">{{ a.dids }}</td>
                     </tr>
-                    <tr v-if="accounts.length === 0">
-                        <td colspan="4" class="text-center text-secondary">No customer accounts yet.</td>
+                    <tr v-if="shown.length === 0">
+                        <td colspan="4" class="text-center text-secondary">{{ accounts.length ? `No customer matches “${q}”.` : 'No customer accounts yet.' }}</td>
                     </tr>
                 </tbody>
             </table>

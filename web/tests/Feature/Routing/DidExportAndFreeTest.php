@@ -113,6 +113,26 @@ class DidExportAndFreeTest extends TestCase
         $this->assertCount(2, array_filter(explode("\n", $filtered)));
     }
 
+    public function test_search_finds_number_comment_or_customer(): void
+    {
+        $other = Account::factory()->create(['is_customer' => true, 'is_vendor' => false, 'code' => 'BETA02', 'name' => 'Beta Widgets']);
+        $did = fn (string $n, ?Account $a, ?string $comment) => PbxDid::create(['number' => $n, 'account_id' => $a?->id, 'provider_account_id' => $this->carrier->id,
+            'language' => 'en', 'status' => $a ? 'active' : 'free', 'description' => $comment]);
+        $did('14165550100', $this->customer, 'Main line');
+        $did('14165550101', $other, 'Fax for acme');
+        $did('14165550102', null, null);
+        $numbers = fn (array $query) => collect($this->actingAs($this->admin)->get(route('dids.index', $query))->assertOk()
+            ->viewData('page')['props']['dids']['data'])->pluck('number')->all();
+
+        $this->assertSame(['14165550100', '14165550101'], $numbers(['q' => 'acme']));            // customer name + comment
+        $this->assertSame(['14165550100'], $numbers(['q' => 'acme', 'in' => 'customer']));
+        $this->assertSame(['14165550101'], $numbers(['q' => 'acme', 'in' => 'comment']));
+        $this->assertSame([], $numbers(['q' => 'acme', 'in' => 'number']));
+        $this->assertSame(['14165550101'], $numbers(['q' => 'beta02']));                          // account code
+        $this->assertSame(['14165550102'], $numbers(['q' => '555-0102', 'in' => 'number']));
+        $this->actingAs($this->admin)->get(route('dids.index', ['in' => 'nope']))->assertSessionHasErrors('in');
+    }
+
     public function test_import_takes_free_dids(): void
     {
         Storage::fake('local');

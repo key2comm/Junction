@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Search
+- **DIDs:** the search finds a number, a comment or a customer (name or account code). A "Search in" option next to it limits the search to one of them. The customer filter is now a searchable dropdown.
+- **New or edit PBX/Device:** the Customer dropdown is searchable. It narrows as you type the name or account code.
+- **PBX:** a search box at the top narrows the customer list by name or account code.
+- **PBX/Devices:** a search box narrows the list by PBX/Device name or customer, and the customer filter is a searchable dropdown.
+
 ## v1.0.8 (2026-11-20)
 
 ### Routing

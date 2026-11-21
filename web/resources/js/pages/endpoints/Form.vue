@@ -9,6 +9,7 @@ import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { SearchSelect } from '@/components/ui/search-select';
 import { selectClass } from '@/lib/ui';
 import { index as didsIndex } from '@/routes/dids';
 import { index } from '@/routes/endpoints';
@@ -114,6 +115,7 @@ const trunk = computed(() => isDevice.value && !receiving.value && form.target =
 const forwards = computed(() => usesFlow.value && form.flow !== 'pbx');
 const numbers = computed(() => props.pbxNumbers[String(form.account_id)] ?? []);
 const pbxTargets = computed(() => (form.pbx_destination.type === 'voicemail' ? numbers.value.filter((n) => n.kind === 'extension' && n.voicemail) : numbers.value));
+const customerOptions = props.customers.map((c) => ({ value: c.id, label: c.name, hint: c.code }));
 const customer = computed(() => props.customers.find((c) => c.id === form.account_id));
 
 // The usual port for the transport, unless one was typed.
@@ -216,10 +218,14 @@ function submit() {
                 </fieldset>
                 <div v-if="isDevice" class="ss-grid gap-1">
                     <Label for="account_id">Customer</Label>
-                    <select id="account_id" v-model="form.account_id" :class="selectClass" required>
-                        <option value="" disabled>Choose…</option>
-                        <option v-for="c in customers" :key="c.id" :value="c.id">{{ c.name }} ({{ c.code }})</option>
-                    </select>
+                    <SearchSelect
+                        id="account_id"
+                        v-model="form.account_id"
+                        :options="customerOptions"
+                        placeholder="Choose the customer…"
+                        search-placeholder="Search by name or account code…"
+                        :invalid="!!form.errors.account_id"
+                    />
                     <InputError :message="form.errors.account_id" />
                 </div>
                 <div class="ss-grid gap-1">

@@ -8,6 +8,7 @@ import Pagination from '@/components/Pagination.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { SearchSelect } from '@/components/ui/search-select';
 import type { Paginated } from '@/lib/ui';
 import { selectClass } from '@/lib/ui';
 import { show as showAccount } from '@/routes/accounts';
@@ -29,21 +30,22 @@ type Did = {
 
 const props = defineProps<{
     dids: Paginated<Did>;
-    filters: { q: string; account: number | null; provider: number | null; status: string; endpoint: { id: number; kind: string; name: string } | null };
+    filters: { q: string; in: string; account: number | null; provider: number | null; status: string; endpoint: { id: number; kind: string; name: string } | null };
     customers: Account[];
     providers: Account[];
     statuses: Record<string, string>;
+    searchIn: Record<string, string>;
     counts: Record<string, number>;
 }>();
 
 defineOptions({ layout: { breadcrumbs: [{ title: 'DIDs', href: index() }] } });
 
-const f = reactive({ q: props.filters.q, account: props.filters.account ?? '', provider: props.filters.provider ?? '', status: props.filters.status });
+const f = reactive({ q: props.filters.q, in: props.filters.in, account: props.filters.account ?? '', provider: props.filters.provider ?? '', status: props.filters.status });
 let timer: ReturnType<typeof setTimeout> | undefined;
 function apply(delay = 0) {
     clearTimeout(timer);
     timer = setTimeout(() => {
-        const query = { q: f.q || undefined, account: f.account || undefined, provider: f.provider || undefined, status: f.status || undefined, endpoint: props.filters.endpoint?.id };
+        const query = { q: f.q || undefined, in: (f.q && f.in) || undefined, account: f.account || undefined, provider: f.provider || undefined, status: f.status || undefined, endpoint: props.filters.endpoint?.id };
         router.get(index.url({ query }), {}, { preserveState: true, replace: true });
     }, delay);
 }
@@ -52,11 +54,13 @@ function remove(d: Did) {
         router.delete(DidController.destroy.url(d.id), { preserveScroll: true });
     }
 }
+const customerOptions = [{ value: '' as const, label: 'All customers' }, ...props.customers.map((c) => ({ value: c.id, label: c.name, hint: c.code }))];
+const searchLabel = computed(() => (f.in ? `Search ${props.searchIn[f.in].toLowerCase()}` : 'Search number, comment or customer'));
 const badge = (s: string) => (s === 'banned' ? 'destructive' : s === 'active' ? 'default' : s === 'free' ? 'outline' : 'secondary');
 // Export: every DID matching the current filters (a plain download, not an Inertia visit).
 const exportUrl = computed(() => {
     const q = new URLSearchParams();
-    for (const [k, v] of Object.entries({ q: props.filters.q, account: props.filters.account, provider: props.filters.provider, status: props.filters.status, endpoint: props.filters.endpoint?.id })) {
+    for (const [k, v] of Object.entries({ q: props.filters.q, in: props.filters.in, account: props.filters.account, provider: props.filters.provider, status: props.filters.status, endpoint: props.filters.endpoint?.id })) {
         if (v) q.set(k, String(v));
     }
     return `/dids/export${q.size ? `?${q}` : ''}`;
@@ -81,11 +85,22 @@ const exportUrl = computed(() => {
             <Link :href="index()" class="ms-1">Show all</Link>
         </p>
         <div class="d-flex flex-wrap gap-2">
-            <Input v-model="f.q" placeholder="Search number or comment" class="ss-maxw-xs" @input="apply(300)" />
-            <select v-model="f.account" :class="selectClass" class="w-auto" aria-label="Customer" @change="apply()">
-                <option value="">All customers</option>
-                <option v-for="c in customers" :key="c.id" :value="c.id">{{ c.name }}</option>
-            </select>
+            <div class="input-group ss-maxw-md">
+                <Input v-model="f.q" :placeholder="searchLabel" :aria-label="searchLabel" @input="apply(300)" />
+                <select v-model="f.in" :class="selectClass" class="ss-w-44 flex-grow-0" aria-label="Search in" @change="f.q && apply()">
+                    <option value="">Everything</option>
+                    <option v-for="(label, k) in searchIn" :key="k" :value="k">{{ label }}</option>
+                </select>
+            </div>
+            <SearchSelect
+                v-model="f.account"
+                :options="customerOptions"
+                class="ss-w-64"
+                aria-label="Customer"
+                placeholder="All customers"
+                search-placeholder="Search by name or account code…"
+                @update:model-value="apply()"
+            />
             <select v-model="f.provider" :class="selectClass" class="w-auto" aria-label="Provider" @change="apply()">
                 <option value="">All providers</option>
                 <option v-for="p in providers" :key="p.id" :value="p.id">{{ p.name }}</option>

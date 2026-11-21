@@ -40,11 +40,12 @@ class DidController extends Controller
 
         return Inertia::render('dids/Index', [
             'dids' => $dids,
-            'filters' => ['q' => $filters['q'] ?? '', 'account' => $filters['account'] ?? null, 'provider' => $filters['provider'] ?? null, 'status' => $filters['status'] ?? '',
+            'filters' => ['q' => $filters['q'] ?? '', 'in' => $filters['in'] ?? '', 'account' => $filters['account'] ?? null, 'provider' => $filters['provider'] ?? null, 'status' => $filters['status'] ?? '',
                 'endpoint' => ($id = $filters['endpoint'] ?? null) ? Endpoint::query()->whereKey($id)->first(['id', 'kind', 'name'])?->only(['id', 'kind', 'name']) : null],
             'customers' => $this->customers(),
             'providers' => $this->providers(),
             'statuses' => PbxDid::STATUSES,
+            'searchIn' => self::SEARCH_IN,
             'counts' => PbxDid::query()->selectRaw('status, count(*) AS n')->groupBy('status')->pluck('n', 'status'),
         ]);
     }
@@ -77,11 +78,15 @@ class DidController extends Controller
         }, 'dids-'.now()->format('Y-m-d').'.csv', ['Content-Type' => 'text/csv']);
     }
 
+    /** Where the list's search looks (none: all of them). */
+    public const SEARCH_IN = ['number' => 'Number', 'comment' => 'Comment', 'customer' => 'Customer name'];
+
     /** @return array<string, mixed> */
     private function filters(Request $request): array
     {
         return $request->validate([
             'q' => ['nullable', 'string', 'max:64'],
+            'in' => ['nullable', Rule::in(array_keys(self::SEARCH_IN))],
             'account' => ['nullable', 'integer'],
             'provider' => ['nullable', 'integer'],
             'status' => ['nullable', Rule::in(array_keys(PbxDid::STATUSES))],
@@ -92,12 +97,20 @@ class DidController extends Controller
     /** The list's filters (search, customer, provider, status, PBX/Device), sorted by number. */
     private function query(array $filters)
     {
-        $digits = preg_replace('/\D/', '', (string) ($filters['q'] ?? ''));
+        $text = trim((string) ($filters['q'] ?? ''));
+        $digits = preg_replace('/\D/', '', $text);
+        $like = '%'.addcslashes($text, '%_\\').'%';
+        $in = $filters['in'] ?? null;
+        $field = fn (string $f) => ! $in || $in === $f;
 
         return PbxDid::query()->with(['account:id,name,code', 'provider:id,name,code'])
-            ->when($filters['q'] ?? null, fn ($q) => $q->where(fn ($w) => $w
-                ->when($digits !== '', fn ($x) => $x->where('number', 'like', "%{$digits}%"))
-                ->orWhere('description', 'ilike', '%'.addcslashes($filters['q'], '%_\\').'%')))
+            ->when($text !== '', fn ($q) => $q->where(fn ($w) => $w
+                // Numbers: by their digits, when the text looks like a number ("416-555 0100"), so a
+                // customer code like ACME02 doesn't also match every number with 02 in it.
+                ->when($field('number'), fn ($x) => $digits !== '' && preg_match('/^[\d\s()+.\-]+$/', $text)
+                    ? $x->orWhere('number', 'like', "%{$digits}%") : $x->orWhereRaw('false'))
+                ->when($field('comment'), fn ($x) => $x->orWhere('description', 'ilike', $like))
+                ->when($field('customer'), fn ($x) => $x->orWhereHas('account', fn ($a) => $a->where(fn ($n) => $n->where('name', 'ilike', $like)->orWhere('code', 'ilike', $like))))))
             ->when($filters['account'] ?? null, fn ($q, $id) => $q->where('account_id', $id))
             ->when($filters['provider'] ?? null, fn ($q, $id) => $q->where('provider_account_id', $id))
             ->when($filters['status'] ?? null, fn ($q, $s) => $q->where('status', $s))

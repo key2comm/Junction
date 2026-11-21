@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
 import { Plus } from '@lucide/vue';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import Heading from '@/components/Heading.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { SearchSelect } from '@/components/ui/search-select';
 import { selectClass } from '@/lib/ui';
 import { show as showAccount } from '@/routes/accounts';
 import { index as didsIndex } from '@/routes/dids';
@@ -40,6 +42,17 @@ defineOptions({ layout: { breadcrumbs: [{ title: 'PBX/Devices', href: index() }]
 const account = ref(props.filters.account ?? '');
 const kind = ref(props.filters.kind ?? '');
 const filter = () => router.get(index.url({ query: { account: account.value || undefined, kind: kind.value || undefined } }), {}, { preserveState: true, replace: true });
+const customerOptions = [{ value: '' as const, label: 'Any customer' }, ...props.customers.map((c) => ({ value: c.id, label: c.name, hint: c.code }))];
+// Narrow the list as you type: every word must be in the name or the customer's name or code.
+const q = ref('');
+const shown = computed(() => {
+    const words = q.value.toLowerCase().split(/\s+/).filter(Boolean);
+    if (!words.length) return props.endpoints;
+    return props.endpoints.filter((e) => {
+        const text = `${e.name} ${e.account?.name ?? 'shared'} ${e.account?.code ?? ''}`.toLowerCase();
+        return words.every((w) => text.includes(w));
+    });
+});
 const limit = (n: number | null) => n ?? '∞';
 </script>
 
@@ -61,10 +74,15 @@ const limit = (n: number | null) => n ?? '∞';
                 <option value="pbx">PBXs</option>
                 <option value="device">Devices</option>
             </select>
-            <select v-model="account" :class="selectClass" class="w-auto" aria-label="Customer" @change="filter">
-                <option value="">Any customer</option>
-                <option v-for="c in customers" :key="c.id" :value="c.id">{{ c.name }} ({{ c.code }})</option>
-            </select>
+            <SearchSelect
+                v-model="account"
+                :options="customerOptions"
+                class="ss-w-64"
+                placeholder="Any customer"
+                search-placeholder="Search by name or account code…"
+                @update:model-value="filter"
+            />
+            <Input v-model="q" type="search" placeholder="Search name or customer" aria-label="Search PBX/Devices" class="ss-maxw-xs" />
         </div>
 
         <div class="card table-responsive">
@@ -80,7 +98,7 @@ const limit = (n: number | null) => n ?? '∞';
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="e in endpoints" :key="e.id">
+                    <tr v-for="e in shown" :key="e.id">
                         <td>
                             <Link :href="edit(e.id)" class="fw-medium">{{ e.name }}</Link>
                             <div class="d-flex gap-1 mt-1">
@@ -102,8 +120,8 @@ const limit = (n: number | null) => n ?? '∞';
                         <td class="small">{{ e.codecs.map((c) => codecs[c] ?? c).join(', ') }}</td>
                         <td class="text-nowrap">{{ limit(e.max_inbound) }} / {{ limit(e.max_outbound) }} / {{ limit(e.max_total) }}</td>
                     </tr>
-                    <tr v-if="endpoints.length === 0">
-                        <td colspan="6" class="text-center text-secondary">No PBX/Devices yet.</td>
+                    <tr v-if="shown.length === 0">
+                        <td colspan="6" class="text-center text-secondary">{{ endpoints.length ? 'No PBX/Devices match.' : 'No PBX/Devices yet.' }}</td>
                     </tr>
                 </tbody>
             </table>
