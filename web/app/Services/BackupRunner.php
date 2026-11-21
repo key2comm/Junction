@@ -122,7 +122,7 @@ class BackupRunner
 
     private function exec(array $command, array $env): void
     {
-        $process = new Process($command, null, $env, null, 3 * 3600);
+        $process = new Process($command, base_path(), $env, null, 3 * 3600); // a readable folder, whoever runs it
         $process->run();
         if (! $process->isSuccessful()) {
             throw new RuntimeException("{$command[0]} failed: ".trim(mb_substr($process->getErrorOutput() ?: $process->getOutput(), 0, 1000)));
