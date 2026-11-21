@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v1.0.10 (2026-11-21)
 
 ### Backups (Settings → Backups)
 - **Nightly database backups**, on by default at 02:00 (UTC until you pick your time zone), kept 7 days on the server. Run now makes one straight away; each backup can be downloaded (after confirming your password) or deleted.
