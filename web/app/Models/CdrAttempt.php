@@ -6,14 +6,23 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['cdr_id', 'attempt', 'trunk_id', 'gateway_id', 'buy_prefix', 'buy_rate', 'started_at', 'answered_at', 'ended_at', 'sip_code', 'hangup_cause', 'pdd_ms'])]
+#[Fillable(['cdr_id', 'cdr_started_at', 'attempt', 'trunk_id', 'gateway_id', 'buy_prefix', 'buy_rate', 'started_at', 'answered_at', 'ended_at', 'sip_code', 'hangup_cause', 'pdd_ms'])]
 class CdrAttempt extends Model
 {
     public $timestamps = false;
 
+    protected static function booted(): void
+    {
+        // Attempts are stored in their call's month (CdrPartitions), so they carry the call's start.
+        static::creating(function (CdrAttempt $a) {
+            $a->cdr_started_at ??= Cdr::query()->whereKey($a->cdr_id)->value('started_at');
+        });
+    }
+
     protected function casts(): array
     {
         return [
+            'cdr_started_at' => 'datetime',
             'attempt' => 'integer',
             'buy_rate' => 'decimal:6',
             'started_at' => 'datetime',

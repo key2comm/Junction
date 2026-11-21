@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Call records
+- **Call records are stored by month**, so they stay fast as they grow: a search over a date range only reads those months, however many years are kept. Nothing changes in how you search, view or export them, and **no call record is ever deleted**.
+- The update moves the existing records into the new layout once (every record is copied and counted before the old table goes, in one step). The coming months are made automatically each night, and a record dated outside them is still kept and filed into its month.
+
 ## v1.0.10 (2026-11-21)
 
 ### Backups (Settings → Backups)

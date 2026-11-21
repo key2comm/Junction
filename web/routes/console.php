@@ -105,3 +105,8 @@ Schedule::command('softswitch:backup --if-due')->everyMinute()->withoutOverlappi
 
 // Settings → Audit log: entries past their retention.
 Schedule::call(fn () => \App\Support\Audit::prune())->name('softswitch:prune-audit-log')->dailyAt('04:10');
+
+// Call records are split by month: make the coming months (and file any records that
+// arrived outside the months made so far). Nothing is ever deleted.
+Schedule::call(fn () => \App\Services\CdrPartitions::create())->name('softswitch:cdr-partitions')->dailyAt('00:20')
+    ->when(fn () => HighAvailability::role() !== 'standby');

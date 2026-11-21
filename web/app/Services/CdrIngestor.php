@@ -134,6 +134,7 @@ class CdrIngestor
             $cdr->attemptLog()->delete();
             foreach (array_values($attempts) as $i => $a) {
                 $cdr->attemptLog()->create([
+                    'cdr_started_at' => $cdr->started_at, // the call's month (CdrPartitions)
                     'attempt' => $i + 1,
                     'trunk_id' => $known($int((string) ($a['trunk'] ?? '')), $trunkIds),
                     'gateway_id' => $known($int((string) ($a['gateway'] ?? '')), $gatewayIds),
