@@ -13,7 +13,7 @@ use Throwable;
  */
 final class Settings
 {
-    public const SECRET = ['mail.password'];
+    public const SECRET = ['mail.password', 'backup.password', 'backup.sftp_password', 'backup.sftp_private_key', 'backup.s3_secret'];
 
     private const CACHE = 'softswitch.settings';
 
@@ -48,6 +48,13 @@ final class Settings
     /** @param  array<string, mixed>  $values */
     public static function put(array $values): void
     {
+        if (Audit::active()) {
+            $before = [];
+            foreach (array_keys($values) as $key) {
+                $before[$key] = self::get($key);
+            }
+            Audit::settings($before, $values);
+        }
         foreach ($values as $key => $value) {
             if ($value !== null && in_array($key, self::SECRET, true)) {
                 $value = Crypt::encryptString((string) $value);

@@ -26,6 +26,8 @@ enum AdminRole: string
         AdminAreas::BILLING => [self::WRITE, self::WRITE, null, self::WRITE, self::READ],
         AdminAreas::SETTINGS => [self::WRITE, self::WRITE, null, null, null],
         AdminAreas::USERS => [self::WRITE, null, null, null, null],
+        // Audit log: owners also set how long it's kept; nobody can edit entries.
+        AdminAreas::AUDIT => [self::WRITE, self::READ, null, null, null],
     ];
 
     public function label(): string

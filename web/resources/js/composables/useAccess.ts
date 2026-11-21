@@ -2,7 +2,7 @@ import { usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 
 /** Areas of the admin UI (App\Support\AdminAreas). */
-export type AdminArea = 'accounts' | 'routing' | 'monitoring' | 'billing' | 'settings' | 'users';
+export type AdminArea = 'accounts' | 'routing' | 'monitoring' | 'billing' | 'settings' | 'users' | 'audit';
 type Level = 'write' | 'read' | null;
 
 export type Access = {

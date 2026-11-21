@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased
+
+### Backups (Settings → Backups)
+- **Nightly database backups**, on by default at 02:00 (UTC until you pick your time zone), kept 7 days on the server. Run now makes one straight away; each backup can be downloaded (after confirming your password) or deleted.
+- **Copies off the server:** by email (attached up to 10 MB), by SFTP, and to Amazon S3 or S3-compatible storage (DigitalOcean Spaces, Wasabi, Backblaze B2, Cloudflare R2, MinIO and others). Each destination has its own "keep for" days (0 = never delete there).
+- **Encryption:** with a backup password, backups are encrypted (AES-256) and also carry the app key, which a new server needs to read saved SIP and SMTP passwords. Copies sent off the server need a password unless you tick "Send them unencrypted".
+- A failed backup or upload is shown on the page and emailed. A backup is skipped rather than fill the disk. The backup (standby) server doesn't make its own.
+- How to restore is on the page and in README.txt inside every backup.
+
+### Audit log (Settings → Audit log)
+- **Who changed what:** every change made in the admin pages, the customer portal and the REST API, with the old and new values, plus sign-ins, sign-outs and failed sign-ins, with the user and IP address.
+- Passwords, keys and other secrets are never stored, only that they changed. Requests that were refused (validation, access level) aren't logged.
+- **Only owners and admins can see it**; only owners can change how long entries are kept (default 1 year). Nobody can edit or delete entries.
+- Search, and filter by admin, type of record, sign-ins, admin/portal/API and dates. Click an entry to see each field that changed.
+
 ## v1.0.9 (2026-11-20)
 
 ### Search

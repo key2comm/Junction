@@ -99,3 +99,9 @@ Schedule::call(fn () => app(\App\Services\UpdateCheck::class)->check())->name('s
 // High availability (main server): a heartbeat the backup measures its lag against.
 Schedule::call(fn () => HighAvailability::beat())->name('softswitch:ha-heartbeat')->everyMinute()
     ->when(fn () => HighAvailability::role() === 'primary');
+
+// Settings → Backups: the nightly database backup (and Run now), checked every minute.
+Schedule::command('softswitch:backup --if-due')->everyMinute()->withoutOverlapping(360)->runInBackground();
+
+// Settings → Audit log: entries past their retention.
+Schedule::call(fn () => \App\Support\Audit::prune())->name('softswitch:prune-audit-log')->dailyAt('04:10');

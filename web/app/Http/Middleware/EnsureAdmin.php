@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Services\FirewallPolicy;
 use App\Support\AdminAreas;
 use App\Support\AdminRole;
+use App\Support\Audit;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -55,6 +56,7 @@ class EnsureAdmin
 
     private function refuse(Request $request, AdminRole $role, string $area, bool $noAccess): Response
     {
+        Audit::end(); // nothing happened: not an audit log entry
         $message = $noAccess
             ? "Your access level ({$role->label()}) doesn't include ".AdminAreas::label($area).'.'
             : "Your access level ({$role->label()}) can see ".AdminAreas::label($area)." but can't change it.";

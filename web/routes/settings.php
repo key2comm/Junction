@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Settings\AdminUserController;
 use App\Http\Controllers\Settings\ApiTokenController;
+use App\Http\Controllers\Settings\AuditLogController;
+use App\Http\Controllers\Settings\BackupController;
 use App\Http\Controllers\Settings\BillingController;
 use App\Http\Controllers\Settings\BrandingController;
 use App\Http\Controllers\Settings\CaptureController;
@@ -98,6 +100,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::patch('settings/admin-users/{user}', [AdminUserController::class, 'update'])->middleware(RequirePassword::class)->name('admin-users.update');
         Route::delete('settings/admin-users/{user}', [AdminUserController::class, 'destroy'])->middleware(RequirePassword::class)->name('admin-users.destroy');
     });
+
+    // Database backups: nightly, kept here and optionally emailed, SFTP and S3. Changing settings and
+    // downloading a backup (the whole database) need a recent password confirmation.
+    Route::middleware('admin')->group(function () {
+        Route::get('settings/backups', [BackupController::class, 'edit'])->name('backups.edit');
+        Route::put('settings/backups', [BackupController::class, 'update'])->middleware(RequirePassword::class)->name('backups.update');
+        Route::post('settings/backups/run', [BackupController::class, 'run'])->middleware('throttle:6,1')->name('backups.run');
+        Route::get('settings/backups/{backup}/download', [BackupController::class, 'download'])->middleware(RequirePassword::class)->name('backups.download');
+        Route::delete('settings/backups/{backup}', [BackupController::class, 'destroy'])->middleware(RequirePassword::class)->name('backups.destroy');
+    });
+
+    // Audit log: who changed what (owners and admins; owners set the retention).
+    Route::get('settings/audit-log', [AuditLogController::class, 'index'])->middleware('admin')->name('audit.index');
+    Route::put('settings/audit-log', [AuditLogController::class, 'update'])->middleware('admin')->name('audit.update');
 
     // What new customer accounts start with.
     Route::get('settings/client-defaults', [ClientDefaultsController::class, 'edit'])->middleware('admin')->name('client-defaults.edit');

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /** Server settings (admin only): the pages under the top menu's Settings item, as tabs of one card. */
 import { Link } from '@inertiajs/vue3';
-import { BrickWall, CalendarClock, FileAudio, KeyRound, Mail, Palette, Receipt, ShieldCheck, UserCog, Users } from '@lucide/vue';
+import { BrickWall, CalendarClock, DatabaseBackup, ScrollText, FileAudio, KeyRound, Mail, Palette, Receipt, ShieldCheck, UserCog, Users } from '@lucide/vue';
 import { computed } from 'vue';
 import { useAccess } from '@/composables/useAccess';
 import type { AdminArea } from '@/composables/useAccess';
@@ -9,6 +9,8 @@ import { useCurrentUrl } from '@/composables/useCurrentUrl';
 import { toUrl } from '@/lib/utils';
 import { index as adminUsers } from '@/routes/admin-users';
 import { index as apiTokens } from '@/routes/api-tokens';
+import { index as auditLog } from '@/routes/audit';
+import { edit as editBackups } from '@/routes/backups';
 import { edit as editBilling } from '@/routes/billing';
 import { edit as editBranding } from '@/routes/branding';
 import { edit as editCaptures } from '@/routes/captures';
@@ -28,15 +30,17 @@ const allTabs: { title: string; href: ReturnType<typeof firewall>; icon: typeof 
     { title: 'Client defaults', href: editClientDefaults(), icon: UserCog, area: 'settings' },
     { title: 'Email (SMTP)', href: editEmail(), icon: Mail, area: 'settings' },
     { title: 'Scheduled reports', href: reports(), icon: CalendarClock, area: 'settings' },
+    { title: 'Backups', href: editBackups(), icon: DatabaseBackup, area: 'settings' },
     { title: 'API tokens', href: apiTokens(), icon: KeyRound, area: 'settings' },
     { title: 'Admin users', href: adminUsers(), icon: Users, area: 'users' },
+    { title: 'Audit log', href: auditLog(), icon: ScrollText, area: 'audit' },
 ];
 // Only the tabs this admin's access level can open.
 const { can } = useAccess();
 const tabs = computed(() => allTabs.filter((t) => can(t.area)));
 const { isCurrentOrParentUrl } = useCurrentUrl();
 // The firewall and reports pages have wide tables; the others are single forms.
-const wide = computed(() => [firewall(), reports(), adminUsers()].some((h) => isCurrentOrParentUrl(h)));
+const wide = computed(() => [firewall(), reports(), adminUsers(), editBackups(), auditLog()].some((h) => isCurrentOrParentUrl(h)));
 </script>
 
 <template>

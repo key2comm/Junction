@@ -8,7 +8,14 @@ use App\Services\FirewallSync;
 use App\Services\Freeswitch\CarrierAcl;
 use App\Services\Freeswitch\GatewaySync;
 use App\Services\Freeswitch\PbxSync;
+use App\Models\User;
+use App\Support\Audit;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Events\Failed;
+use Illuminate\Auth\Events\Login;
+use Illuminate\Auth\Events\Logout;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -55,6 +62,18 @@ class AppServiceProvider extends ServiceProvider
         // REST API: 120 requests a minute per token (per IP before authentication).
         RateLimiter::for('api', fn (Request $request) => Limit::perMinute(120)
             ->by(($request->attributes->get('api_token')?->id ? 'token:'.$request->attributes->get('api_token')->id : 'ip:'.$request->ip())));
+
+        // Settings → Audit log: record changes made during admin and portal requests, and sign-ins.
+        foreach (['created', 'updated', 'deleted'] as $event) {
+            Event::listen("eloquent.{$event}: *", function (string $name, array $data) use ($event) {
+                if (Audit::active() && ($data[0] ?? null) instanceof Model) {
+                    Audit::model($event, $data[0]);
+                }
+            });
+        }
+        Event::listen(Login::class, fn (Login $e) => $e->user instanceof User ? Audit::auth('login', $e->user, request()) : null);
+        Event::listen(Logout::class, fn (Logout $e) => $e->user instanceof User ? Audit::auth('logout', $e->user, request()) : null);
+        Event::listen(Failed::class, fn (Failed $e) => Audit::auth('login_failed', null, request(), (string) ($e->credentials['email'] ?? '')));
 
         // SMTP settings come from Settings → Email, applied only when mail is sent.
         $this->app->afterResolving('mail.manager', fn () => MailSettings::apply());

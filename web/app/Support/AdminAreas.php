@@ -24,6 +24,9 @@ final class AdminAreas
 
     public const USERS = 'users';
 
+    /** Settings → Audit log: owners and admins only. */
+    public const AUDIT = 'audit';
+
     /** Every admin, whatever their level. */
     public const ANY = 'any';
 
@@ -31,6 +34,7 @@ final class AdminAreas
     private const ROUTES = [
         self::ANY => ['dashboard', 'dashboard.*'],
         self::USERS => ['admin-users.*', 'admin-invitations.*'],
+        self::AUDIT => ['audit.*'],
         self::MONITORING => ['alerts.*', 'quality.*', 'live.*', 'cdrs.*'],
         self::BILLING => [
             'invoices.*', 'accounts.invoices.*', 'accounts.ledger.*', 'billing-items.*', 'billing-profiles.*', 'taxes.*',
@@ -45,7 +49,7 @@ final class AdminAreas
         self::ACCOUNTS => ['accounts.*'],
         self::SETTINGS => [
             'certificate.*', 'api-tokens.*', 'email.*', 'reports.*', 'captures.*', 'branding.*', 'firewall.*', 'client-defaults.*',
-            'ha.*',
+            'ha.*', 'backups.*',
         ],
     ];
 
@@ -74,6 +78,7 @@ final class AdminAreas
             self::MONITORING => 'calls and alerts',
             self::SETTINGS => 'server settings',
             self::USERS => 'admin users',
+            self::AUDIT => 'the audit log',
             default => $area,
         };
     }

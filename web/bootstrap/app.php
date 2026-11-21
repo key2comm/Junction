@@ -4,6 +4,7 @@ use App\Http\Middleware\EnsureNotStandby;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\InternalAuth;
+use App\Http\Middleware\RecordAudit;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -35,9 +36,10 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
             EnsureNotStandby::class,
+            RecordAudit::class, // Settings → Audit log
         ]);
         // High availability: the backup's API is closed (read-only database).
-        $middleware->api(append: [EnsureNotStandby::class]);
+        $middleware->api(append: [EnsureNotStandby::class, RecordAudit::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
