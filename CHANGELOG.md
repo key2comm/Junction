@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v1.0.13 (2026-11-22)
 
 ### Grafana
 - **Call quality in Grafana**: the metrics now include ASR, ACD, PDD and failed attempts by reason (busy, no answer, congestion, rejected) per carrier trunk, and calls, ASR, ACD and PDD per customer, over the calls that ended in the last 15 minutes. Short calls that start and end between two Prometheus reads are counted too. The Grafana dashboard has a new *Call quality* section; download it again from Settings → System health and import it over the old one.
