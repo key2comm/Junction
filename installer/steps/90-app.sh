@@ -103,7 +103,15 @@ done
 
 info "Building frontend assets (slow on small servers)"
 as_app npm ci --no-audit --no-fund --loglevel=error
-as_app npm run build --silent >/dev/null
+# The build's output goes to a log (it is long); a failure shows its end. The
+# first build after new code has occasionally failed once and then passed, so
+# it is retried once before giving up.
+build_log="$home/frontend-build.log"
+if ! as_app npm run build >"$build_log" 2>&1; then
+	tail -n 25 "$build_log" >&2
+	warn "the frontend build failed; trying once more (full output: $build_log)"
+	as_app npm run build >"$build_log" 2>&1 || { tail -n 40 "$build_log" >&2; die "the frontend build failed (full output: $build_log)"; }
+fi
 rm -rf "$app/node_modules"
 
 # --- Database + caches.

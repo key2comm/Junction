@@ -4,6 +4,8 @@
 
 ### Fixes
 - Settings → System health: the sample Prometheus configuration was nearly invisible (light text on a light background).
+- Updating no longer stops when the operating system's package mirrors are briefly out of step (for example "cannot install the best candidate" for libcurl-devel): the installed version is kept.
+- The web app's build step is retried once if it fails, and its output is kept in `/var/lib/softswitch/frontend-build.log` instead of being thrown away.
 
 ## v1.0.13 (2026-11-22)
 

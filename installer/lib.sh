@@ -109,4 +109,6 @@ secret() {
 	printf '%s' "$val"
 }
 
-pkg_install() { dnf -y -q install "$@"; }
+# --nobest: when the mirrors are briefly out of step (e.g. baseos has a newer
+# libcurl than appstream's libcurl-devel), keep what is installed instead of failing.
+pkg_install() { dnf -y -q --nobest install "$@"; }
