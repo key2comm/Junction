@@ -2,9 +2,12 @@
 
 namespace Tests\Feature\Settings;
 
+use App\Models\Account;
 use App\Models\Alert;
 use App\Models\ApiToken;
 use App\Models\Backup;
+use App\Models\Cdr;
+use App\Models\Trunk;
 use App\Models\User;
 use App\Services\AlertEngine;
 use App\Services\Freeswitch\EventSocket;
@@ -13,6 +16,7 @@ use App\Support\AdminRole;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
 use RuntimeException;
 use Tests\TestCase;
@@ -202,5 +206,39 @@ class SystemHealthTest extends TestCase
         [, $other] = ApiToken::issue('other', ['alerts:read']);
         $this->withHeaders(['Authorization' => "Bearer {$other}"])->get('/api/v1/metrics')->assertForbidden();
         $this->flushHeaders()->get('/api/v1/metrics')->assertUnauthorized();
+    }
+
+    public function test_metrics_include_call_quality_per_carrier_and_customer(): void
+    {
+        $this->readings();
+        $customer = Account::factory()->create(['code' => 'CUST']);
+        $carrier = Account::factory()->vendor()->create(['code' => 'CARR']);
+        $trunk = Trunk::factory()->for($carrier, 'account')->create(['name' => 'Main']);
+        $call = fn (array $attrs) => Cdr::factory()->create(['uuid' => (string) Str::uuid(), 'customer_account_id' => $customer->id, ...$attrs]);
+
+        // Answered on the second attempt after a 503: 60 seconds, 2s PDD.
+        $a = $call(['started_at' => now()->subMinutes(5), 'answered_at' => now()->subMinutes(4), 'ended_at' => now()->subMinutes(3), 'billsec' => 60, 'pdd_ms' => 2000]);
+        $a->attemptLog()->create(['attempt' => 1, 'trunk_id' => $trunk->id, 'started_at' => now()->subMinutes(5), 'sip_code' => 503, 'pdd_ms' => 1000]);
+        $a->attemptLog()->create(['attempt' => 2, 'trunk_id' => $trunk->id, 'started_at' => now()->subMinutes(5), 'answered_at' => now()->subMinutes(4), 'sip_code' => 200, 'pdd_ms' => 3000]);
+        // Busy.
+        $b = $call(['started_at' => now()->subMinutes(2), 'ended_at' => now()->subMinutes(2), 'sip_code' => 486]);
+        $b->attemptLog()->create(['attempt' => 1, 'trunk_id' => $trunk->id, 'started_at' => now()->subMinutes(2), 'sip_code' => 486]);
+        // A long call that started 40 minutes ago but just ended counts; one that ended an hour ago does not.
+        $c = $call(['started_at' => now()->subMinutes(40), 'answered_at' => now()->subMinutes(40), 'ended_at' => now()->subMinute(), 'billsec' => 2340]);
+        $c->attemptLog()->create(['attempt' => 1, 'trunk_id' => $trunk->id, 'started_at' => now()->subMinutes(40), 'answered_at' => now()->subMinutes(40), 'sip_code' => 200]);
+        $call(['started_at' => now()->subHours(2), 'ended_at' => now()->subHour()])->attemptLog()->create(['attempt' => 1, 'trunk_id' => $trunk->id, 'started_at' => now()->subHours(2), 'sip_code' => 503]);
+
+        [, $plain] = ApiToken::issue('grafana', ['metrics:read']);
+        $body = $this->withHeaders(['Authorization' => "Bearer {$plain}"])->get('/api/v1/metrics')->assertOk()->getContent();
+        $l = '{carrier="CARR",trunk="Main"}';
+        foreach (["junction_carrier_attempts_15m{$l} 4", "junction_carrier_answered_15m{$l} 2", "junction_carrier_billed_seconds_15m{$l} 2400",
+            "junction_carrier_asr_percent{$l} 50", "junction_carrier_acd_seconds{$l} 1200", "junction_carrier_pdd_seconds{$l} 2",
+            'junction_carrier_failures_15m{carrier="CARR",trunk="Main",reason="busy"} 1', 'junction_carrier_failures_15m{carrier="CARR",trunk="Main",reason="congestion"} 1',
+            'junction_carrier_failures_15m{carrier="CARR",trunk="Main",reason="rejected"} 0',
+            'junction_customer_calls_15m{customer="CUST"} 3', 'junction_customer_answered_15m{customer="CUST"} 2',
+            'junction_customer_asr_percent{customer="CUST"} 66.67', 'junction_customer_acd_seconds{customer="CUST"} 1200', 'junction_customer_pdd_seconds{customer="CUST"} 2',
+            '# TYPE junction_carrier_asr_percent gauge'] as $line) {
+            $this->assertStringContainsString($line, $body);
+        }
     }
 }

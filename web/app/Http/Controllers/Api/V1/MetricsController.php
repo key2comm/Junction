@@ -14,8 +14,8 @@ use Illuminate\Support\Facades\DB;
  * GET /api/v1/metrics: the server's figures in Prometheus' text format, for
  * Grafana (through Prometheus, Grafana Alloy or Grafana Cloud). Needs an API
  * token with the metrics:read ability. CPU, memory, disk, network and
- * FreeSWITCH come from SystemHealth's 15-second readings; active calls and
- * alerts are read live.
+ * FreeSWITCH come from SystemHealth's 15-second readings; active calls,
+ * alerts and call quality (ASR/ACD/PDD per carrier and customer) are read live.
  */
 class MetricsController extends Controller
 {
@@ -77,6 +77,7 @@ class MetricsController extends Controller
             ->groupBy('accounts.code')->selectRaw('accounts.code, count(*) AS n')->get() as $row) {
             $this->metric('junction_active_calls_by_customer', 'gauge', 'Calls in progress per customer.', $row->n, ['customer' => $row->code]);
         }
+        $this->quality();
         foreach (['warning', 'critical'] as $severity) {
             $this->metric('junction_open_alerts', 'gauge', 'Alerts open or acknowledged.',
                 DB::table('alerts')->whereIn('status', ['open', 'acknowledged'])->where('severity', $severity)->count(), ['severity' => $severity]);
@@ -101,6 +102,67 @@ class MetricsController extends Controller
         }
 
         return response(implode("\n", array_merge(...array_values($this->metrics)))."\n", 200, ['Content-Type' => 'text/plain; version=0.0.4; charset=utf-8', 'Cache-Control' => 'no-store']);
+    }
+
+    /**
+     * Call quality over the calls that ended in the last 15 minutes, per carrier
+     * trunk and per customer. Windowed on the end time because a call's record
+     * (and its carrier attempts) only arrives when it ends: counting by start
+     * time would miss the answered calls still in progress and understate ASR.
+     * The counts are there so Grafana can add trunks and customers up
+     * (ASR = sum(answered) / sum(attempts)); the ratios are for quick panels.
+     */
+    private function quality(): void
+    {
+        $since = now()->subMinutes(15);
+        $floor = now()->subDay(); // keeps the scan to the recent months' partitions
+
+        // Same failure classes as QualityRollup (the Quality page).
+        $carriers = DB::table('cdr_attempts as a')
+            ->join('cdrs as c', fn ($j) => $j->on('c.id', '=', 'a.cdr_id')->on('c.started_at', '=', 'a.cdr_started_at'))
+            ->join('trunks as t', 't.id', '=', 'a.trunk_id')
+            ->join('accounts as acc', 'acc.id', '=', 't.account_id')
+            ->where('c.started_at', '>=', $floor)->where('a.cdr_started_at', '>=', $floor)->where('c.ended_at', '>=', $since)
+            ->groupBy('acc.code', 't.name')
+            ->selectRaw(<<<'SQL'
+                acc.code AS carrier, t.name AS trunk, count(*) AS attempts, count(a.answered_at) AS answered,
+                coalesce(sum(c.billsec) FILTER (WHERE a.answered_at IS NOT NULL), 0) AS billsec,
+                avg(a.pdd_ms) AS pdd,
+                count(*) FILTER (WHERE a.answered_at IS NULL AND a.sip_code IN (486, 600)) AS busy,
+                count(*) FILTER (WHERE a.answered_at IS NULL AND (a.sip_code IN (480, 408) OR a.hangup_cause IN ('NO_ANSWER', 'NO_USER_RESPONSE'))) AS no_answer,
+                count(*) FILTER (WHERE a.answered_at IS NULL AND (a.sip_code BETWEEN 500 AND 599
+                                 OR a.hangup_cause IN ('NORMAL_TEMPORARY_FAILURE', 'NORMAL_CIRCUIT_CONGESTION', 'SWITCH_CONGESTION',
+                                                       'PROGRESS_TIMEOUT', 'RECOVERY_ON_TIMER_EXPIRE', 'GATEWAY_DOWN', 'DESTINATION_OUT_OF_ORDER'))) AS congestion,
+                count(*) FILTER (WHERE a.answered_at IS NULL AND (a.sip_code BETWEEN 400 AND 699)
+                                 AND a.sip_code NOT IN (486, 600, 480, 408) AND a.sip_code NOT BETWEEN 500 AND 599) AS rejected
+            SQL)->get();
+        foreach ($carriers as $r) {
+            $l = ['carrier' => (string) $r->carrier, 'trunk' => (string) $r->trunk];
+            $this->metric('junction_carrier_attempts_15m', 'gauge', 'Carrier attempts in the calls that ended in the last 15 minutes.', (int) $r->attempts, $l);
+            $this->metric('junction_carrier_answered_15m', 'gauge', 'Carrier attempts answered (last 15 minutes).', (int) $r->answered, $l);
+            $this->metric('junction_carrier_billed_seconds_15m', 'gauge', 'Billed seconds of the answered attempts (last 15 minutes).', (int) $r->billsec, $l);
+            foreach (['busy', 'no_answer', 'congestion', 'rejected'] as $reason) {
+                $this->metric('junction_carrier_failures_15m', 'gauge', 'Failed carrier attempts by reason (last 15 minutes).', (int) $r->{$reason}, $l + ['reason' => $reason]);
+            }
+            $this->metric('junction_carrier_asr_percent', 'gauge', 'Carrier answer-seizure ratio, 0-100 (last 15 minutes).', round($r->answered / $r->attempts * 100, 2), $l);
+            $this->metric('junction_carrier_acd_seconds', 'gauge', 'Carrier average call duration (last 15 minutes).', $r->answered ? round($r->billsec / $r->answered, 1) : null, $l);
+            $this->metric('junction_carrier_pdd_seconds', 'gauge', 'Carrier average post-dial delay (last 15 minutes).', $r->pdd !== null ? round((float) $r->pdd / 1000, 3) : null, $l);
+        }
+
+        $customers = DB::table('cdrs as c')->join('accounts as acc', 'acc.id', '=', 'c.customer_account_id')
+            ->where('c.started_at', '>=', $floor)->where('c.ended_at', '>=', $since)
+            ->groupBy('acc.code')
+            ->selectRaw('acc.code AS customer, count(*) AS calls, count(c.answered_at) AS answered, coalesce(sum(c.billsec), 0) AS billsec, avg(c.pdd_ms) AS pdd')
+            ->get();
+        foreach ($customers as $r) {
+            $l = ['customer' => (string) $r->customer];
+            $this->metric('junction_customer_calls_15m', 'gauge', 'Customer calls that ended in the last 15 minutes.', (int) $r->calls, $l);
+            $this->metric('junction_customer_answered_15m', 'gauge', 'Customer calls answered (last 15 minutes).', (int) $r->answered, $l);
+            $this->metric('junction_customer_billed_seconds_15m', 'gauge', 'Customer billed seconds (last 15 minutes).', (int) $r->billsec, $l);
+            $this->metric('junction_customer_asr_percent', 'gauge', 'Customer answer-seizure ratio, 0-100 (last 15 minutes).', round($r->answered / $r->calls * 100, 2), $l);
+            $this->metric('junction_customer_acd_seconds', 'gauge', 'Customer average call duration (last 15 minutes).', $r->answered ? round($r->billsec / $r->answered, 1) : null, $l);
+            $this->metric('junction_customer_pdd_seconds', 'gauge', 'Customer average post-dial delay (last 15 minutes).', $r->pdd !== null ? round((float) $r->pdd / 1000, 3) : null, $l);
+        }
     }
 
     /** @param array<string, string> $labels */

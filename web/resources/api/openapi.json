@@ -4313,7 +4313,7 @@
     "/metrics": {
       "get": {
         "summary": "Server metrics for Prometheus / Grafana",
-        "description": "CPU, memory, disk, network (per interface), FreeSWITCH call legs and calls per second, active calls (total and per customer), open alerts, queue, backups, certificate expiry and database size, in Prometheus text format. Server figures are refreshed every 15 seconds. Admin tokens only.",
+        "description": "CPU, memory, disk, network (per interface), FreeSWITCH call legs and calls per second, active calls (total and per customer), call quality over the last 15 minutes (attempts, answered, ASR, ACD, PDD and failure reasons per carrier trunk; calls, ASR, ACD and PDD per customer), open alerts, queue, backups, certificate expiry and database size, in Prometheus text format. Server figures are refreshed every 15 seconds. Admin tokens only.",
         "security": [
           {
             "bearer": []

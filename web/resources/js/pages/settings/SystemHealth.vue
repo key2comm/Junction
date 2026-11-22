@@ -219,19 +219,38 @@ const scrape = computed(() => {
         </section>
 
         <section class="ss-stack-2">
-            <Heading variant="small" title="Grafana" description="Graph CPU, memory, disk, bandwidth, active calls and calls per second in Grafana, through Prometheus (or Grafana Alloy / Grafana Cloud)." />
+            <Heading
+                variant="small"
+                title="Grafana"
+                description="Graph CPU, memory, disk, bandwidth, active calls, calls per second and call quality (ASR, ACD, PDD per carrier and customer) in Grafana."
+            />
+            <p class="mb-0 text-secondary">
+                Grafana can't read this server directly: something has to collect the metrics for it first (Grafana Cloud's Metrics Endpoint, Prometheus or Grafana Alloy). Don't point a Grafana
+                data source at this server's address; it won't work, whatever token you give it.
+            </p>
             <ol class="ss-stack-2 ps-3 mb-0">
                 <li>
                     Create an API token with the <strong>Read server metrics</strong> permission under <Link :href="apiTokens()">Settings → API tokens</Link>.
                     <span v-if="metricsTokens" class="text-success">({{ metricsTokens }} active token{{ metricsTokens === 1 ? '' : 's' }} can read metrics.)</span>
                 </li>
                 <li>
-                    Have Prometheus read <span class="font-monospace">{{ metricsUrl }}</span> with that token, e.g. in <span class="font-monospace">prometheus.yml</span>:
-                    <pre class="mt-2 mb-0 p-2 rounded border bg-body-tertiary small">{{ scrape }}</pre>
-                    The address can only be read from outside if the firewall lets the Prometheus server reach this server's HTTPS port.
+                    Have the metrics collected from <span class="font-monospace">{{ metricsUrl }}</span> with that token:
+                    <ul class="ss-stack-2 mt-2 ps-3">
+                        <li>
+                            <strong>Grafana Cloud</strong> (nothing to install): Connections → Add new connection → <strong>Metrics Endpoint</strong>. Enter the address above, choose
+                            <strong>Bearer</strong> authentication and paste the token (without the word "Bearer"), then Test Connection, Save and Install. Its data source is the
+                            one ending in <span class="font-monospace">-prom</span>.
+                        </li>
+                        <li>
+                            <strong>Your own Prometheus</strong>, e.g. in <span class="font-monospace">prometheus.yml</span>:
+                            <pre class="mt-2 mb-0 p-2 rounded border bg-body-tertiary small">{{ scrape }}</pre>
+                        </li>
+                    </ul>
+                    The address can only be read from outside if the firewall lets the collector (Grafana Cloud or your Prometheus server) reach this server's HTTPS port. If you
+                    replace the token, update it there too.
                 </li>
                 <li>
-                    In Grafana, add Prometheus as a data source, then import the ready-made dashboard (Dashboards → New → Import):
+                    In Grafana, import the ready-made dashboard (Dashboards → New → Import) and pick that Prometheus data source:
                     <div class="mt-2">
                         <a :href="grafana().url" class="btn btn-outline-primary btn-sm"><Download class="icon me-1" /> Download the Grafana dashboard</a>
                     </div>
