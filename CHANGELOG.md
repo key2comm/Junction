@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v1.0.11 (2026-11-21)
 
 ### Call records
 - **Call records are stored by month**, so they stay fast as they grow: a search over a date range only reads those months, however many years are kept. Nothing changes in how you search, view or export them, and **no call record is ever deleted**.
