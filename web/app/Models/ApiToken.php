@@ -29,6 +29,7 @@ class ApiToken extends Model
         'cdrs:read' => 'Read call records',
         'billing:read' => 'Read invoices',
         'alerts:read' => 'Read fraud and operational alerts',
+        'metrics:read' => 'Read server metrics (Prometheus format, for Grafana)',
     ];
 
     /** A token scoped to one customer account can only have these. */

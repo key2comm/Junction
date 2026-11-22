@@ -35,7 +35,7 @@ final class AdminAreas
         self::ANY => ['dashboard', 'dashboard.*'],
         self::USERS => ['admin-users.*', 'admin-invitations.*'],
         self::AUDIT => ['audit.*'],
-        self::MONITORING => ['alerts.*', 'quality.*', 'live.*', 'cdrs.*'],
+        self::MONITORING => ['alerts.*', 'quality.*', 'live.*', 'cdrs.*', 'system-health.*'],
         self::BILLING => [
             'invoices.*', 'accounts.invoices.*', 'accounts.ledger.*', 'billing-items.*', 'billing-profiles.*', 'taxes.*',
             'accounts.billing-profile.*', 'accounts.charges.*', 'accounts.vendor-ledger.*', 'accounts.vendor-invoices.*',

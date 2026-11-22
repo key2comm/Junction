@@ -1,5 +1,23 @@
 # Changelog
 
+## Unreleased
+
+### System health
+- **Settings → System health**: one page showing whether everything is working: the scheduler, FreeSWITCH and its SIP profiles, background jobs, call records being saved, disk space, backups, the SSL certificate and the monthly call record tables. Also shows CPU, memory, disk, bandwidth per network interface, FreeSWITCH call legs and calls per second, and the database size month by month. It refreshes every 15 seconds. Admins of every level can see it.
+- **Server alerts**: new rules on the Alerts page, on by default, emailed like the others and resolved automatically once fixed:
+  - FreeSWITCH down for 2 minutes, or a SIP profile not running
+  - disk 90% full
+  - background jobs stuck for 10 minutes
+  - call records not saved for 10 minutes
+  - the last backup failed, or no backup for 26 hours
+  - the certificate expiring within 14 days
+  - next month's call record table missing
+
+  Thresholds can be changed under Alerts → Rules.
+
+### Grafana
+- **Metrics for Grafana**: `/api/v1/metrics` gives CPU, memory, disk, bandwidth, active calls (in total and per customer), calls per second, FreeSWITCH, open alerts, backups, certificate expiry and database size in Prometheus format. It needs an API token with the new *Read server metrics* permission. A ready-made Grafana dashboard can be downloaded from Settings → System health, which also has a sample Prometheus configuration.
+
 ## v1.0.11 (2026-11-21)
 
 ### Call records

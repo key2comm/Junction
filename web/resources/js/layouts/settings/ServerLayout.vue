@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /** Server settings (admin only): the pages under the top menu's Settings item, as tabs of one card. */
 import { Link } from '@inertiajs/vue3';
-import { BrickWall, CalendarClock, DatabaseBackup, ScrollText, FileAudio, KeyRound, Mail, Palette, Receipt, ShieldCheck, UserCog, Users } from '@lucide/vue';
+import { BrickWall, CalendarClock, DatabaseBackup, HeartPulse, ScrollText, FileAudio, KeyRound, Mail, Palette, Receipt, ShieldCheck, UserCog, Users } from '@lucide/vue';
 import { computed } from 'vue';
 import { useAccess } from '@/composables/useAccess';
 import type { AdminArea } from '@/composables/useAccess';
@@ -19,6 +19,7 @@ import { edit as editClientDefaults } from '@/routes/client-defaults';
 import { edit as editEmail } from '@/routes/email';
 import { index as firewall } from '@/routes/firewall';
 import { index as reports } from '@/routes/reports';
+import { index as systemHealth } from '@/routes/system-health';
 
 const allTabs: { title: string; href: ReturnType<typeof firewall>; icon: typeof Mail; area: AdminArea }[] = [
     // Same order as the top menu's Settings dropdown.
@@ -31,6 +32,7 @@ const allTabs: { title: string; href: ReturnType<typeof firewall>; icon: typeof 
     { title: 'Email (SMTP)', href: editEmail(), icon: Mail, area: 'settings' },
     { title: 'Scheduled reports', href: reports(), icon: CalendarClock, area: 'settings' },
     { title: 'Backups', href: editBackups(), icon: DatabaseBackup, area: 'settings' },
+    { title: 'System health', href: systemHealth(), icon: HeartPulse, area: 'monitoring' },
     { title: 'API tokens', href: apiTokens(), icon: KeyRound, area: 'settings' },
     { title: 'Admin users', href: adminUsers(), icon: Users, area: 'users' },
     { title: 'Audit log', href: auditLog(), icon: ScrollText, area: 'audit' },
@@ -40,7 +42,7 @@ const { can } = useAccess();
 const tabs = computed(() => allTabs.filter((t) => can(t.area)));
 const { isCurrentOrParentUrl } = useCurrentUrl();
 // The firewall and reports pages have wide tables; the others are single forms.
-const wide = computed(() => [firewall(), reports(), adminUsers(), editBackups(), auditLog()].some((h) => isCurrentOrParentUrl(h)));
+const wide = computed(() => [firewall(), reports(), adminUsers(), editBackups(), auditLog(), systemHealth()].some((h) => isCurrentOrParentUrl(h)));
 </script>
 
 <template>

@@ -4,6 +4,7 @@ use App\Http\Controllers\Settings\AdminUserController;
 use App\Http\Controllers\Settings\ApiTokenController;
 use App\Http\Controllers\Settings\AuditLogController;
 use App\Http\Controllers\Settings\BackupController;
+use App\Http\Controllers\Settings\SystemHealthController;
 use App\Http\Controllers\Settings\BillingController;
 use App\Http\Controllers\Settings\BrandingController;
 use App\Http\Controllers\Settings\CaptureController;
@@ -110,6 +111,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('settings/backups/{backup}/download', [BackupController::class, 'download'])->middleware(RequirePassword::class)->name('backups.download');
         Route::delete('settings/backups/{backup}', [BackupController::class, 'destroy'])->middleware(RequirePassword::class)->name('backups.destroy');
     });
+
+    // System health: the server's checks and figures, and the Grafana dashboard to import.
+    Route::get('settings/system-health', [SystemHealthController::class, 'index'])->middleware('admin')->name('system-health.index');
+    Route::get('settings/system-health/grafana-dashboard', [SystemHealthController::class, 'grafana'])->middleware('admin')->name('system-health.grafana');
 
     // Audit log: who changed what (owners and admins; owners set the retention).
     Route::get('settings/audit-log', [AuditLogController::class, 'index'])->middleware('admin')->name('audit.index');

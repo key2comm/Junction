@@ -99,7 +99,7 @@ class SystemStats
     }
 
     /** @return array{0: int, 1: int}|null [busy, total] jiffies since boot */
-    private function cpuTimes(): ?array
+    public function cpuTimes(): ?array
     {
         $stat = @file_get_contents("{$this->proc}/stat");
         if ($stat === false || ! preg_match('/^cpu\s+(.+)$/m', $stat, $m)) {
@@ -114,7 +114,7 @@ class SystemStats
     }
 
     /** @return array<string, int> kB values */
-    private function meminfo(): array
+    public function meminfo(): array
     {
         $out = [];
         foreach (explode("\n", (string) @file_get_contents("{$this->proc}/meminfo")) as $line) {
@@ -126,10 +126,35 @@ class SystemStats
         return $out;
     }
 
-    private function cores(): int
+    public function cores(): int
     {
         $stat = (string) @file_get_contents("{$this->proc}/stat");
 
         return max(1, preg_match_all('/^cpu\d+\s/m', $stat));
+    }
+
+    /**
+     * Bytes received and sent since boot, per network interface (not loopback
+     * or virtual bridges).
+     *
+     * @return array<string, array{rx: int, tx: int}>
+     */
+    public function network(): array
+    {
+        $out = [];
+        foreach (array_slice(explode("\n", (string) @file_get_contents("{$this->proc}/net/dev")), 2) as $line) {
+            if (! preg_match('/^\s*([^:\s]+):\s*(.+)$/', $line, $m) || preg_match('/^(lo|docker|veth|br-|virbr)/', $m[1])) {
+                continue;
+            }
+            $f = preg_split('/\s+/', trim($m[2]));
+            $out[$m[1]] = ['rx' => (int) ($f[0] ?? 0), 'tx' => (int) ($f[8] ?? 0)];
+        }
+
+        return $out;
+    }
+
+    public function diskPath(): string
+    {
+        return $this->disk;
     }
 }

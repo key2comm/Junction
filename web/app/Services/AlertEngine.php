@@ -39,7 +39,28 @@ class AlertEngine
             'help' => "A gateway's last {attempts} attempts (within the last hour) all failed."],
         'ha_backup' => ['label' => 'Backup server not in sync', 'kind' => 'operational', 'severity' => 'critical',
             'help' => 'High availability: the backup server is disconnected, or more than {max_lag_minutes} minutes behind. (Only on a main server with a backup set up.)'],
+        // Server health (SystemHealth; shown on Settings → System health).
+        'freeswitch_down' => ['label' => 'FreeSWITCH down', 'kind' => 'operational', 'severity' => 'critical',
+            'help' => 'FreeSWITCH has not answered for {minutes} minutes, or one of its SIP profiles is not running.'],
+        'disk_space' => ['label' => 'Disk almost full', 'kind' => 'operational', 'severity' => 'critical',
+            'help' => "The server's disk is {percent}% full or more."],
+        'queue_stuck' => ['label' => 'Background jobs stuck', 'kind' => 'operational', 'severity' => 'critical',
+            'help' => 'A background job (certificates, firewall, imports, emails) has waited {minutes} minutes or more: the queue worker is not running or is stuck.'],
+        'cdr_not_saved' => ['label' => 'Call records not saved', 'kind' => 'operational', 'severity' => 'critical',
+            'help' => 'FreeSWITCH could not hand call records to the app for {minutes} minutes or more (they wait in its xml_cdr folder).'],
+        'backup_missed' => ['label' => 'Backup missed', 'kind' => 'operational', 'severity' => 'critical',
+            'help' => 'The last backup failed, or there has been no backup for {hours} hours. (Only while nightly backups are on.)'],
+        'certificate_expiring' => ['label' => 'Certificate expiring', 'kind' => 'operational', 'severity' => 'warning',
+            'help' => 'The SSL certificate expires in fewer than {days} days (Let\'s Encrypt certificates renew 30 days ahead, so this means renewal is failing).'],
+        'cdr_months_missing' => ['label' => 'Call record months missing', 'kind' => 'operational', 'severity' => 'warning',
+            'help' => "Next month's call record table hasn't been made (calls are still saved; this means the nightly job is failing)."],
     ];
+
+    /** Server health rules: their findings come from SystemHealth::checks(). */
+    public const HEALTH_RULES = ['freeswitch_down', 'disk_space', 'queue_stuck', 'cdr_not_saved', 'backup_missed', 'certificate_expiring', 'cdr_months_missing'];
+
+    /** @var list<array<string, mixed>>|null this run's health checks */
+    private ?array $health = null;
 
     /** @return array{opened: int, updated: int, resolved: int} */
     public function run(): array
@@ -54,10 +75,16 @@ class AlertEngine
             }
             $params = json_decode($rule->params, true) ?: [];
             try {
-                $findings = $this->{'check'.str_replace('_', '', ucwords($type, '_'))}($params);
+                $findings = in_array($type, self::HEALTH_RULES, true)
+                    ? $this->healthFindings($type)
+                    : $this->{'check'.str_replace('_', '', ucwords($type, '_'))}($params);
             } catch (Throwable $e) {
                 Log::error("Alert rule {$type} failed", ['error' => $e->getMessage()]);
 
+                continue;
+            }
+            // No reading to judge by (e.g. FreeSWITCH's state isn't known): leave its alerts as they are.
+            if ($findings === null) {
                 continue;
             }
 
@@ -257,6 +284,20 @@ class AlertEngine
         return array_map(fn ($r) => ['key' => "gateway_failing:{$r->gateway_id}", 'account_id' => $r->account_id, 'trunk_id' => $r->trunk_id,
             'gateway_id' => $r->gateway_id, 'title' => "Gateway {$r->name}: last {$r->n} attempts all failed",
             'details' => ['attempts' => (int) $r->n]], $rows);
+    }
+
+    // --- server health ---
+
+    /** @return list<array<string, mixed>>|null null when the rule's checks have no reading yet */
+    private function healthFindings(string $type): ?array
+    {
+        $checks = array_values(array_filter($this->health ??= SystemHealth::checks(), fn ($c) => $c['rule'] === $type));
+        if ($checks === [] || collect($checks)->contains(fn ($c) => $c['state'] === 'unknown' && ! $c['alert'])) {
+            return $checks === [] ? [] : null;
+        }
+
+        return array_values(array_map(fn ($c) => ['key' => "{$type}:{$c['key']}", 'title' => "{$c['label']}: {$c['summary']}",
+            'details' => array_filter($c['details'], fn ($v) => is_scalar($v))], array_filter($checks, fn ($c) => $c['alert'])));
     }
 
     // --- high availability ---

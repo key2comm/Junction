@@ -60,6 +60,8 @@ return [
         // The "carriers" ACL (carriers sending to the PBX port), written by App\Services\Freeswitch\CarrierAcl.
         'acl_dir' => env('SOFTSWITCH_FS_ACL_DIR', '/usr/local/freeswitch/etc/freeswitch/acl'),
         'greeting_dir' => env('SOFTSWITCH_FS_GREETING_DIR', '/usr/local/freeswitch/var/lib/freeswitch/greetings'),
+        // Call records mod_xml_cdr could not post after its retries (System health checks it).
+        'cdr_error_dir' => env('SOFTSWITCH_FS_CDR_ERROR_DIR', '/usr/local/freeswitch/var/log/freeswitch/xml_cdr'),
     ],
 
     // Extra carrier IPs from the installer config, always allowed through the firewall.

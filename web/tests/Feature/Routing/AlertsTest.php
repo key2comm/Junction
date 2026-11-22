@@ -191,7 +191,7 @@ class AlertsTest extends TestCase
 
         $this->cdr(['sell_cost' => '100']);
         $this->run_();
-        $this->actingAs($admin)->get(route('alerts.index'))->assertInertia(fn (Assert $p) => $p->component('alerts/Index')->has('alerts', 1)->has('rules', 8)->where('openAlerts', 1));
+        $this->actingAs($admin)->get(route('alerts.index'))->assertInertia(fn (Assert $p) => $p->component('alerts/Index')->has('alerts', 1)->has('rules', count(\App\Services\AlertEngine::RULES))->where('openAlerts', 1));
 
         [, $plain] = ApiToken::issue('a', ['alerts:read']);
         $this->withHeaders(['Authorization' => "Bearer {$plain}"])->getJson('/api/v1/alerts')->assertOk()->assertJsonPath('data.0.type', 'spend_spike');

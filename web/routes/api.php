@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\QualityController;
 use App\Http\Controllers\Api\V1\AccountsController;
 use App\Http\Controllers\Api\V1\CdrsController;
 use App\Http\Controllers\Api\V1\MeController;
+use App\Http\Controllers\Api\V1\MetricsController;
 use App\Http\Controllers\Api\V1\RateDecksController;
 use App\Http\Controllers\Api\V1\RoutingController;
 use App\Http\Middleware\ApiAuth;
@@ -81,6 +82,8 @@ Route::prefix('v1')->group(function () {
         Route::middleware($can('alerts:read'))->group(function () {
             Route::get('alerts', [AlertController::class, 'api']);
         });
+        // Prometheus scrapes every 15-60 seconds; for Grafana.
+        Route::get('metrics', MetricsController::class)->middleware($can('metrics:read'));
         Route::middleware([$can('billing:read'), 'billing'])->group(function () {
             Route::get('invoices', [CdrsController::class, 'invoices']);
             Route::get('invoices/{invoice}', [CdrsController::class, 'invoice']);

@@ -4309,6 +4309,37 @@
           }
         }
       }
+    },
+    "/metrics": {
+      "get": {
+        "summary": "Server metrics for Prometheus / Grafana",
+        "description": "CPU, memory, disk, network (per interface), FreeSWITCH call legs and calls per second, active calls (total and per customer), open alerts, queue, backups, certificate expiry and database size, in Prometheus text format. Server figures are refreshed every 15 seconds. Admin tokens only.",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "x-ability": "metrics:read",
+        "responses": {
+          "200": {
+            "description": "Prometheus text exposition format",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "# HELP junction_active_calls Calls in progress.\n# TYPE junction_active_calls gauge\njunction_active_calls 42\n"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
     }
   }
 }

@@ -40,6 +40,7 @@ import {
     Users,
     UserRound,
     DatabaseBackup,
+    HeartPulse,
     ScrollText,
 } from '@lucide/vue';
 import { onClickOutside } from '@vueuse/core';
@@ -64,6 +65,7 @@ import { edit as capturesSettings } from '@/routes/captures';
 import { index as reports } from '@/routes/reports';
 import { index as auditLog } from '@/routes/audit';
 import { edit as backupSettings } from '@/routes/backups';
+import { index as systemHealth } from '@/routes/system-health';
 import { edit as certificate } from '@/routes/certificate';
 import { edit as clientDefaults } from '@/routes/client-defaults';
 import { index as carrierRates } from '@/routes/carrier-rates';
@@ -160,6 +162,7 @@ const allAdminNav = computed((): Gated<NavItem | (NavGroup & { items: Gated<NavI
             { title: 'Email (SMTP)', href: email(), icon: Mail, area: 'settings' },
             { title: 'Scheduled reports', href: reports(), icon: CalendarClock, area: 'settings' },
             { title: 'Backups', href: backupSettings(), icon: DatabaseBackup, area: 'settings' },
+            { title: 'System health', href: systemHealth(), icon: HeartPulse, area: 'monitoring' },
             { title: 'API tokens', href: apiTokens(), icon: KeyRound, area: 'settings' },
             { title: 'Admin users', href: adminUsers(), icon: Users, area: 'users' },
             { title: 'Audit log', href: auditLog(), icon: ScrollText, area: 'audit' },
