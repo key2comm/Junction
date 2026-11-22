@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v1.0.12 (2026-11-22)
 
 ### System health
 - **Settings → System health**: one page showing whether everything is working: the scheduler, FreeSWITCH and its SIP profiles, background jobs, call records being saved, disk space, backups, the SSL certificate and the monthly call record tables. Also shows CPU, memory, disk, bandwidth per network interface, FreeSWITCH call legs and calls per second, and the database size month by month. It refreshes every 15 seconds. Admins of every level can see it.
