@@ -243,7 +243,7 @@ const scrape = computed(() => {
                         </li>
                         <li>
                             <strong>Your own Prometheus</strong>, e.g. in <span class="font-monospace">prometheus.yml</span>:
-                            <pre class="mt-2 mb-0 p-2 rounded border bg-body-tertiary small">{{ scrape }}</pre>
+                            <pre class="mt-2 mb-0 small">{{ scrape }}</pre>
                         </li>
                     </ul>
                     The address can only be read from outside if the firewall lets the collector (Grafana Cloud or your Prometheus server) reach this server's HTTPS port. If you

@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Fixes
+- Settings → System health: the sample Prometheus configuration was nearly invisible (light text on a light background).
+
 ## v1.0.13 (2026-11-22)
 
 ### Grafana
