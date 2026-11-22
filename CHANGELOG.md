@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v1.0.14 (2026-11-22)
 
 ### Fixes
 - Settings → System health: the sample Prometheus configuration was nearly invisible (light text on a light background).
