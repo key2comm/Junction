@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Fixes
+- The Grafana dashboard works when shared externally (Grafana's public dashboards): it no longer has a "Server" variable, which public dashboards don't fill in, so every panel showed "No data". With several servers in one Grafana, the panels add them up as before. Download it again from Settings → System health and import it over the old one.
+
 ## v1.0.14 (2026-11-22)
 
 ### Fixes

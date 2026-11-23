@@ -31,7 +31,7 @@
   ],
   "timezone": "browser",
   "schemaVersion": 38,
-  "version": 2,
+  "version": 3,
   "editable": true,
   "refresh": "30s",
   "time": {
@@ -39,31 +39,7 @@
     "to": "now"
   },
   "templating": {
-    "list": [
-      {
-        "name": "instance",
-        "label": "Server",
-        "type": "query",
-        "datasource": {
-          "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
-        },
-        "query": {
-          "query": "label_values(junction_info, instance)",
-          "refId": "instance"
-        },
-        "definition": "label_values(junction_info, instance)",
-        "refresh": 2,
-        "includeAll": true,
-        "multi": true,
-        "current": {
-          "selected": true,
-          "text": "All",
-          "value": "$__all"
-        },
-        "allValue": ".*"
-      }
-    ]
+    "list": []
   },
   "panels": [
     {
@@ -87,7 +63,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "refId": "A",
-          "expr": "sum(junction_active_calls{instance=~\"$instance\"})",
+          "expr": "sum(junction_active_calls)",
           "legendFormat": ""
         }
       ],
@@ -134,7 +110,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "refId": "A",
-          "expr": "sum(rate(junction_freeswitch_sessions_total{instance=~\"$instance\"}[1m])) / 2",
+          "expr": "sum(rate(junction_freeswitch_sessions_total[1m])) / 2",
           "legendFormat": ""
         }
       ],
@@ -184,7 +160,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "refId": "A",
-          "expr": "min(junction_freeswitch_up{instance=~\"$instance\"})",
+          "expr": "min(junction_freeswitch_up)",
           "legendFormat": ""
         }
       ],
@@ -255,7 +231,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "refId": "A",
-          "expr": "avg(junction_cpu_usage_percent{instance=~\"$instance\"})",
+          "expr": "avg(junction_cpu_usage_percent)",
           "legendFormat": ""
         }
       ],
@@ -307,7 +283,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "refId": "A",
-          "expr": "sum(junction_memory_used_bytes{instance=~\"$instance\"}) / sum(junction_memory_total_bytes{instance=~\"$instance\"}) * 100",
+          "expr": "sum(junction_memory_used_bytes) / sum(junction_memory_total_bytes) * 100",
           "legendFormat": ""
         }
       ],
@@ -359,7 +335,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "refId": "A",
-          "expr": "sum(junction_disk_used_bytes{instance=~\"$instance\"}) / sum(junction_disk_total_bytes{instance=~\"$instance\"}) * 100",
+          "expr": "sum(junction_disk_used_bytes) / sum(junction_disk_total_bytes) * 100",
           "legendFormat": ""
         }
       ],
@@ -411,7 +387,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "refId": "A",
-          "expr": "sum(junction_active_calls{instance=~\"$instance\"})",
+          "expr": "sum(junction_active_calls)",
           "legendFormat": "Calls"
         },
         {
@@ -420,7 +396,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "refId": "B",
-          "expr": "sum(junction_freeswitch_sessions{instance=~\"$instance\"})",
+          "expr": "sum(junction_freeswitch_sessions)",
           "legendFormat": "Call legs (FreeSWITCH)"
         }
       ],
@@ -467,7 +443,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "refId": "A",
-          "expr": "sum(rate(junction_freeswitch_sessions_total{instance=~\"$instance\"}[1m])) / 2",
+          "expr": "sum(rate(junction_freeswitch_sessions_total[1m])) / 2",
           "legendFormat": "Calls/s"
         }
       ],
@@ -515,7 +491,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "refId": "A",
-          "expr": "junction_cpu_usage_percent{instance=~\"$instance\"}",
+          "expr": "junction_cpu_usage_percent",
           "legendFormat": "CPU % {{host}}"
         }
       ],
@@ -565,7 +541,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "refId": "A",
-          "expr": "junction_memory_used_bytes{instance=~\"$instance\"}",
+          "expr": "junction_memory_used_bytes",
           "legendFormat": "Used {{host}}"
         },
         {
@@ -574,7 +550,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "refId": "B",
-          "expr": "junction_memory_total_bytes{instance=~\"$instance\"}",
+          "expr": "junction_memory_total_bytes",
           "legendFormat": "Total {{host}}"
         },
         {
@@ -583,7 +559,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "refId": "C",
-          "expr": "junction_swap_used_bytes{instance=~\"$instance\"}",
+          "expr": "junction_swap_used_bytes",
           "legendFormat": "Swap used {{host}}"
         }
       ],
@@ -631,7 +607,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "refId": "A",
-          "expr": "rate(junction_network_receive_bytes_total{instance=~\"$instance\"}[1m]) * 8",
+          "expr": "rate(junction_network_receive_bytes_total[1m]) * 8",
           "legendFormat": "{{interface}} in"
         },
         {
@@ -640,7 +616,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "refId": "B",
-          "expr": "-rate(junction_network_transmit_bytes_total{instance=~\"$instance\"}[1m]) * 8",
+          "expr": "-rate(junction_network_transmit_bytes_total[1m]) * 8",
           "legendFormat": "{{interface}} out"
         }
       ],
@@ -689,7 +665,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "refId": "A",
-          "expr": "topk(10, junction_active_calls_by_customer{instance=~\"$instance\"})",
+          "expr": "topk(10, junction_active_calls_by_customer)",
           "legendFormat": "{{customer}}"
         }
       ],
@@ -736,7 +712,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "refId": "A",
-          "expr": "junction_load_average{instance=~\"$instance\"}",
+          "expr": "junction_load_average",
           "legendFormat": "{{minutes}} min"
         }
       ],
@@ -783,7 +759,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "refId": "A",
-          "expr": "junction_disk_used_bytes{instance=~\"$instance\"}",
+          "expr": "junction_disk_used_bytes",
           "legendFormat": "Used"
         },
         {
@@ -792,7 +768,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "refId": "B",
-          "expr": "junction_disk_total_bytes{instance=~\"$instance\"}",
+          "expr": "junction_disk_total_bytes",
           "legendFormat": "Total"
         },
         {
@@ -801,7 +777,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "refId": "C",
-          "expr": "junction_database_bytes{instance=~\"$instance\"}",
+          "expr": "junction_database_bytes",
           "legendFormat": "Database"
         }
       ],
@@ -849,7 +825,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "refId": "A",
-          "expr": "sum(junction_open_alerts{instance=~\"$instance\",severity=\"critical\"})",
+          "expr": "sum(junction_open_alerts{severity=\"critical\"})",
           "legendFormat": "Critical"
         },
         {
@@ -858,7 +834,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "refId": "B",
-          "expr": "sum(junction_open_alerts{instance=~\"$instance\",severity=\"warning\"})",
+          "expr": "sum(junction_open_alerts{severity=\"warning\"})",
           "legendFormat": "Warning"
         }
       ],
@@ -914,7 +890,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "refId": "A",
-          "expr": "min(junction_certificate_expiry_timestamp_seconds{instance=~\"$instance\"}) - time()",
+          "expr": "min(junction_certificate_expiry_timestamp_seconds) - time()",
           "legendFormat": ""
         }
       ],
@@ -975,7 +951,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "refId": "A",
-          "expr": "time() - max(junction_backup_last_success_timestamp_seconds{instance=~\"$instance\"})",
+          "expr": "time() - max(junction_backup_last_success_timestamp_seconds)",
           "legendFormat": ""
         }
       ],
@@ -1033,7 +1009,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "refId": "A",
-          "expr": "sum(junction_cdr_waiting{instance=~\"$instance\"})",
+          "expr": "sum(junction_cdr_waiting)",
           "legendFormat": ""
         }
       ],
@@ -1103,7 +1079,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "refId": "A",
-          "expr": "100 * sum by (carrier) (junction_carrier_answered_15m{instance=~\"$instance\"}) / sum by (carrier) (junction_carrier_attempts_15m{instance=~\"$instance\"})",
+          "expr": "100 * sum by (carrier) (junction_carrier_answered_15m) / sum by (carrier) (junction_carrier_attempts_15m)",
           "legendFormat": "{{carrier}}"
         }
       ],
@@ -1154,7 +1130,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "refId": "A",
-          "expr": "sum by (carrier) (junction_carrier_pdd_seconds{instance=~\"$instance\"} * junction_carrier_attempts_15m{instance=~\"$instance\"}) / sum by (carrier) (junction_carrier_attempts_15m{instance=~\"$instance\"})",
+          "expr": "sum by (carrier) (junction_carrier_pdd_seconds * junction_carrier_attempts_15m) / sum by (carrier) (junction_carrier_attempts_15m)",
           "legendFormat": "{{carrier}}"
         }
       ],
@@ -1204,7 +1180,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "refId": "A",
-          "expr": "sum by (carrier) (junction_carrier_billed_seconds_15m{instance=~\"$instance\"}) / sum by (carrier) (junction_carrier_answered_15m{instance=~\"$instance\"})",
+          "expr": "sum by (carrier) (junction_carrier_billed_seconds_15m) / sum by (carrier) (junction_carrier_answered_15m)",
           "legendFormat": "{{carrier}}"
         }
       ],
@@ -1254,7 +1230,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "refId": "A",
-          "expr": "sum by (carrier, reason) (junction_carrier_failures_15m{instance=~\"$instance\"}) > 0",
+          "expr": "sum by (carrier, reason) (junction_carrier_failures_15m) > 0",
           "legendFormat": "{{carrier}} {{reason}}"
         }
       ],
@@ -1308,7 +1284,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "refId": "A",
-          "expr": "100 * (sum by (customer) (junction_customer_answered_15m{instance=~\"$instance\"}) / sum by (customer) (junction_customer_calls_15m{instance=~\"$instance\"})) and on (customer) topk(10, sum by (customer) (junction_customer_calls_15m{instance=~\"$instance\"}))",
+          "expr": "100 * (sum by (customer) (junction_customer_answered_15m) / sum by (customer) (junction_customer_calls_15m)) and on (customer) topk(10, sum by (customer) (junction_customer_calls_15m))",
           "legendFormat": "{{customer}}"
         }
       ],
@@ -1359,7 +1335,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "refId": "A",
-          "expr": "topk(10, sum by (customer) (junction_customer_billed_seconds_15m{instance=~\"$instance\"})) / 60",
+          "expr": "topk(10, sum by (customer) (junction_customer_billed_seconds_15m)) / 60",
           "legendFormat": "{{customer}}"
         }
       ],

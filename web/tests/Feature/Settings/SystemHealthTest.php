@@ -188,6 +188,9 @@ class SystemHealthTest extends TestCase
 
         $dashboard = json_decode(file_get_contents(resource_path('grafana/junction-dashboard.json')), true);
         $this->assertSame('Junction softswitch', $dashboard['title']);
+        // No template variables: Grafana's public (shared externally) dashboards don't fill them in.
+        $this->assertSame([], $dashboard['templating']['list']);
+        $this->assertStringNotContainsString('$instance', json_encode($dashboard));
     }
 
     public function test_metrics_for_prometheus_need_the_metrics_ability(): void
