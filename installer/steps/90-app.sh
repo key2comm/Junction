@@ -105,8 +105,12 @@ info "Building frontend assets (slow on small servers)"
 as_app npm ci --no-audit --no-fund --loglevel=error
 # The build's output goes to a log (it is long); a failure shows its end. The
 # first build after new code has occasionally failed once and then passed, so
-# it is retried once before giving up.
-build_log="$home/frontend-build.log"
+# it is retried once before giving up. The log is opened by root, so it lives in
+# a root-only folder: in the app user's home, that user could replace it with a
+# symlink and have root write (through the build, which runs as that user) to
+# any file.
+install -d -o root -g root -m 0700 /var/log/softswitch-install
+build_log=/var/log/softswitch-install/frontend-build.log
 if ! as_app npm run build >"$build_log" 2>&1; then
 	tail -n 25 "$build_log" >&2
 	warn "the frontend build failed; trying once more (full output: $build_log)"

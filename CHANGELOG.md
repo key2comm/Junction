@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Fixes
+- Security: the installer's frontend build log moved from the app user's home folder to `/var/log/softswitch-install/frontend-build.log` (root only). Where it was, the app user could have pointed it at another file and had the installer overwrite that file as root.
 - The Grafana dashboard works when shared externally (Grafana's public dashboards): it no longer has a "Server" variable, which public dashboards don't fill in, so every panel showed "No data". With several servers in one Grafana, the panels add them up as before. Download it again from Settings → System health and import it over the old one.
 
 ## v1.0.14 (2026-11-22)
