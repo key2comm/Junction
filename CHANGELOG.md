@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v1.0.15 (2026-11-23)
 
 ### Fixes
 - Security: the installer's frontend build log moved from the app user's home folder to `/var/log/softswitch-install/frontend-build.log` (root only). Where it was, the app user could have pointed it at another file and had the installer overwrite that file as root.
