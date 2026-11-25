@@ -1,0 +1,4 @@
+# The Junction release key. Servers save this file once, as /etc/softswitch/release-signers,
+# and update.sh then installs only releases signed with this key.
+# Fingerprint: SHA256:u4oi6X0Q/pB8qUAH+OfLmKuUDonrD2xxOgWWb/sXnO8
+junction-release namespaces="git" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINuWBWfgZT03Y/BWcKWdr4kl1aSQF4wAvv/c9V6NxnH0
