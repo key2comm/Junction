@@ -39,7 +39,10 @@ id "$build_user" >/dev/null 2>&1 || useradd --system -g "$build_user" -d "$build
 install -d -o "$build_user" -g "$build_user" -m 0700 "$build_home"
 rsync -a --delete --exclude=/vendor/ --exclude=/.env "$SS_ROOT/web/" "$stage/"
 chown -R "$build_user:$build_user" "$stage"
-[ -f "$stage/.env" ] || { install -o "$build_user" -g "$build_user" -m 0600 "$stage/.env.example" "$stage/.env"; as_build php artisan key:generate -q --no-interaction; }
+if [ ! -f "$stage/.env" ]; then
+	install -o "$build_user" -g "$build_user" -m 0600 "$stage/.env.example" "$stage/.env"
+	sed -i -E "s|^APP_KEY=.*|APP_KEY=base64:$(head -c 32 /dev/urandom | base64)|" "$stage/.env" # a key only for building
+fi
 
 info "Installing PHP dependencies"
 as_build composer install --no-dev --optimize-autoloader --no-interaction --no-progress
