@@ -21,8 +21,8 @@ FreeSWITCH relays every call's media (RTP). The current 1 vCPU droplet is for bu
 
 | | |
 |---|---|
-| Host | `theswitch.key2pbx.ca` (SSH alias `theswitch`, user `rocky`) |
-| Public IP | 147.182.148.63 (DigitalOcean droplet), VPC 10.137.0.15 |
+| Host | SSH alias `theswitch` (the hostname, IP and login live in each device's `~/.ssh/config`, never in the repo: it is public) |
+| Hosting | a small cloud server |
 | OS | Rocky Linux 10.2 |
 | Size | 1 vCPU, 1.7 GB RAM, 49 GB disk |
 

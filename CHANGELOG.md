@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Security
+- The project documents no longer name the development test server (hostname, IP address, login) or customer details.
+
 ## v1.0.15 (2026-11-23)
 
 ### Fixes
