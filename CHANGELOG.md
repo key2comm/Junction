@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v1.0.16 (2026-11-25)
 
 ### Security
 - **The running app can no longer change its own code.** The web app, background jobs and scheduler can read the program files but only write their data folder (`storage/`). Before, a flaw in the app could have been used to plant code that stayed. In detail:
