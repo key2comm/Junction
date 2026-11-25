@@ -30,7 +30,7 @@
         "@types/node": "^22.13.5",
         "@vitejs/plugin-vue": "^6.0.0",
         "concurrently": "^10.0.3",
-        "typescript": "^5.2.2",
+        "typescript": "^7.0.2",
         "vite": "npm:@voidzero-dev/vite-plus-core@1.4.0",
         "vite-plus": "1.4.0",
         "vue-tsc": "^3.3.13"
