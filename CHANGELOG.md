@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v1.1.0 (2026-11-25)
 
 ### Security
 - **SECURITY.md** says how to report a vulnerability privately, and which versions get fixes.
