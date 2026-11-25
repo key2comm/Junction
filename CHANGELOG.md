@@ -8,6 +8,8 @@
   - the cached settings and routes, which are program code too, are made by the installer as root;
   - Composer and npm, which run other people's install scripts, now run as their own user (`softswitch-build`) in a separate copy that holds no passwords, never as root or as the app;
   - the web server can read only the public files (`public/`), not the rest of the app or its settings.
+- **Every Junction service runs in a systemd sandbox**: the web app (PHP-FPM), background jobs, scheduler, FreeSWITCH, SIP capture and high availability. Each one can only write the folders it needs, sees no home folders, devices or kernel settings, and can't load kernel modules or change the clock. Where nothing needs sudo (the web app, FreeSWITCH, high availability), the service can't gain privileges at all.
+- **Updates are signed.** `update.sh` now installs the newest *release* (not the latest unreleased code), and only after checking that it is signed with the Junction release key. Your server keeps that key in `/etc/softswitch/release-signers` and never takes a new one from an update, so even someone who took over the GitHub repository couldn't push code to your server. `sudo ./update.sh --main` still installs the latest code for testing, with a warning that it isn't signed. Updating to this version is the last unsigned update: it saves the key, and every update after it is checked.
 - The project documents no longer name the development test server (hostname, IP address, login) or customer details.
 
 ## v1.0.15 (2026-11-23)
