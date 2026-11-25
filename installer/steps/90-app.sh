@@ -1,32 +1,90 @@
 # Deploy the Laravel admin UI / API (web/) to $SS_WEB_ROOT, build it, migrate,
 # and run its queue worker + scheduler under systemd.
 
-pkg_install rsync
+# Who owns what:
+#  - The live code ($SS_WEB_ROOT) is root's: the app (php-fpm, queue, scheduler,
+#    all running as $SS_APP_USER) can read it but not change it, so a flaw in
+#    the app can't plant code that survives. It writes only storage/.
+#  - bootstrap/cache holds PHP the app runs (cached config and routes), so root
+#    writes it (optimize_app).
+#  - Composer and npm run third-party install scripts, so they run as their own
+#    user ($build_user) in their own copy, never as root or as the app.
+#  - nginx may read public/ only (an ACL); PHP files go to php-fpm.
+
+pkg_install rsync acl
 
 app="$SS_WEB_ROOT"
 home=/var/lib/softswitch
-as_app() { (cd "$app" && runuser -u "$SS_APP_USER" -- env HOME="$home" COMPOSER_HOME="$home/.composer" \
-	npm_config_cache="$home/.npm" "$@"); }
+build_user=softswitch-build
+build_home=/var/lib/softswitch-build
+stage="$build_home/web"
+as_app() { (cd "$app" && runuser -u "$SS_APP_USER" -- env HOME="$home" "$@"); }
 artisan() { as_app php artisan "$@"; }
+as_build() { (cd "$stage" && runuser -u "$build_user" -- env HOME="$build_home" COMPOSER_HOME="$build_home/.composer" \
+	npm_config_cache="$build_home/.npm" "$@"); }
+# Rebuild the caches in bootstrap/cache as root, and the compiled views (which
+# live in storage/) as the app. Booting the app as root must not leave
+# root-owned files in storage/ (e.g. today's log), which the app couldn't write.
+optimize_app() {
+	(cd "$app" && php artisan config:cache -q && php artisan route:cache -q && php artisan event:cache -q)
+	artisan view:cache -q
+	chown -R "root:$SS_APP_USER" "$app/bootstrap/cache"
+	find "$app/bootstrap/cache" -type f -exec chmod 0640 {} +
+	find "$app/storage" ! -user "$SS_APP_USER" -exec chown -h "$SS_APP_USER:$SS_APP_USER" {} +
+}
 
-# --- Code. .env, storage/ and build outputs survive redeploys.
-rsync -a --delete \
-	--exclude=/.env --exclude=/storage/ --exclude=/vendor/ --exclude=/node_modules/ \
-	--exclude=/public/build/ --exclude=/public/hot --exclude='/bootstrap/cache/*.php' \
-	"$SS_ROOT/web/" "$app/"
+# --- Build, in the build user's copy (no secrets there: it gets .env.example).
+getent group "$build_user" >/dev/null || groupadd --system "$build_user"
+id "$build_user" >/dev/null 2>&1 || useradd --system -g "$build_user" -d "$build_home" -s /sbin/nologin "$build_user"
+install -d -o "$build_user" -g "$build_user" -m 0700 "$build_home"
+rsync -a --delete --exclude=/vendor/ --exclude=/.env "$SS_ROOT/web/" "$stage/"
+chown -R "$build_user:$build_user" "$stage"
+[ -f "$stage/.env" ] || { install -o "$build_user" -g "$build_user" -m 0600 "$stage/.env.example" "$stage/.env"; as_build php artisan key:generate -q --no-interaction; }
+
+info "Installing PHP dependencies"
+as_build composer install --no-dev --optimize-autoloader --no-interaction --no-progress
+
+info "Building frontend assets (slow on small servers)"
+as_build npm ci --no-audit --no-fund --loglevel=error
+# The build's output goes to a log (it is long); a failure shows its end. The
+# first build after new code has occasionally failed once and then passed, so
+# it is retried once before giving up. Root opens the log, so it lives in a
+# root-only folder that no other user can plant a symlink in.
+install -d -o root -g root -m 0700 /var/log/softswitch-install
+build_log=/var/log/softswitch-install/frontend-build.log
+if ! as_build npm run build >"$build_log" 2>&1; then
+	tail -n 25 "$build_log" >&2
+	warn "the frontend build failed; trying once more (full output: $build_log)"
+	as_build npm run build >"$build_log" 2>&1 || { tail -n 40 "$build_log" >&2; die "the frontend build failed (full output: $build_log)"; }
+fi
+rm -rf "$stage/node_modules"
+
+# --- Code: the build goes live. .env and storage/ survive redeploys; caches
+# from the old code are removed (optimize_app makes new ones further down).
+rsync -a --delete --exclude=/.env --exclude=/storage/ --exclude=/public/hot \
+	--exclude='/bootstrap/cache/config.php' --exclude='/bootstrap/cache/routes-*.php' --exclude='/bootstrap/cache/events.php' \
+	"$stage/" "$app/"
+rm -f "$app/bootstrap/cache/config.php" "$app"/bootstrap/cache/routes-*.php "$app/bootstrap/cache/events.php"
 rsync -a --ignore-existing "$SS_ROOT/web/storage/" "$app/storage/"
-chown -R "$SS_APP_USER:nginx" "$app"
-find "$app" -type d -exec chmod 0750 {} +
-find "$app" -type f -exec chmod 0640 {} +
+chown -R "root:$SS_APP_USER" "$app"
+chown -R "$SS_APP_USER:$SS_APP_USER" "$app/storage"
+find "$app" -path "$app/storage" -prune -o -type d -exec chmod 0750 {} +
+find "$app" -path "$app/storage" -prune -o -type f -exec chmod 0640 {} +
 chmod 0750 "$app/artisan"
-# The app writes here; nginx must not need to.
-chmod -R u+rwX,g-w "$app/storage" "$app/bootstrap/cache"
+chmod -R u+rwX,g-w,o-rwx "$app/storage"
+# nginx: through the folder to public/, and read public/ (static files).
+setfacl -m u:nginx:x "$app"
+setfacl -R -m u:nginx:rX "$app/public"
+if command -v semanage >/dev/null 2>&1; then
+	# bootstrap/cache used to be writable by the web app; now only storage/ is.
+	semanage fcontext -d "$SS_WEB_ROOT/bootstrap/cache(/.*)?" >/dev/null 2>&1 || true
+fi
 command -v restorecon >/dev/null && restorecon -R "$app"
 
 # --- .env (first run creates it; DB settings are always kept in sync).
 env_file="$app/.env"
 if [ ! -f "$env_file" ]; then
-	install -o "$SS_APP_USER" -g "$SS_APP_USER" -m 0600 "$app/.env.example" "$env_file"
+	install -o root -g "$SS_APP_USER" -m 0640 "$app/.env.example" "$env_file"
 fi
 set_env() { # set_env KEY VALUE - replace (or append) KEY=VALUE, also if commented out
 	local key="$1" val="$2" esc
@@ -79,49 +137,23 @@ set_env SOFTSWITCH_FS_CDR_ERROR_DIR "$SS_FS_LOG/xml_cdr"
 set_env SOFTSWITCH_HOSTNAME "$SS_HOSTNAME"
 set_env SOFTSWITCH_PBX_PORT "$SS_PBX_PORT"
 set_env SOFTSWITCH_STATIC_CARRIER_IPS "$SS_CARRIER_IPS"
-chown "$SS_APP_USER:$SS_APP_USER" "$env_file"; chmod 0600 "$env_file"
+# The app reads its settings but can't change them.
+chown "root:$SS_APP_USER" "$env_file"; chmod 0640 "$env_file"
 
-# --- Dependencies + assets.
-info "Installing PHP dependencies"
-as_app composer install --no-dev --optimize-autoloader --no-interaction --no-progress
 if ha_standby; then
 	# The main server's key (it decrypts settings such as the SMTP password).
 	key="$(runuser -u postgres -- psql -qAtX -d "$SS_DB_NAME" -c "SELECT convert_from(content, 'UTF8') FROM softswitch_ha.files WHERE name = 'app_key'" | sed -n 's/^APP_KEY=//p')"
 	[ -n "$key" ] || die "the main server's app key hasn't arrived yet; check that softswitch-ha runs on the main server, then re-run"
 	set_env APP_KEY "$key"
 else
-	grep -qE '^APP_KEY=.+' "$env_file" || artisan key:generate --force --no-interaction
+	grep -qE '^APP_KEY=.+' "$env_file" || set_env APP_KEY "base64:$(head -c 32 /dev/urandom | base64)"
 fi
-
-# Stale route/config caches from the previous deploy would hide new routes
-# from Wayfinder (which generates the frontend route helpers during the build).
-# Only the cached files: optimize:clear would also empty the database cache,
-# whose table doesn't exist yet on a new server (migrate runs further down).
-for what in config route view event; do
-	artisan "$what:clear" --no-interaction >/dev/null
-done
-
-info "Building frontend assets (slow on small servers)"
-as_app npm ci --no-audit --no-fund --loglevel=error
-# The build's output goes to a log (it is long); a failure shows its end. The
-# first build after new code has occasionally failed once and then passed, so
-# it is retried once before giving up. The log is opened by root, so it lives in
-# a root-only folder: in the app user's home, that user could replace it with a
-# symlink and have root write (through the build, which runs as that user) to
-# any file.
-install -d -o root -g root -m 0700 /var/log/softswitch-install
-build_log=/var/log/softswitch-install/frontend-build.log
-if ! as_app npm run build >"$build_log" 2>&1; then
-	tail -n 25 "$build_log" >&2
-	warn "the frontend build failed; trying once more (full output: $build_log)"
-	as_app npm run build >"$build_log" 2>&1 || { tail -n 40 "$build_log" >&2; die "the frontend build failed (full output: $build_log)"; }
-fi
-rm -rf "$app/node_modules"
+artisan view:clear -q --no-interaction
 
 # --- Database + caches.
 if ha_standby; then
 	# Everything below changes the database; a backup gets it all from the main server.
-	artisan optimize --no-interaction >/dev/null
+	optimize_app
 	install -d -o "$SS_APP_USER" -g "$SS_APP_USER" -m 0750 "$app/storage/app/ha"
 	for unit in softswitch-scheduler.service softswitch-queue.service softswitch-capture.service 		softswitch-ha.service softswitch-ha.timer softswitch-ha-promote.service softswitch-ha-promote.path; do
 		render "$SS_ROOT/deploy/systemd/$unit" "/etc/systemd/system/$unit"
@@ -154,7 +186,7 @@ runuser -u postgres -- psql -v ON_ERROR_STOP=1 -qAtX -d "$SS_DB_NAME" <<-SQL
 	GRANT EXECUTE ON FUNCTION softswitch_device(bigint) TO "$SS_FS_DB_USER";
 	GRANT EXECUTE ON FUNCTION softswitch_gateway_options(bigint[]) TO "$SS_FS_DB_USER";
 SQL
-artisan optimize --no-interaction >/dev/null
+optimize_app
 
 # --- First admin login (only if there are no users yet).
 admin_email="${SS_ADMIN_EMAIL:-admin@$SS_HOSTNAME}"

@@ -34,6 +34,15 @@ setting() { (set +u; . "$CONF"; eval "printf '%s' \"\${$1:-}\""); }
 secret() { sed -n "s/^$1=//p" "$SECRETS" 2>/dev/null | awk 'NR==1'; }
 psql_su() { runuser -u postgres -- psql -v ON_ERROR_STOP=1 -qAtX -d "$DB" "$@"; }
 artisan() { (cd "$WEB" && runuser -u "$APP_USER" -- php artisan "$@"); }
+# The app can't write its code or bootstrap/cache (cached config and routes are
+# PHP it runs), so root makes those caches; compiled views live in storage/.
+optimize() {
+	(cd "$WEB" && php artisan config:cache -q && php artisan route:cache -q && php artisan event:cache -q)
+	artisan view:cache -q
+	chown -R "root:$APP_USER" "$WEB/bootstrap/cache"
+	find "$WEB/bootstrap/cache" -type f -exec chmod 0640 {} +
+	find "$WEB/storage" ! -user "$APP_USER" -exec chown -h "$APP_USER:$APP_USER" {} +
+}
 in_recovery() { [ "$(psql_su -c 'SELECT pg_is_in_recovery()' 2>/dev/null)" = t ]; }
 now() { date -u +%Y-%m-%dT%H:%M:%SZ; }
 
@@ -136,7 +145,7 @@ pull() {
 		printf '%s' "$sha" > "$APPLIED/$name"
 		changed=$((changed + 1))
 	done < <(psql_su -c "SELECT name || '|' || kind || '|' || sha256 FROM softswitch_ha.files ORDER BY name" -F'|')
-	if [ "$reoptimize" = 1 ] && [ -f "$WEB/artisan" ]; then artisan optimize --no-interaction >/dev/null; fi
+	if [ "$reoptimize" = 1 ] && [ -f "$WEB/artisan" ]; then optimize; fi
 	if [ "$reload_nginx" = 1 ] && systemctl is-active -q nginx; then nginx -t -q 2>/dev/null && systemctl reload nginx || true; fi
 	write_state pull "{\"at\":\"$(now)\",\"changed\":$changed}"
 }
@@ -166,7 +175,7 @@ promote() {
 	set_env SESSION_DRIVER database
 	set_env CACHE_STORE database
 	set_env QUEUE_CONNECTION database
-	artisan optimize --no-interaction >/dev/null
+	optimize
 	systemctl enable -q --now freeswitch
 	systemctl enable -q --now softswitch-queue softswitch-scheduler
 	systemctl restart php-fpm
@@ -224,7 +233,7 @@ clone() {
 		set_env SESSION_DRIVER file
 		set_env CACHE_STORE file
 		set_env QUEUE_CONNECTION sync
-		artisan optimize --no-interaction >/dev/null
+		optimize
 		systemctl enable -q --now softswitch-ha.timer softswitch-ha-promote.path 2>/dev/null || true
 		systemctl restart php-fpm
 	fi

@@ -279,7 +279,7 @@ class BackupRunner
     {
         $steps = self::restoreSteps($file, $encrypted);
         $key = $encrypted
-            ? "app-key.txt holds this switch's app key. On a new server, put that APP_KEY line in /var/www/html/.env\n(then run: sudo -u softswitch php /var/www/html/artisan config:cache) so saved SIP and SMTP passwords can be read."
+            ? "app-key.txt holds this switch's app key. On a new server, put that APP_KEY line in /var/www/html/.env\n(then run: cd /var/www/html && sudo php artisan config:cache) so saved SIP and SMTP passwords can be read."
             : "This backup is not encrypted and has no app key. On a new server, saved SIP and SMTP passwords can only be\nread with the old server's APP_KEY (in /var/www/html/.env). Set a backup password in Settings → Backups to include it.";
 
         return "Softswitch database backup\n\nContents: database.dump (pg_dump custom format), VERSION (the app version it came from), README.txt.\n\n"

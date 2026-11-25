@@ -15,7 +15,8 @@ getent passwd "$SS_APP_USER" >/dev/null \
 # Writes FreeSWITCH gateway files (sip_profiles/carrier is group-writable).
 getent group freeswitch >/dev/null && usermod -aG freeswitch "$SS_APP_USER"
 
-install -d -o "$SS_APP_USER" -g nginx -m 0750 "$SS_WEB_ROOT"
+# Root owns the code; the app may read it (step 90 sets the rest, and lets nginx into public/).
+install -d -o root -g "$SS_APP_USER" -m 0750 "$SS_WEB_ROOT"
 install -d -m 0755 /var/www/acme
 
 # --- TLS: self-signed until a real certificate is issued from the admin UI.
