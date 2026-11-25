@@ -19,5 +19,25 @@ LimitSTACK=250000
 LimitRTPRIO=infinity
 LimitRTTIME=infinity
 
+# --- Sandbox. FreeSWITCH writes only under its var/ (logs, databases,
+# recordings, greetings); its config is written by the app, not by it.
+# Realtime scheduling stays allowed (audio).
+NoNewPrivileges=yes
+ProtectSystem=full
+ReadWritePaths=@SS_FS_PREFIX@/var
+ProtectHome=yes
+PrivateTmp=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+RestrictSUIDSGID=yes
+RestrictNamespaces=yes
+LockPersonality=yes
+SystemCallArchitectures=native
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+
 [Install]
 WantedBy=multi-user.target

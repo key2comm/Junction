@@ -17,5 +17,25 @@ Restart=always
 RestartSec=5
 Nice=5
 
+# --- Sandbox: tcpdump needs raw sockets and to drop to the app user, nothing else.
+NoNewPrivileges=yes
+CapabilityBoundingSet=CAP_NET_RAW CAP_NET_ADMIN CAP_SETUID CAP_SETGID CAP_CHOWN CAP_FOWNER CAP_DAC_OVERRIDE
+ProtectSystem=strict
+ReadWritePaths=/var/lib/softswitch/capture
+ProtectHome=yes
+PrivateTmp=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+RestrictNamespaces=yes
+LockPersonality=yes
+SystemCallArchitectures=native
+RestrictAddressFamilies=AF_PACKET AF_UNIX AF_NETLINK AF_INET AF_INET6
+
 [Install]
 WantedBy=multi-user.target
