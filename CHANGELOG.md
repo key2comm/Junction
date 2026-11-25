@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+- **The call routing function has one definition** (`web/database/sql/softswitch_route.sql`), applied after every database update. Before, ten database migrations redefined it in turn, and four of them built theirs by find-and-replace on the previous one, so changing an old one could silently break the later ones. The function itself is unchanged (checked against a running server).
+- **Automatic checks on GitHub**: every push runs the frontend build, the type check and all tests on PostgreSQL, and Dependabot proposes updates for Composer, npm and GitHub Actions each week. (The settings were in the wrong folder, so neither had ever run.)
+
 ## v1.0.16 (2026-11-25)
 
 ### Security

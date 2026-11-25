@@ -10,6 +10,9 @@ use App\Services\Freeswitch\GatewaySync;
 use App\Services\Freeswitch\PbxSync;
 use App\Models\User;
 use App\Support\Audit;
+use App\Support\DatabaseFunctions;
+use Illuminate\Database\Events\MigrationsEnded;
+use Illuminate\Database\Events\NoPendingMigrations;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
@@ -74,6 +77,15 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(Login::class, fn (Login $e) => $e->user instanceof User ? Audit::auth('login', $e->user, request()) : null);
         Event::listen(Logout::class, fn (Logout $e) => $e->user instanceof User ? Audit::auth('logout', $e->user, request()) : null);
         Event::listen(Failed::class, fn (Failed $e) => Audit::auth('login_failed', null, request(), (string) ($e->credentials['email'] ?? '')));
+
+        // PostgreSQL functions in database/sql/ (softswitch_route...): applied after
+        // every migrate, including when there was nothing to migrate. Not after a
+        // rollback, which may have removed something they use.
+        Event::listen([MigrationsEnded::class, NoPendingMigrations::class], function (MigrationsEnded|NoPendingMigrations $e) {
+            if ($e->method === 'up') {
+                DatabaseFunctions::apply();
+            }
+        });
 
         // SMTP settings come from Settings → Email, applied only when mail is sent.
         $this->app->afterResolving('mail.manager', fn () => MailSettings::apply());

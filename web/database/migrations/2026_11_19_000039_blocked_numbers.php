@@ -48,35 +48,12 @@ return new class extends Migration
             $$;
             REVOKE ALL ON FUNCTION softswitch_number_blocked(bigint, text, text) FROM PUBLIC;
         SQL);
-        DB::unprepared(self::routeFunction(blocked: true));
     }
 
     public function down(): void
     {
-        DB::unprepared(self::routeFunction(blocked: false));
         DB::unprepared('DROP FUNCTION IF EXISTS softswitch_number_blocked(bigint, text, text)');
         Schema::dropIfExists('account_blocked_numbers');
     }
 
-    private static function routeFunction(bool $blocked): string
-    {
-        $previous = require database_path('migrations/2026_11_18_000038_service_codes_exact_rates.php');
-        $sql = (new ReflectionMethod($previous, 'routeFunction'))->invoke(null, true);
-        if (! $blocked) {
-            return $sql;
-        }
-        $from = "                IF EXISTS (SELECT 1 FROM blocked_prefixes b\n";
-        if (substr_count($sql, $from) !== 1) {
-            throw new RuntimeException('softswitch_route patch point not found once: blocked prefixes');
-        }
-
-        return str_replace($from, <<<'PLPGSQL'
-                -- The customer's blocked numbers (exact numbers it may not call).
-                IF softswitch_number_blocked(acct.id, num, 'outbound') THEN
-                    r.status := 'reject'; r.reason := 'blocked_number'; RETURN NEXT r; RETURN;
-                END IF;
-
-
-PLPGSQL.$from, $sql);
-    }
 };

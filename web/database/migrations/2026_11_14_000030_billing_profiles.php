@@ -118,12 +118,10 @@ return new class extends Migration
             $table->decimal('amount', 16, 6);
         });
 
-        DB::unprepared(self::routeFunction(included: true));
     }
 
     public function down(): void
     {
-        DB::unprepared(self::routeFunction(included: false));
         Schema::dropIfExists('invoice_charges');
         Schema::table('invoices', fn (Blueprint $t) => $t->dropColumn(['charges_total', 'included_seconds']));
         DB::statement("DELETE FROM ledger_entries WHERE type = 'charge'");
@@ -139,59 +137,4 @@ return new class extends Migration
         Schema::dropIfExists('billing_items');
     }
 
-    /**
-     * softswitch_route as the dialing-rules migration (000029) wrote it, and
-     * with $included: calls the customer's plan covers (unlimited Canada/USA,
-     * or within the month's included minutes) need no funds and reserve none.
-     */
-    private static function routeFunction(bool $included): string
-    {
-        $source = file_get_contents(database_path('migrations/2026_11_10_000029_dialing_rules.php'));
-        $start = strpos($source, 'CREATE OR REPLACE FUNCTION softswitch_route(');
-        $endMarker = 'REVOKE ALL ON FUNCTION softswitch_route(bigint, text, uuid, timestamptz, integer) FROM PUBLIC;';
-        $end = strpos($source, $endMarker, (int) $start);
-        if ($start === false || $end === false) {
-            throw new RuntimeException('softswitch_route not found in migration 000029');
-        }
-        $sql = substr($source, $start, $end - $start + strlen($endMarker));
-        if (! $included) {
-            return $sql;
-        }
-
-        $patch = function (string $from, string $to) use (&$sql) {
-            if (substr_count($sql, $from) !== 1) {
-                throw new RuntimeException("softswitch_route patch point not found once: {$from}");
-            }
-            $sql = str_replace($from, $to, $sql);
-        };
-        $patch(
-            "                dest_country text;\n            BEGIN",
-            "                dest_country text;\n                prof billing_profiles%ROWTYPE;\n                covered boolean := false;\n                used bigint;\n            BEGIN",
-        );
-        $patch(
-            "                -- Funds (only when the built-in billing is on).",
-            <<<'PLPGSQL'
-                -- Billing profile: Canada/USA calls inside the plan (unlimited, or
-                -- while included minutes remain this month) cost nothing up front.
-                IF acct.billing_profile_id IS NOT NULL THEN
-                    SELECT * INTO prof FROM billing_profiles WHERE id = acct.billing_profile_id;
-                    IF FOUND AND prof.nanp_plan <> 'metered' AND coalesce(dest_country, softswitch_dial_country(num)) = 'NANP' THEN
-                        IF prof.nanp_plan = 'unlimited' THEN
-                            covered := true;
-                        ELSE
-                            SELECT u.seconds INTO used FROM account_bundle_usage u
-                            WHERE u.account_id = acct.id AND u.period = to_char(p_at AT TIME ZONE acct.timezone, 'YYYY-MM');
-                            covered := coalesce(used, 0) < prof.nanp_minutes::bigint * 60;
-                        END IF;
-                    END IF;
-                END IF;
-
-                -- Funds (only when the built-in billing is on).
-PLPGSQL,
-        );
-        $patch("                IF NOT billing THEN\n                    maxdur := p_max_duration;", "                IF NOT billing OR covered THEN\n                    maxdur := p_max_duration;");
-        $patch('CASE WHEN billing THEN sell.connect_fee', 'CASE WHEN billing AND NOT covered THEN sell.connect_fee');
-
-        return $sql;
-    }
 };
