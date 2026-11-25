@@ -32,6 +32,7 @@ Junction is an open Class 4 (wholesale carrier) switch. It routes VoIP traffic b
 ```sh
 git clone https://github.com/key2comm/Junction.git
 cd Junction
+git checkout "$(git tag -l 'v*' --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1)"   # the newest release
 sudo ./install.sh
 ```
 
@@ -51,10 +52,18 @@ When the install finishes, it shows the admin UI address, login and initial pass
 The dashboard shows **Update available** when there's a newer release on GitHub. To update, run this in the Junction folder on your server:
 
 ```sh
-cd ~/Junction && git pull && sudo ./update.sh
+cd ~/Junction && sudo ./update.sh
 ```
 
-It downloads the latest version and applies it. Your settings, database and call records are kept. To switch to a specific release instead, name it: `sudo ./update.sh v1.0.1`.
+It downloads the newest release, checks that it is signed with the Junction release key, and applies it. Your settings, database and call records are kept. To switch to a specific release instead, name it: `sudo ./update.sh v1.0.16`.
+
+**Signed releases.** Every release from v1.0.16 on is a signed git tag. Your server saves the release key in `/etc/softswitch/release-signers` the first time it installs or updates to a version that has one, and from then on refuses any release that isn't signed with it, even if the GitHub repository were taken over. Before a first install you can check a release yourself:
+
+```sh
+git -c gpg.format=ssh -c gpg.ssh.allowedSignersFile=release-signers verify-tag v1.0.16
+```
+
+and compare the key in `release-signers` with the one published on the release page. `sudo ./update.sh --main` installs the latest unreleased code instead (not signed; for testing only).
 
 Installed v0.1.1 beta or earlier? Those don't have `update.sh` yet, so run `git pull` once first.
 

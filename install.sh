@@ -38,6 +38,11 @@ if [ ! -f "$SS_CONFIG" ]; then
 	install -m 0640 "$SS_ROOT/softswitch.conf.example" "$SS_CONFIG"
 	log "Created $SS_CONFIG from defaults (edit it and re-run to change settings)"
 fi
+# The release key update.sh checks releases against: saved on the first
+# install and never replaced by an update (a new key needs an admin to put it here).
+if [ ! -s /etc/softswitch/release-signers ] && [ -s "$SS_ROOT/release-signers" ]; then
+	install -m 0644 "$SS_ROOT/release-signers" /etc/softswitch/release-signers
+fi
 # shellcheck disable=SC1090
 . "$SS_CONFIG"
 resolve_defaults
