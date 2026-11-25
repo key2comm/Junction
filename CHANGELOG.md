@@ -3,6 +3,11 @@
 ## Unreleased
 
 ### Security
+- **The running app can no longer change its own code.** The web app, background jobs and scheduler can read the program files but only write their data folder (`storage/`). Before, a flaw in the app could have been used to plant code that stayed. In detail:
+  - the program files and settings file (`.env`) belong to root;
+  - the cached settings and routes, which are program code too, are made by the installer as root;
+  - Composer and npm, which run other people's install scripts, now run as their own user (`softswitch-build`) in a separate copy that holds no passwords, never as root or as the app;
+  - the web server can read only the public files (`public/`), not the rest of the app or its settings.
 - The project documents no longer name the development test server (hostname, IP address, login) or customer details.
 
 ## v1.0.15 (2026-11-23)
