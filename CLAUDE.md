@@ -2,7 +2,7 @@
 
 This project is worked on from multiple devices and synced through GitHub.
 - Run `git pull` at the start of a session.
-- Commit and push finished work so the other devices can pick it up.
+- `main` is protected: every change goes through a pull request. Work on a branch, push it, open a PR (`gh pr create`) with a summary of what changed and how it was tested. It can merge once the `tests` check passes; the user reviews and merges (or says to merge). No direct pushes or force-pushes to `main`. Other devices pick changes up with `git pull` on `main`.
 - Never commit secrets. The repo is public: no server hostnames, IPs, logins, customer names or phone numbers in any file (the test server is only the SSH alias `theswitch`).
 - Keep machine-specific config in `.env` or `.claude/settings.local.json` (both gitignored).
 
