@@ -92,10 +92,9 @@ class BackupController extends Controller
         if (! $s['enabled']) {
             return null;
         }
-        [$h, $m] = array_map('intval', explode(':', (string) $s['time']) + [1 => 0]);
-        $next = CarbonImmutable::now($s['timezone'] ?: 'UTC')->setTime($h, $m);
+        $runner = app(BackupRunner::class);
 
-        return app(BackupRunner::class)->due() ? CarbonImmutable::now()->addMinute()->startOfMinute() : ($next->isPast() ? $next->addDay() : $next);
+        return $runner->due() ? CarbonImmutable::now()->addMinute()->startOfMinute() : $runner->nextSlot();
     }
 
     private function validated(Request $request): array
@@ -110,6 +109,7 @@ class BackupController extends Controller
         }
         $data = $request->validate([
             'enabled' => ['boolean'],
+            'frequency' => ['sometimes', 'in:'.implode(',', BackupSettings::FREQUENCIES)],
             'time' => ['required', 'date_format:H:i'],
             'timezone' => ['required', 'timezone:all'],
             'retention_days' => ['required', 'integer', 'between:1,365'],

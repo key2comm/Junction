@@ -16,6 +16,7 @@ import { edit as editEmail } from '@/routes/email';
 
 type Settings = {
     enabled: boolean;
+    frequency: 'daily' | 'hourly';
     time: string;
     timezone: string;
     retention_days: number;
@@ -74,6 +75,7 @@ const props = defineProps<{
 defineOptions({ layout: { breadcrumbs: [{ title: 'Backups', href: edit() }] } });
 
 const s = props.settings;
+const frequency = ref(s.frequency ?? 'daily');
 const sftp = ref(s.sftp_enabled);
 const s3 = ref(s.s3_enabled);
 const provider = ref(s.s3_provider);
@@ -109,7 +111,7 @@ const runNow = () => router.post(run.url(), {}, { preserveScroll: true });
             <Heading
                 variant="small"
                 title="Database backups"
-                description="A backup of the whole database (accounts, rates, routing, DIDs, PBX, billing and call records) made every night, kept on this server and optionally sent elsewhere."
+                description="A backup of the whole database (accounts, rates, routing, DIDs, PBX, billing and call records) made every night or every hour, kept on this server and optionally sent elsewhere."
             />
             <Button variant="outline" :disabled="requested || standby" @click="runNow"><Play class="icon" /> {{ requested ? 'Starting…' : 'Run now' }}</Button>
         </div>
@@ -119,11 +121,20 @@ const runNow = () => router.post(run.url(), {}, { preserveScroll: true });
         <Form v-bind="BackupController.update.form()" class="ss-stack-4 ss-maxw-3xl" v-slot="{ errors, processing }">
             <section class="card card-body ss-grid gap-3 ss-cols-sm-2">
                 <label class="d-flex align-items-center gap-2 ss-span-sm-2 fw-semibold">
-                    <input type="checkbox" name="enabled" value="1" :checked="s.enabled" class="form-check-input m-0" /> Back up every night
+                    <input type="checkbox" name="enabled" value="1" :checked="s.enabled" class="form-check-input m-0" /> Back up automatically
                 </label>
+                <div class="ss-grid gap-1">
+                    <Label for="frequency">How often</Label>
+                    <select id="frequency" name="frequency" v-model="frequency" :class="selectClass">
+                        <option value="daily">Every night</option>
+                        <option value="hourly">Every hour</option>
+                    </select>
+                    <InputError :message="errors.frequency" />
+                </div>
                 <div class="ss-grid gap-1">
                     <Label for="time">At</Label>
                     <Input id="time" name="time" type="time" :default-value="s.time" required />
+                    <p v-if="frequency === 'hourly'" class="small text-secondary mb-0">Every hour at these minutes past the hour (the hour itself is ignored).</p>
                     <InputError :message="errors.time" />
                 </div>
                 <div class="ss-grid gap-1">
@@ -140,6 +151,7 @@ const runNow = () => router.post(run.url(), {}, { preserveScroll: true });
                         <span class="input-group-text">days</span>
                     </div>
                     <p class="small text-secondary mb-0">
+                        <template v-if="frequency === 'hourly'">Every hourly backup is kept for a day; after that, the last one of each day. Copies sent by SFTP or S3 are thinned the same way. </template>
                         <template v-if="diskFree">{{ size(diskFree) }} free on this server. </template>A backup is skipped rather than fill the disk.
                     </p>
                     <InputError :message="errors.retention_days" />
