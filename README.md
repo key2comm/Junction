@@ -106,6 +106,17 @@ The main server's dashboard shows whether the backup is in sync. If the backup d
 
 Calls in progress on the failed server are lost; new calls work once the DNS change takes effect. Run `sudo softswitch-ha status` on either server to see where it stands.
 
+## When something goes wrong
+
+[docs/RUNBOOKS.md](docs/RUNBOOKS.md) has step-by-step fixes for:
+- restoring from a backup, onto the same server or a new one;
+- failing over to the backup server;
+- a firewall lockout;
+- an expired certificate;
+- FreeSWITCH not starting.
+
+It also sets the recovery targets: at most 1 hour of lost data, and calls flowing again within 1 hour.
+
 ## Tour
 
 ### Dashboard

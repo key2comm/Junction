@@ -7,6 +7,7 @@
 
 ### Added
 - **Backups every hour**: Settings → Backups has a new *How often* choice, every night (as before, the default) or every hour at the minute you choose. Hourly backups are all kept for a day; after that only the last one of each day is kept, up to *Keep for* days. Copies sent by SFTP or S3 are thinned the same way.
+- **Runbooks** (`docs/RUNBOOKS.md`): step-by-step fixes for restoring from a backup, failing over to the backup server, a firewall lockout, an expired certificate and FreeSWITCH not starting. They also set the recovery targets: at most 1 hour of lost data, and calls flowing again within 1 hour.
 
 ### Fixed
 - **Backups could stop for up to 6 hours after an update or a restart.** If the scheduler was restarted while it was checking whether a backup was due, the check's "already running" lock stayed behind and blocked backups until it expired. The scheduler now clears its leftover locks when it starts.
