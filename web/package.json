@@ -16,7 +16,7 @@
         "@laravel/passkeys": "^0.2.0",
         "@lucide/vue": "^1.17.0",
         "@tabler/core": "1.6.1",
-        "@vueuse/core": "^12.8.2",
+        "@vueuse/core": "^15.0.0",
         "clsx": "^2.1.1",
         "jssip": "^3.10.1",
         "laravel-vite-plugin": "^3.0.0",
