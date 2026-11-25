@@ -1,0 +1,79 @@
+name: tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+
+    # The same checks as scripts/test-on-server.sh: frontend build, type check,
+    # and the test suite on PostgreSQL (the app relies on it: partitions,
+    # PL/pgSQL routing functions).
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: softswitch
+          POSTGRES_PASSWORD: softswitch
+          POSTGRES_DB: softswitch_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U softswitch -d softswitch_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    defaults:
+      run:
+        working-directory: web
+
+    env:
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: softswitch_test
+      DB_USERNAME: softswitch
+      DB_PASSWORD: softswitch
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+        with:
+          php-version: '8.3'
+          extensions: bcmath, intl, mbstring, pdo_pgsql, pgsql, sockets, zip
+          tools: composer:v2
+          coverage: none
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: |
+          composer install --no-interaction --no-progress --prefer-dist
+          npm ci --no-audit --no-fund
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Type check
+        run: npm run types:check
+
+      - name: Tests (PostgreSQL)
+        run: php artisan test --compact
