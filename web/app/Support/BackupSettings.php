@@ -25,6 +25,7 @@ final class BackupSettings
 
     public const DEFAULTS = [
         'enabled' => true,
+        'frequency' => 'daily',  // daily | hourly (at the minute of 'time')
         'time' => '02:00',
         'timezone' => 'UTC',
         'retention_days' => 7,
@@ -46,6 +47,8 @@ final class BackupSettings
         's3_path' => null,
         's3_keep_days' => 30,
     ];
+
+    public const FREQUENCIES = ['daily', 'hourly'];
 
     /** Run now (Settings → Backups): the scheduler picks it up within a minute. */
     public const REQUESTED = 'backup.requested_at';

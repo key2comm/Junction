@@ -5,6 +5,12 @@
 ### Security
 - **SECURITY.md** says how to report a vulnerability privately, and which versions get fixes.
 
+### Added
+- **Backups every hour**: Settings → Backups has a new *How often* choice, every night (as before, the default) or every hour at the minute you choose. Hourly backups are all kept for a day; after that only the last one of each day is kept, up to *Keep for* days. Copies sent by SFTP or S3 are thinned the same way.
+
+### Fixed
+- **Backups could stop for up to 6 hours after an update or a restart.** If the scheduler was restarted while it was checking whether a backup was due, the check's "already running" lock stayed behind and blocked backups until it expired. The scheduler now clears its leftover locks when it starts.
+
 ### Changed
 - **The call routing function has one definition** (`web/database/sql/softswitch_route.sql`), applied after every database update. Before, ten database migrations redefined it in turn, and four of them built theirs by find-and-replace on the previous one, so changing an old one could silently break the later ones. The function itself is unchanged (checked against a running server).
 - **Automatic checks on GitHub**: every push runs the frontend build, the type check and all tests on PostgreSQL, and Dependabot proposes updates for Composer, npm and GitHub Actions each week. (The settings were in the wrong folder, so neither had ever run.)

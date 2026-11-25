@@ -8,6 +8,11 @@ Wants=postgresql.service
 User=@SS_APP_USER@
 Group=@SS_APP_USER@
 WorkingDirectory=@SS_WEB_ROOT@
+# A restart (an update, a reboot) stops the tasks it had running in the
+# background before they release their "already running" locks, and the backup
+# check's lock would then block backups for up to 6 hours. Nothing from this
+# scheduler can be running when it starts, so its leftover locks go first.
+ExecStartPre=/usr/bin/php artisan schedule:clear-cache --no-interaction
 ExecStart=/usr/bin/php artisan schedule:work
 Restart=always
 RestartSec=5

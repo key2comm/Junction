@@ -100,6 +100,44 @@ class BackupTest extends TestCase
         $this->assertNull($runner->due($at('2026-11-22 03:00')));
     }
 
+    public function test_hourly_backups_run_every_hour_at_the_chosen_minute(): void
+    {
+        BackupSettings::put(['frequency' => 'hourly', 'time' => '02:15', 'timezone' => 'America/Toronto']);
+        $runner = app(BackupRunner::class);
+        $at = fn (string $t) => CarbonImmutable::parse($t, 'America/Toronto');
+
+        $this->assertSame('schedule', $runner->due($at('2026-11-21 14:20')));
+        Backup::create(['status' => 'done', 'trigger' => 'schedule', 'started_at' => $at('2026-11-21 14:15')->utc()]);
+        $this->assertNull($runner->due($at('2026-11-21 15:10')));      // not yet 15:15
+        $this->assertSame('schedule', $runner->due($at('2026-11-21 15:15')));
+        $this->assertTrue($runner->nextSlot($at('2026-11-21 14:20'))->eq($at('2026-11-21 15:15')));
+
+        // Saved from the form; nightly stays the default.
+        $this->save(['frequency' => 'weekly'])->assertSessionHasErrors('frequency');
+        $this->save(['frequency' => 'daily'])->assertSessionHasNoErrors();
+        $this->assertSame('daily', BackupSettings::get('frequency'));
+        $this->save([])->assertSessionHasNoErrors(); // left out: unchanged
+        $this->assertSame('daily', BackupSettings::get('frequency'));
+    }
+
+    public function test_hourly_backups_are_thinned_to_one_a_day_after_a_day(): void
+    {
+        $now = CarbonImmutable::parse('2026-11-25 12:00', 'UTC');
+        $made = [
+            'recent1' => $now->subHours(2),
+            'recent2' => $now->subHours(23),
+            'day1-early' => CarbonImmutable::parse('2026-11-23 01:00', 'UTC'),
+            'day1-late' => CarbonImmutable::parse('2026-11-23 23:00', 'UTC'),
+            'day1-mid' => CarbonImmutable::parse('2026-11-23 12:00', 'UTC'),
+            'too-old' => $now->subDays(8),
+        ];
+        $delete = BackupRunner::expired($made, 7, true, $now);
+        sort($delete);
+        $this->assertSame(['day1-early', 'day1-mid', 'too-old'], $delete);
+        // Nightly: only the age limit applies.
+        $this->assertSame(['too-old'], BackupRunner::expired($made, 7, false, $now));
+    }
+
     public function test_an_encrypted_backup_holds_the_dump_and_the_app_key(): void
     {
         BackupSettings::put(['password' => 'correct horse battery staple']);

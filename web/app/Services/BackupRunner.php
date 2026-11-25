@@ -40,7 +40,7 @@ class BackupRunner
     /** A backup still "running" after this long died (killed, server restarted). */
     public const STALE_HOURS = 6;
 
-    /** Is a backup due (Run now, or the daily time has passed since the last one)? */
+    /** Is a backup due (Run now, or the scheduled time has passed since the last one)? */
     public function due(?CarbonImmutable $now = null): ?string
     {
         if (Settings::get(BackupSettings::REQUESTED)) {
@@ -49,15 +49,69 @@ class BackupRunner
         if (! BackupSettings::get('enabled')) {
             return null;
         }
+
+        return Backup::query()->where('started_at', '>=', $this->lastSlot($now)->utc())->exists() ? null : 'schedule';
+    }
+
+    /** The latest scheduled time at or before $now: today's (or yesterday's) time, or this hour's (or the last hour's) minute. */
+    public function lastSlot(?CarbonImmutable $now = null): CarbonImmutable
+    {
         $now ??= CarbonImmutable::now();
-        $tz = BackupSettings::get('timezone') ?: 'UTC';
         [$h, $m] = array_map('intval', explode(':', (string) BackupSettings::get('time')) + [1 => 0]);
-        $slot = $now->setTimezone($tz)->setTime($h, $m);
-        if ($slot->greaterThan($now)) {
-            $slot = $slot->subDay();
+        $local = $now->setTimezone(BackupSettings::get('timezone') ?: 'UTC');
+        if (self::hourly()) {
+            $slot = $local->setTime($local->hour, $m);
+
+            return $slot->greaterThan($now) ? $slot->subHour() : $slot;
+        }
+        $slot = $local->setTime($h, $m);
+
+        return $slot->greaterThan($now) ? $slot->subDay() : $slot;
+    }
+
+    /** The next scheduled time after $now. */
+    public function nextSlot(?CarbonImmutable $now = null): CarbonImmutable
+    {
+        $last = $this->lastSlot($now);
+
+        return self::hourly() ? $last->addHour() : $last->addDay();
+    }
+
+    private static function hourly(): bool
+    {
+        return BackupSettings::get('frequency') === 'hourly';
+    }
+
+    /**
+     * Which backups to delete, given when each was made: everything older than
+     * $days, and with hourly backups, all but the last of each day once they're
+     * a day old (so a week of them is about 30 files, not 168).
+     *
+     * @param  array<array-key, CarbonImmutable>  $made
+     * @return list<array-key>
+     */
+    public static function expired(array $made, int $days, bool $hourly, ?CarbonImmutable $now = null): array
+    {
+        $now ??= CarbonImmutable::now();
+        $delete = [];
+        $lastOfDay = [];
+        foreach ($made as $key => $at) {
+            if ($at->lt($now->subDays($days))) {
+                $delete[] = $key;
+            } elseif ($hourly && $at->lt($now->subDay())) {
+                $day = $at->utc()->format('Y-m-d');
+                if (! isset($lastOfDay[$day]) || $at->gt($made[$lastOfDay[$day]])) {
+                    if (isset($lastOfDay[$day])) {
+                        $delete[] = $lastOfDay[$day];
+                    }
+                    $lastOfDay[$day] = $key;
+                } else {
+                    $delete[] = $key;
+                }
+            }
         }
 
-        return Backup::query()->where('started_at', '>=', $slot->utc())->exists() ? null : 'schedule';
+        return $delete;
     }
 
     public function run(string $trigger = 'manual'): Backup
@@ -185,22 +239,40 @@ class BackupRunner
         $backup->save();
     }
 
-    /** Local backups past retention, and remote ones past their own "keep" days (0 = never delete). */
+    /**
+     * Local backups past retention, and remote ones past their own "keep" days
+     * (0 = never delete). With hourly backups, older than a day only the last
+     * of each day stays (see expired()); failed ones are kept as history.
+     */
     public function prune(?array $s = null): void
     {
         $s ??= BackupSettings::all();
+        $hourly = ($s['frequency'] ?? 'daily') === 'hourly';
         $keep = max(1, (int) $s['retention_days']);
         Backup::query()->where('started_at', '<', now()->subDays($keep))->get()->each->delete();
+        if ($hourly) {
+            $done = Backup::query()->where('status', 'done')->get(['id', 'started_at'])
+                ->mapWithKeys(fn (Backup $b) => [$b->id => CarbonImmutable::parse($b->started_at)])->all();
+            Backup::query()->whereKey(self::expired($done, $keep, true))->get()->each->delete();
+        }
 
-        $old = fn (int $days) => fn (string $name) => $days > 0 && ($at = self::fileTime($name)) && $at->lt(now()->subDays($days));
+        // Remote copies, by the time in their names.
+        $stale = function (array $names, int $days) use ($hourly): array {
+            $made = array_filter(array_map(fn (string $n) => self::fileTime(basename($n)), $names));
+
+            return array_map(fn ($i) => $names[$i], self::expired($made, $days, $hourly));
+        };
         try {
             if ($s['sftp_enabled'] && ($days = (int) $s['sftp_keep_days']) > 0) {
                 $sftp = self::sftp($s);
+                $names = [];
                 foreach ($sftp->listContents('')->toArray() as $item) {
-                    $name = basename($item->path());
-                    if ($item->isFile() && str_starts_with($name, self::FILE_PREFIX) && $old($days)($name)) {
-                        $sftp->delete($item->path());
+                    if ($item->isFile() && str_starts_with(basename($item->path()), self::FILE_PREFIX)) {
+                        $names[] = $item->path();
                     }
+                }
+                foreach ($stale($names, $days) as $path) {
+                    $sftp->delete($path);
                 }
             }
         } catch (Throwable $e) {
@@ -209,10 +281,8 @@ class BackupRunner
         try {
             if ($s['s3_enabled'] && ($days = (int) $s['s3_keep_days']) > 0) {
                 $s3 = self::s3($s);
-                foreach ($s3->list(self::s3Key($s, self::FILE_PREFIX)) as $key) {
-                    if ($old($days)(basename($key))) {
-                        $s3->delete($key);
-                    }
+                foreach ($stale(array_values($s3->list(self::s3Key($s, self::FILE_PREFIX))), $days) as $key) {
+                    $s3->delete($key);
                 }
             }
         } catch (Throwable $e) {
